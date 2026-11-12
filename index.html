@@ -686,7 +686,7 @@
 
         // Tagesnotizen oben in den Spalten (zusätzlich zu den automatischen Spezialtagen)
         let dayNotesStore = {};
-        // Lektionen: { unit, title, notes, homework, homeworkTargetKey, link, audioClips: [], todos: [] }
+        // Lektionen: { homeworkDueToday, unit, title, notes, homework, homeworkTargetKey, link, audioClips: [], todos: [] }
         let lessonsStore = {};
 
         let currentMonday = getMonday(new Date());
@@ -896,7 +896,6 @@
                 const col = document.createElement('div');
                 col.className = "flex flex-col gap-2.5";
 
-                // Tageskopf + gelber Tagesnotiz-Block mit automatischen Spezialtagen / Feiertagen oben
                 const eventsHtml = eventsToday.map(ev => `
                     <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-extrabold mb-1 mr-1 ${ev.type === 'holiday' ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-200/90 text-amber-950 border border-amber-300'}">
                         <span>${ev.type === 'holiday' ? '🏖️' : '📌'}</span>
@@ -921,7 +920,7 @@
 
                 daySlots.forEach(slot => {
                     const key = `${iso}_${slot.id}`;
-                    const data = lessonsStore[key] || { unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                    const data = lessonsStore[key] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     const style = getStyleForSlot(slot.subject, slot.className);
                     const openTodos = (data.todos || []).filter(t => !t.done).length;
 
@@ -1019,7 +1018,6 @@
                         label: `${style.label} ${s.className} • ${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start})`
                     });
                 });
-            // Gleiches Fach zuerst sortieren
             return results.sort((a, b) => (b.isSameSubject ? 1 : 0) - (a.isSameSubject ? 1 : 0));
         }
 
@@ -1027,7 +1025,7 @@
             activeLessonKey = key;
             activeSlotMeta = { slot, dayDate };
             const iso = formatDateISO(dayDate);
-            const data = lessonsStore[key] || { unit: "", title: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
+            const data = lessonsStore[key] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
             const style = getStyleForSlot(slot.subject, slot.className);
 
             const header = document.getElementById('modalHeaderBar');
@@ -1044,13 +1042,11 @@
             document.getElementById('lessonAiResultBox').classList.add('hidden');
             document.getElementById('lessonAiPromptInput').value = "";
 
-            // Dropdown 1: Nächste Lektionen für Hausaufgaben-Verweis befüllen
             const hwSelect = document.getElementById('homeworkTargetLessonSelect');
             const nextSlots = findUpcomingSlotsForCourse(slot.subject, slot.className, iso, slot.start, 8);
-            hwSelect.innerHTML = `<option value="">— Nicht in nächste Lektion eintragen —</option>` +
+            hwSelect.innerHTML = `<option value="">— Nicht übertragen —</option>` +
                 nextSlots.map((ns, idx) => `<option value="${ns.key}" ${(data.homeworkTargetKey === ns.key || (!data.homeworkTargetKey && idx === 0)) ? 'selected' : ''}>Nächste: ${ns.label}</option>`).join('');
 
-            // Dropdown 2: Parallele Lektionen derselben Woche befüllen
             const parSelect = document.getElementById('parallelTargetLessonSelect');
             const parallelSlots = findParallelSlotsInSameWeek(slot, getMonday(dayDate));
             parSelect.innerHTML = `<option value="">— Keine parallele Lektion ausgewählt —</option>` +
@@ -1107,7 +1103,7 @@
             const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
             const parMode = document.getElementById('parallelSyncModeSelect').value;
             if (parTargetKey) {
-                const existingPar = lessonsStore[parTargetKey] || { unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                const existingPar = lessonsStore[parTargetKey] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                 if (parMode === 'overwrite') {
                     lessonsStore[parTargetKey] = {
                         ...existingPar,
@@ -1118,7 +1114,6 @@
                         link
                     };
                 } else {
-                    // Ergänzen ohne bestehende Inhalte zu löschen
                     lessonsStore[parTargetKey] = {
                         ...existingPar,
                         unit: existingPar.unit || unit,
@@ -1307,11 +1302,7 @@
                 openSettingsModal();
                 return;
             }
-            if (key.startsWith("AQ.")) {
-                resultText.innerText = "⚠️ Falscher Schlüsseltyp erkannt (beginnt mit AQ.):\n\nEin AQ.-Schlüssel ist ein OAuth-/Vertex-Token und funktioniert nicht im Browser. Bitte erstelle unter aistudio.google.com/apikey einen regulären Gemini API-Key (beginnt mit AIzaSy...) und kopiere ihn über das Kopier-Symbol rechts.";
-                resultBox.classList.remove('hidden');
-                return;
-            }
+
             const topic = document.getElementById('lessonAiPromptInput').value.trim() || document.getElementById('editLessonTitle').value.trim();
             if (!topic) {
                 showToast("Bitte ein Thema oder Stichwort eingeben.");
@@ -1327,17 +1318,16 @@
             btn.innerText = "Denke nach...";
             btn.disabled = true;
 
-            const prompt = `Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch (Lehrplan 21 Kanton Zürich).
+            const prompt = `Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch.
 Aktuelles Fach: ${style.label} (${slot.className})${unit ? `, Einheit/Unit: ${unit}` : ''}.
 Gewünschte Unterrichtsphase: ${selectedAiPhase}.
 Thema / Auftrag: "${topic}".
-Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A). Keine Einleitung, kein Schlusswort.`;
+Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Keine Einleitung, kein Schlusswort.`;
 
             let lastError = "Unbekannter Fehler";
             let successReply = "";
 
             try {
-                // 1. Zuerst automatisch abfragen, welche Modelle für diesen Key freigeschaltet sind
                 let modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-flash-latest"];
                 try {
                     const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
@@ -1355,7 +1345,6 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                     }
                 } catch (e) {}
 
-                // 2. Freigeschaltete Modelle der Reihe nach testen
                 for (const modelName of modelsToTry.slice(0, 5)) {
                     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`, {
                         method: 'POST',
@@ -1375,7 +1364,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                     resultText.innerText = successReply;
                     resultBox.classList.remove('hidden');
                 } else {
-                    resultText.innerText = "⚠️ API-Rückmeldung: " + lastError + "\n\nHinweis: Stelle sicher, dass der Schlüssel mit AIzaSy... beginnt (unter aistudio.google.com/apikey -> Kopiersymbol rechts anklicken).";
+                    resultText.innerText = "⚠️ API-Rückmeldung: " + lastError + "\n\nHinweis: Prüfe unter aistudio.google.com/apikey, ob der Schlüssel aktiv ist.";
                     resultBox.classList.remove('hidden');
                 }
             } catch (e) {
@@ -1574,7 +1563,6 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         function parseSwissDatesFromText(rawText) {
             const found = [];
             const lines = rawText.split(/\r?\n/);
-            // Erkennt CH-Datumsformat DD.MM.YYYY (optional bis DD.MM.YYYY)
             const dateRegex = /(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s*(?:-|–|bis)\s*(\d{1,2})\.(\d{1,2})\.(\d{4}))?/;
 
             lines.forEach(line => {
@@ -1806,7 +1794,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                 const lines = row.block.split('\n');
                 const newTitle = lines[0];
                 const newNotes = lines.slice(1).join('\n') || lines[0];
-                const existing = lessonsStore[row.target.key] || { unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                const existing = lessonsStore[row.target.key] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
 
                 if (row.action === 'append' && row.hasExisting) {
                     lessonsStore[row.target.key] = {
