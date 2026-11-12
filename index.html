@@ -21,7 +21,7 @@
 
         .lesson-card-body {
             display: -webkit-box;
-            -webkit-line-clamp: 5;
+            -webkit-line-clamp: 6;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -70,9 +70,8 @@
             </div>
         </div>
 
-        <!-- Rechts: 3 Haupt-Reiter + Werkzeuge -->
+        <!-- Rechts: Reiter + KI-Chat + Universeller Import + Stundenplan + Settings -->
         <div class="flex items-center flex-wrap gap-2">
-            <!-- Haupt-Reiter: Wochenplan | Notizen & Sprachmemos | Ferien & Spezialtage -->
             <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
                 <button type="button" id="mainTabPlan" onclick="switchMainTab('plan')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-2xs flex items-center gap-1.5">
                     <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-600"></i>
@@ -89,26 +88,31 @@
                 </button>
             </div>
 
-            <!-- Ansicht Woche / Tag -->
             <div id="weekDayToggleWrap" class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
                 <button type="button" id="viewBtnWeek" onclick="setViewMode('week')" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs">Woche</button>
                 <button type="button" id="viewBtnDay" onclick="setViewMode('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
             </div>
 
-            <!-- Sequenz-Import -->
-            <button type="button" onclick="openSequenceModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
-                <i data-lucide="file-plus-2" class="w-3.5 h-3.5"></i>
-                <span>Sequenz</span>
+            <!-- ALLGEMEINER KI-CHAT -->
+            <button type="button" onclick="openGeneralAiChatModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
+                <i data-lucide="message-square-sparkles" class="w-3.5 h-3.5"></i>
+                <span>KI-Chat</span>
             </button>
 
-            <!-- Stundenplan manuell -->
+            <!-- DATEI HOCHLADEN / SEQUENZ & LEHRMITTEL -->
+            <button type="button" onclick="openUniversalImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
+                <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                <span>Datei / Sequenz</span>
+            </button>
+
+            <!-- Stundenplan -->
             <button type="button" onclick="openScheduleEditorModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors">
                 <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-slate-500"></i>
                 <span>Stundenplan</span>
             </button>
 
-            <!-- Einstellungen & Backup -->
-            <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="Backup, API-Key & Zürich Sync">
+            <!-- Einstellungen & API-Check -->
+            <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="API-Key testen, Backup & Zürich Sync">
                 <span id="syncLed" class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
             </button>
@@ -119,9 +123,7 @@
     <!-- ANSICHT 1: WOCHENRASTER (5 SPALTEN MO–FR NEBENEINANDER)                -->
     <!-- ===================================================================== -->
     <main id="planViewSection" class="flex-1 w-full max-w-[1600px] mx-auto p-3 md:p-4 overflow-x-auto custom-scroll">
-        <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1120px]">
-            <!-- 5 Tages-Spalten -->
-        </div>
+        <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1120px]"></div>
     </main>
 
     <!-- ===================================================================== -->
@@ -129,7 +131,6 @@
     <!-- ===================================================================== -->
     <section id="notesViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            <!-- Links: Pendenzen & Vergessene Abgaben (7 Spalten) -->
             <div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <div>
@@ -144,7 +145,6 @@
                 <div id="aggregatedNotesList" class="flex flex-col gap-2.5"></div>
             </div>
 
-            <!-- Rechts: Separate Liste aller Sprachmemo-Transkriptionen (5 Spalten) -->
             <div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
                 <div class="border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2">
@@ -159,38 +159,40 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- ANSICHT 3: REITER FÜR FERIEN, FEIERTAGE & SPEZIALTAGE (SEKMÄTTMI)     -->
+    <!-- ANSICHT 3: FERIEN, FEIERTAGE & SPEZIALTAGE (MIT KI-CHAT-EINGABE)      -->
     <!-- ===================================================================== -->
     <section id="holidaysViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
         <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-5 text-xs">
             <div class="border-b border-slate-100 pb-3">
                 <h2 class="text-base font-extrabold text-slate-900">Ferien, Feiertage &amp; Spezialtage (Sek Mättmi / Kanton Zürich)</h2>
                 <p class="text-xs text-slate-500 mt-0.5">
-                    Alle hier eingetragenen Daten erscheinen am konkreten Tag automatisch oben im Tages-Notizfeld des Wochenplans (z. B. Elternbesuchstag, Auffahrt, Projektwoche). Ferien blockieren automatisch den Sequenz-Import.
+                    Alle hier eingetragenen Daten erscheinen am konkreten Tag automatisch oben im gelben Tages-Notizfeld des Wochenplans.
                 </p>
             </div>
 
-            <!-- Import-Box: Datei (PDF / XLS / DOCX) oder Website-URL (z. B. sekmaettmi.ch / zh.ch) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <div class="flex flex-col gap-2">
-                    <span class="font-extrabold text-slate-800">1. Jahresprogramm / Ferienplan hochladen (PDF, XLS, DOCX)</span>
-                    <p class="text-[11px] text-slate-600">Erkennt automatisch Schweizer Datumsangaben (z. B. 14.05.2027 oder 2027-05-14) und Ereignistitel.</p>
-                    <input type="file" accept=".pdf,.xls,.xlsx,.csv,.docx,.txt" onchange="handleSpecialDaysFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+            <!-- KI-Chat für Ferien & Spezialtage -->
+            <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 flex flex-col gap-2.5">
+                <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+                    <span>KI-Assistent für Termine &amp; Ferien (einfach in Alltagssprache hineinschreiben)</span>
                 </div>
-
-                <div class="flex flex-col gap-2">
-                    <span class="font-extrabold text-slate-800">2. Von Website einlesen (sekmaettmi.ch / zh.ch)</span>
-                    <p class="text-[11px] text-slate-600">Liest Termine direkt aus dem Kalender oder der Terminseite aus.</p>
-                    <div class="flex gap-2">
-                        <input type="url" id="specialDaysWebsiteUrl" value="https://www.sekmaettmi.ch" placeholder="https://www.sekmaettmi.ch/..." class="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs">
-                        <button type="button" id="fetchWebEventsBtn" onclick="fetchSpecialDaysFromUrl()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shrink-0">
-                            Einlesen
-                        </button>
+                <div class="flex gap-2">
+                    <input type="text" id="holidayAiInput" onkeydown="if(event.key==='Enter'){event.preventDefault();parseHolidaysWithAi();}" placeholder="z. B. «Trage den Elternbesuchstag am 18. März 2027 ein und Projektwoche vom 7. bis 11. Juni 2027»" class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button type="button" id="holidayAiBtn" onclick="parseHolidaysWithAi()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
+                        Mit KI erkennen
+                    </button>
+                </div>
+                <div id="holidayAiPreviewBox" class="hidden bg-white border border-indigo-200 rounded-lg p-3 flex flex-col gap-2">
+                    <div class="font-bold text-indigo-950">Erkannte Termine – Bitte bestätigen:</div>
+                    <div id="holidayAiPreviewList" class="flex flex-col gap-1"></div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="document.getElementById('holidayAiPreviewBox').classList.add('hidden')" class="px-3 py-1 bg-slate-100 rounded font-bold text-slate-600">Verwerfen</button>
+                        <button type="button" onclick="confirmAiHolidays()" class="px-3 py-1 bg-emerald-600 text-white rounded font-bold">In Kalender übernehmen</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Manuell hinzufügen -->
+            <!-- Manuelle Eingabe -->
             <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-wrap items-end gap-2.5">
                 <div>
                     <label class="block font-bold text-amber-950 mb-1">Typ</label>
@@ -208,7 +210,7 @@
                     <input type="date" id="newEventEnd" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
                 </div>
                 <div class="flex-1 min-w-[180px]">
-                    <label class="block font-bold text-amber-950 mb-1">Bezeichnung (z. B. Elternbesuchstag)</label>
+                    <label class="block font-bold text-amber-950 mb-1">Bezeichnung</label>
                     <input type="text" id="newEventName" placeholder="z. B. Elternbesuchstag Sek Mättmi" class="w-full bg-white border border-amber-200 rounded-lg px-3 py-1.5 font-bold">
                 </div>
                 <button type="button" onclick="addManualCalendarEvent()" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">
@@ -216,13 +218,12 @@
                 </button>
             </div>
 
-            <!-- Tabelle aller hinterlegten Ferien & Spezialtage -->
             <div class="border border-slate-200 rounded-xl overflow-hidden">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200">
                         <tr>
                             <th class="py-2 px-3">Datum</th>
-                            <th class="py-2 px-3">Bezeichnung (erscheint oben im Tagesfeld)</th>
+                            <th class="py-2 px-3">Bezeichnung</th>
                             <th class="py-2 px-3">Kategorie</th>
                             <th class="py-2 px-3 text-right">Aktion</th>
                         </tr>
@@ -234,11 +235,10 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 1: LEKTIONS-EDITOR (MIT PARALLEL-KOPPLUNG, HA-VERWEIS, KI)      -->
+    <!-- MODAL 1: LEKTIONS-EDITOR (3 PHASEN, KI-KONTROLLFENSTER, HA, KOPPLUNG) -->
     <!-- ===================================================================== -->
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
-        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-            <!-- Farbiger Kopfbalken -->
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             <div id="modalHeaderBar" class="px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
                 <div class="flex items-center gap-2">
                     <span id="modalSubjectClass" class="text-sm font-extrabold uppercase tracking-wide">DEUTSCH S2Aa</span>
@@ -249,18 +249,17 @@
                 </button>
             </div>
 
-            <!-- Scrollbarer Inhalt -->
             <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
-                <!-- Automatisch übertragene Hausaufgabe auf heute -->
-                <div class="bg-sky-100/70 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
+                <!-- 1. HAUSAUFGABE AUF HEUTE (GANZ OBEN) -->
+                <div class="bg-sky-100/80 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
                     <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
                         <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
-                        <span>Hausaufgabe auf heute (automatisch aus vorheriger Lektion)</span>
+                        <span>Hausaufgabe auf heute (automatisch aus vorheriger Lektion übertragen)</span>
                     </label>
                     <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
 
-                <!-- Unit & Stundenthema -->
+                <!-- 2. UNIT & STUNDENTHEMA -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div class="sm:col-span-1">
                         <label class="block font-bold text-slate-600 mb-1">Sequenz / Einheit (Unit)</label>
@@ -268,129 +267,155 @@
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block font-bold text-slate-600 mb-1">Stundenthema / Fokus</label>
-                        <input type="text" id="editLessonTitle" placeholder="z. B. Kapitel 3 lesen & Lesetagebuch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="editLessonTitle" oninput="updateParallelPreview()" placeholder="z. B. Kapitel 3 lesen & Lesetagebuch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
 
-                <!-- Lektionsablauf -->
-                <div>
-                    <label class="block font-bold text-slate-600 mb-1">Lektionsablauf &amp; Inhalt (erscheint in der Wochenkarte)</label>
-                    <textarea id="editLessonNotes" rows="5" placeholder="Einstieg: ...&#10;Hauptteil: ...&#10;Schluss: ..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                </div>
-
-                <!-- HAUSAUFGABEN AUF NÄCHSTE LEKTION -->
-                <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-3.5 flex flex-col gap-2">
-                    <div class="flex items-center justify-between">
-                        <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
-                            <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
-                            <span>Hausaufgaben auf nächste Lektion</span>
-                        </label>
-                        <span class="text-[10.5px] text-sky-800 font-semibold">Erscheint oben bei «Hausaufgabe auf heute» in der gewählten Lektion</span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        <input type="text" id="editLessonHomework" placeholder="z. B. S. 24 Nr. 1–3 lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                        <select id="homeworkTargetLessonSelect" class="sm:col-span-5 bg-white border border-sky-200 rounded-lg px-2.5 py-2 font-bold text-sky-950">
-                            <option value="">— Nicht übertragen —</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- PARALLELE LEKTION KOPPELN (Z. B. S2Aa -> S2Ac) -->
-                <div class="bg-purple-50/70 border border-purple-200 rounded-xl p-3.5 flex flex-col gap-2">
-                    <div class="flex items-center justify-between">
-                        <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
-                            <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
-                            <span>Auf parallele Klasse / Lektion übertragen (ohne doppelte Arbeit)</span>
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        <select id="parallelTargetLessonSelect" class="sm:col-span-7 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-purple-950">
-                            <option value="">— Keine parallele Lektion ausgewählt —</option>
-                        </select>
-                        <select id="parallelSyncModeSelect" class="sm:col-span-5 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
-                            <option value="append">Ergänzen (bestehendes behalten)</option>
-                            <option value="overwrite">Überschreiben (identisch setzen)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- DIREKTER KI-ASSISTENT IN DER LEKTION (EINSTIEG / HAUPTTEIL / SCHLUSS) -->
-                <div class="bg-indigo-50/70 border border-indigo-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
+                <!-- 3. DIREKTER KI-TUTOR MIT KONTROLLFENSTER -->
+                <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2.5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
                             <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-                            <span>Direkter KI-Tutor (Sek A ZH • Fach wird automatisch erkannt)</span>
+                            <span>Direkter KI-Tutor (Sek A ZH • Fach automatisch erkannt)</span>
                         </div>
                         <div class="flex bg-white p-0.5 rounded-lg border border-indigo-200 text-[11px] font-bold">
-                            <button type="button" id="aiPhaseEinstieg" onclick="selectAiPhase('Einstieg (ca. 5-10 Min)')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white">Einstieg</button>
-                            <button type="button" id="aiPhaseHauptteil" onclick="selectAiPhase('Hauptteil / Erarbeitung (ca. 25 Min)')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Hauptteil</button>
-                            <button type="button" id="aiPhaseSchluss" onclick="selectAiPhase('Schluss / Sicherung (ca. 5-10 Min)')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Schluss</button>
+                            <button type="button" id="aiPhaseEinstieg" onclick="selectAiPhase('einstieg')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white">Einstieg</button>
+                            <button type="button" id="aiPhaseHauptteil" onclick="selectAiPhase('hauptteil')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Hauptteil</button>
+                            <button type="button" id="aiPhaseSchluss" onclick="selectAiPhase('schluss')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Schluss</button>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <input type="text" id="lessonAiPromptInput" placeholder="Stichwort / Thema eingeben (z. B. Einstieg Adjektive oder Hörbeispiel Blues)..." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="button" id="lessonAiRunBtn" onclick="runLessonAiAssistant()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0 transition-colors">
+                        <input type="text" id="lessonAiPromptInput" onkeydown="if(event.key==='Enter'){event.preventDefault();runLessonAiAssistant();}" placeholder="Stichwort / Thema eingeben (z. B. aktivierender Einstieg Adjektive)..." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" id="lessonAiRunBtn" onclick="runLessonAiAssistant()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0 transition-colors">
                             Generieren
                         </button>
                     </div>
-                    <div id="lessonAiResultBox" class="hidden bg-white border border-indigo-200 rounded-xl p-3 flex flex-col gap-2">
-                        <div id="lessonAiResultText" class="text-slate-700 whitespace-pre-line leading-relaxed"></div>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="appendAiResultToLesson()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold">
-                                + In Ablauf übernehmen
+
+                    <div id="lessonAiResultBox" class="hidden bg-white border-2 border-indigo-300 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-indigo-900">
+                            <span>Kontrollfenster (du kannst den Vorschlag hier direkt anpassen):</span>
+                            <button type="button" onclick="document.getElementById('lessonAiResultBox').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">Schliessen</button>
+                        </div>
+                        <textarea id="lessonAiResultEditor" rows="4" class="w-full bg-indigo-50/40 border border-indigo-200 rounded-lg p-2.5 text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none"></textarea>
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <button type="button" onclick="insertAiIntoPhase('replace')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertReplaceBtn">
+                                In «Einstieg» einsetzen (ersetzen)
+                            </button>
+                            <button type="button" onclick="insertAiIntoPhase('append')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertAppendBtn">
+                                + An «Einstieg» anhängen
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- NOTIZ- & PENDENZENFENSTER -->
-                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-col gap-2">
-                    <div class="flex items-center justify-between">
-                        <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
-                            <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-600"></i>
-                            <span>Notizen &amp; Pendenzen (erscheint im Reiter «Notizen &amp; Memos» mit Checkbox)</span>
-                        </span>
-                        <span class="text-[10.5px] font-semibold text-amber-800">Nur Vornamen</span>
+                <!-- 4. LEKTIONSABLAUF UNTERTEILT IN EINSTIEG / HAUPTTEIL / SCHLUSS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+                        <label class="font-extrabold text-indigo-900 flex items-center justify-between">
+                            <span>1. Einstieg (E)</span>
+                            <span class="text-[10px] font-semibold text-slate-400">ca. 5–10 Min</span>
+                        </label>
+                        <textarea id="editPhaseEinstieg" oninput="updateParallelPreview()" rows="4" placeholder="Ankommen, Vorwissen aktivieren..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                     </div>
-                    <div class="flex gap-2">
-                        <input type="text" id="newLessonTodoInput" onkeydown="if(event.key==='Enter'){event.preventDefault();addLessonTodo();}" placeholder="z. B. Tim & Lena: HA nachreichen" class="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
-                        <button type="button" onclick="addLessonTodo()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shrink-0">
-                            + Notiz
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+                        <label class="font-extrabold text-indigo-900 flex items-center justify-between">
+                            <span>2. Hauptteil (H)</span>
+                            <span class="text-[10px] font-semibold text-slate-400">ca. 25 Min</span>
+                        </label>
+                        <textarea id="editPhaseHauptteil" oninput="updateParallelPreview()" rows="4" placeholder="Erarbeitung, Üben, Sozialform..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+                        <label class="font-extrabold text-indigo-900 flex items-center justify-between">
+                            <span>3. Schluss (S)</span>
+                            <span class="text-[10px] font-semibold text-slate-400">ca. 5–10 Min</span>
+                        </label>
+                        <textarea id="editPhaseSchluss" oninput="updateParallelPreview()" rows="4" placeholder="Sicherung, Kontrolle, Ausblick..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                </div>
+
+                <!-- 5. HAUSAUFGABEN FÜRS NÄCHSTE MAL (MIT ZIEL-LEKTION) -->
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-1">
+                        <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
+                            <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
+                            <span>Hausaufgaben fürs nächste Mal</span>
+                        </label>
+                        <span class="text-[10.5px] text-sky-800 font-semibold">Erscheint oben als «Hausaufgabe auf heute» in der gewählten Lektion</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <input type="text" id="editLessonHomework" placeholder="z. B. S. 24 Nr. 1–3 fertig lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <select id="homeworkTargetLessonSelect" class="sm:col-span-5 bg-white border border-sky-200 rounded-lg px-2.5 py-2 font-bold text-sky-950"></select>
+                    </div>
+                </div>
+
+                <!-- 6. PARALLELE LEKTION KOPPELN MIT LIVE-VORSCHAU & HA-ÜBERTRAGUNG -->
+                <div class="bg-purple-50/80 border border-purple-200 rounded-xl p-3.5 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
+                            <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
+                            <span>Auf parallele Klasse / Lektion übertragen (mit Live-Vorschau &amp; deren nächster HA-Lektion)</span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <select id="parallelTargetLessonSelect" onchange="updateParallelPreview()" class="sm:col-span-6 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-purple-950"></select>
+                        <select id="parallelSyncModeSelect" onchange="updateParallelPreview()" class="sm:col-span-4 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
+                            <option value="append">Ergänzen (bestehendes behalten)</option>
+                            <option value="overwrite">Überschreiben (identisch setzen)</option>
+                        </select>
+                        <button type="button" onclick="applyParallelTransferNow()" class="sm:col-span-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg font-bold py-2 px-2.5 transition-colors shadow-2xs">
+                            Jetzt übertragen
                         </button>
                     </div>
-                    <div id="lessonTodosList" class="flex flex-col gap-1.5"></div>
-                </div>
 
-                <!-- SPRACHMEMO (AUDIO + TRANSKRIPTION IN NOTIZREITER) -->
-                <div class="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 flex flex-col gap-2.5">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 font-bold text-slate-800">
-                            <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
-                            <span>Sprachmemo (Audio + automatische Transkription im Notizreiter)</span>
+                    <div id="parallelPreviewBox" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white border border-purple-200/80 rounded-lg p-2.5 text-[11px]">
+                        <div>
+                            <div class="font-extrabold text-slate-500 uppercase text-[10px] mb-1">Aktuell in Ziel-Lektion vorhanden:</div>
+                            <div id="parallelCurrentContent" class="text-slate-600 whitespace-pre-line bg-slate-50 p-2 rounded border border-slate-100 min-h-[54px]">Leer</div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button type="button" id="startVoiceBtn" onclick="startVoiceMemo()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-2xs">
-                                <span class="w-2 h-2 rounded-full bg-white"></span>
-                                <span>Aufnahme starten</span>
-                            </button>
-                            <button type="button" id="stopVoiceBtn" onclick="stopVoiceMemo()" class="hidden px-3 py-1.5 bg-slate-900 text-white rounded-lg font-bold flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-rose-500 recording-dot"></span>
-                                <span>Stopp &amp; transkribieren</span>
-                            </button>
+                        <div>
+                            <div class="font-extrabold text-purple-700 uppercase text-[10px] mb-1">Vorschau nach Übertragung:</div>
+                            <div id="parallelResultPreview" class="text-slate-800 whitespace-pre-line bg-purple-50/40 p-2 rounded border border-purple-100 min-h-[54px]">—</div>
                         </div>
                     </div>
-                    <p id="voiceLivePreview" class="hidden text-[11px] text-indigo-700 italic bg-white p-2 rounded-lg border border-indigo-100">Höre zu...</p>
-                    <div id="audioClipsList" class="flex flex-col gap-2"></div>
                 </div>
 
-                <!-- Google Drive Link -->
+                <!-- 7. NOTIZEN / PENDENZEN & SPRACHMEMO -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+                        <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
+                            <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-600"></i>
+                            <span>Notizen &amp; Pendenzen (mit Checkbox)</span>
+                        </span>
+                        <div class="flex gap-1.5">
+                            <input type="text" id="newLessonTodoInput" onkeydown="if(event.key==='Enter'){event.preventDefault();addLessonTodo();}" placeholder="z. B. Tim: HA nachreichen" class="flex-1 bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs">
+                            <button type="button" onclick="addLessonTodo()" class="px-2.5 py-1.5 bg-amber-600 text-white rounded-lg font-bold shrink-0">+ Notiz</button>
+                        </div>
+                        <div id="lessonTodosList" class="flex flex-col gap-1"></div>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                                <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
+                                <span>Sprachmemo + Transkription</span>
+                            </span>
+                            <div>
+                                <button type="button" id="startVoiceBtn" onclick="startVoiceMemo()" class="px-2.5 py-1 bg-rose-600 text-white rounded-lg font-bold text-[11px]">Aufnahme</button>
+                                <button type="button" id="stopVoiceBtn" onclick="stopVoiceMemo()" class="hidden px-2.5 py-1 bg-slate-900 text-white rounded-lg font-bold text-[11px]">Stopp</button>
+                            </div>
+                        </div>
+                        <p id="voiceLivePreview" class="hidden text-[11px] text-indigo-700 italic bg-white p-1.5 rounded border border-indigo-100">Höre zu...</p>
+                        <div id="audioClipsList" class="flex flex-col gap-1.5"></div>
+                    </div>
+                </div>
+
+                <!-- 8. GOOGLE DRIVE / LEHRMITTEL-LINKS -->
                 <div>
-                    <label class="block font-bold text-slate-600 mb-1">Google Drive / YouTube Link</label>
+                    <label class="block font-bold text-slate-600 mb-1">Google Drive / Lehrmittel-Link</label>
                     <input type="url" id="editLessonLink" placeholder="https://drive.google.com/..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
 
-            <!-- Footer -->
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
@@ -404,75 +429,106 @@
 
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="closeLessonModal()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold">Abbrechen</button>
-                    <button type="button" onclick="saveLessonModal()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs">Speichern &amp; Übertragen</button>
+                    <button type="button" onclick="saveLessonModal()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs">Speichern</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 2: SEQUENZ-IMPORT MIT KONTROLLTABELLE (ERSETZEN / HINZUFÜGEN)    -->
+    <!-- MODAL 2: DATEI HOCHLADEN (FRAGT OB LEKTIONENABLAUF ODER LEHRMITTEL)    -->
     <!-- ===================================================================== -->
-    <div id="sequenceModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
+    <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="file-plus-2" class="w-5 h-5 text-indigo-600"></i>
-                    <h3 class="text-sm font-extrabold text-slate-900">Mehrwöchige Sequenz einfügen (z. B. 7 Wochen Literatur)</h3>
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-600"></i>
+                    <h3 class="text-sm font-extrabold text-slate-900">Datei hochladen oder Sequenz zuordnen – Worum handelt es sich?</h3>
                 </div>
-                <button type="button" onclick="closeSequenceModal()" class="text-slate-400 hover:text-slate-700 p-1">
+                <button type="button" onclick="closeUniversalImportModal()" class="text-slate-400 hover:text-slate-700 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Fach &amp; Klasse</label>
-                        <select id="seqTargetCourse" onchange="buildSequencePreviewTable()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 font-bold text-slate-800"></select>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Start ab Datum</label>
-                        <input type="date" id="seqStartDate" onchange="buildSequencePreviewTable()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Sequenz / Buchtitel (Unit)</label>
-                        <input type="text" id="seqUnitTitle" placeholder="z. B. Jugendbuch Tschick" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
-                    </div>
+                <!-- Schritt 1: Auswahl ob Lektionenablauf, Lehrmittel, Stundenplan oder Ferien -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button type="button" id="impTypeBtn_sequence" onclick="setImportCategory('sequence')" class="p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all">
+                        <span class="font-extrabold text-indigo-950 text-xs">1. Lektionenablauf</span>
+                        <span class="text-[10.5px] text-indigo-800">Ablauf/Sequenz analysieren &amp; einzelnen Lektionen zuordnen</span>
+                    </button>
+                    <button type="button" id="impTypeBtn_lehrmittel" onclick="setImportCategory('lehrmittel')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
+                        <span class="font-extrabold text-slate-900 text-xs">2. Lehrmittel / PDF</span>
+                        <span class="text-[10.5px] text-slate-600">Kapitel auswerten &amp; Lektionsideen für Sek A generieren</span>
+                    </button>
+                    <button type="button" id="impTypeBtn_schedule" onclick="setImportCategory('schedule')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
+                        <span class="font-extrabold text-slate-900 text-xs">3. Stundenplan</span>
+                        <span class="text-[10.5px] text-slate-600">Escola PDF/XLS auslesen &amp; Slots auswählen</span>
+                    </button>
+                    <button type="button" id="impTypeBtn_holidays" onclick="setImportCategory('holidays')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
+                        <span class="font-extrabold text-slate-900 text-xs">4. Ferien &amp; Termine</span>
+                        <span class="text-[10.5px] text-slate-600">Jahresprogramm / Spezialtage einlesen</span>
+                    </button>
                 </div>
 
-                <div class="flex flex-col gap-2">
+                <!-- Schritt 2: Datei-Upload & Rohtext -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <label class="font-bold text-slate-700">Ablauf einfügen oder Datei hochladen (.docx, .pdf, .xlsx):</label>
-                        <input type="file" id="seqDocUploadInput" accept=".docx,.doc,.pdf,.xls,.xlsx,.txt" onchange="handleSequenceDocUpload(event)" class="text-[11px] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                        <span class="font-bold text-slate-800">Datei hochladen (.docx, .pdf, .xls, .xlsx, .txt):</span>
+                        <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
-                    <textarea id="seqBlocksTextarea" oninput="buildSequencePreviewTable()" rows="5" placeholder="Füge hier deinen Text ein (z. B. aus Word oder Gemini).&#10;Trenne einzelne Lektionen durch eine Leerzeile oder beginne mit «Lektion 1:», «Lektion 2:»..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                </div>
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-extrabold text-slate-900">Kontrolltabelle vor dem Einfügen (Ferien werden automatisch übersprungen)</span>
-                        <div class="flex items-center gap-1.5 text-[11px]">
-                            <button type="button" onclick="setAllPreviewModes('append')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded">Alle hinzufügen</button>
-                            <button type="button" onclick="setAllPreviewModes('replace')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded">Alle ersetzen</button>
-                            <button type="button" onclick="setAllPreviewModes('skip')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded">Belegte überspringen</button>
+                    <!-- Optionen für Lektionenablauf & Lehrmittel -->
+                    <div id="importOptionsSequence" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200/80">
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Ziel-Fach &amp; Klasse</label>
+                            <select id="seqTargetCourse" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold"></select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Start ab Datum</label>
+                            <input type="date" id="seqStartDate" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Sequenz / Unit-Titel</label>
+                            <input type="text" id="seqUnitTitle" placeholder="z. B. Jugendbuch Tschick" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
                         </div>
                     </div>
 
-                    <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <!-- Zusatzbutton für Lehrmittel-KI-Auswertung -->
+                    <div id="importOptionsLehrmittel" class="hidden flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/80 bg-indigo-50/70 p-2.5 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-indigo-950">Anzahl Lektionen aus Lehrmittel planen:</span>
+                            <input type="number" id="lehrmittelLessonCount" value="5" min="1" max="16" class="w-14 bg-white border border-indigo-200 rounded px-2 py-1 font-bold text-center">
+                        </div>
+                        <button type="button" id="analyzeLehrmittelBtn" onclick="analyzeLehrmittelWithAi()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">
+                            Lehrmittel mit KI in Lektionen zerlegen
+                        </button>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="font-bold text-slate-600">Ausgelesener Inhalt (oder Text direkt einfügen):</label>
+                            <button type="button" onclick="analyzeRawTextWithAi()" class="text-[11px] font-bold text-indigo-600 hover:underline">Mit KI sauber in einzelne Lektionen gliedern</button>
+                        </div>
+                        <textarea id="universalRawTextarea" oninput="rebuildUniversalPreview()" rows="4" placeholder="Hier erscheint der Text deiner hochgeladenen Datei – oder kopiere deinen Lektionenablauf direkt hinein..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                </div>
+
+                <!-- Schritt 3: ZUORDNUNGSTABELLE (JEDER BLOCK KANN EINER KONKRETEN LEKTION ZUGEORDNET WERDEN) -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="font-extrabold text-slate-900">Zuordnung zu deinen Lektionen (Datum individuell wählbar):</span>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <button type="button" onclick="toggleAllUniversalItems(true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Alle anwählen</button>
+                            <button type="button" onclick="toggleAllUniversalItems(false)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Keine</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto custom-scroll">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200">
-                                <tr>
-                                    <th class="py-2 px-3">Datum &amp; Zeit</th>
-                                    <th class="py-2 px-3">Aktuell in Lektion vorhanden</th>
-                                    <th class="py-2 px-3">Neuer Inhalt aus Import</th>
-                                    <th class="py-2 px-3 w-40">Aktion</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sequencePreviewTbody" class="divide-y divide-slate-100 text-[11.5px]">
-                                <tr>
-                                    <td colspan="4" class="py-6 text-center text-slate-400 italic">Oben Datei hochladen oder Text einfügen, um die Kontrolltabelle zu sehen.</td>
-                                </tr>
+                            <thead id="universalPreviewThead" class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200 sticky top-0"></thead>
+                            <tbody id="universalPreviewTbody" class="divide-y divide-slate-100 text-[11.5px]">
+                                <tr><td class="py-6 text-center text-slate-400 italic">Bitte oben eine Datei hochladen oder Text einfügen.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -480,16 +536,60 @@
             </div>
 
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                <button type="button" onclick="closeSequenceModal()" class="px-4 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold">Abbrechen</button>
-                <button type="button" onclick="confirmAndApplySequence()" class="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-xs">
-                    Auswahl jetzt in Wochenplan übernehmen
+                <button type="button" onclick="closeUniversalImportModal()" class="px-4 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold">Abbrechen</button>
+                <button type="button" onclick="applyUniversalImportSelection()" class="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-xs">
+                    Ausgewählte Zuordnung übernehmen
                 </button>
             </div>
         </div>
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 3: MANUELLER STUNDENPLAN-EDITOR                                 -->
+    <!-- MODAL 3: ALLGEMEINER KI-CHAT (MIT VERLAUF & IN LEKTION ÜBERNEHMEN)    -->
+    <!-- ===================================================================== -->
+    <div id="generalAiChatModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
+            <div class="px-5 py-3.5 bg-purple-700 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="message-square-sparkles" class="w-5 h-5"></i>
+                    <div>
+                        <h3 class="text-sm font-extrabold">KI-Unterrichtsassistent (Sek A Kanton Zürich)</h3>
+                        <p class="text-[10.5px] opacity-85">D, Mu, GS, GG, MI, E • Gesprächsverlauf bleibt aktiv</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="clearGeneralAiChat()" class="px-2 py-1 bg-white/15 hover:bg-white/25 rounded text-[11px] font-bold">Verlauf leeren</button>
+                    <button type="button" onclick="closeGeneralAiChatModal()" class="p-1 rounded-lg hover:bg-white/20">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat-Verlauf -->
+            <div id="generalChatMessages" class="flex-1 p-4 overflow-y-auto custom-scroll flex flex-col gap-3 bg-slate-50/70 min-h-[260px]">
+                <div class="bg-white border border-slate-200 rounded-xl p-3 text-slate-700 leading-relaxed">
+                    Hallo! Frag mich nach Unterrichtsideen, Differenzierungsaufgaben für Niveau A, Elternbrief-Formulierungen oder Prüfungsfragen für deine Fächer (D, Mu, GS, GG, MI, E). Jede Antwort kannst du direkt in eine Lektion übernehmen.
+                </div>
+            </div>
+
+            <!-- Ziel-Lektion Auswahl zum direkten Einfügen -->
+            <div class="px-4 py-2 bg-purple-50 border-t border-purple-100 flex flex-wrap items-center gap-2">
+                <span class="font-bold text-purple-950 text-[11px]">Ziel-Lektion für Übernahme:</span>
+                <select id="generalChatTargetLesson" class="flex-1 bg-white border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800"></select>
+            </div>
+
+            <!-- Eingabezeile -->
+            <div class="p-3.5 bg-white border-t border-slate-200 flex gap-2">
+                <input type="text" id="generalChatInput" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGeneralAiChat();}" placeholder="Frage stellen oder Auftrag eingeben..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <button type="button" id="generalChatSendBtn" onclick="sendGeneralAiChat()" class="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold shrink-0">
+                    Senden
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 4: MANUELLER STUNDENPLAN-EDITOR                                 -->
     <!-- ===================================================================== -->
     <div id="scheduleEditorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
@@ -543,39 +643,43 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 4: BACKUP, VERSIONSSCHUTZ, API-KEY & ZÜRICH SYNC                -->
+    <!-- MODAL 5: EINSTELLUNGEN, API-VERBINDUNGSTEST & BACKUP                  -->
     <!-- ===================================================================== -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 flex flex-col gap-4 text-xs">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <h3 class="text-sm font-extrabold text-slate-900">Datensicherung, Gemini API-Key &amp; Zürich Sync</h3>
+                <h3 class="text-sm font-extrabold text-slate-900">API-Verbindung prüfen, Backup &amp; Zürich Sync</h3>
                 <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
+            <!-- Gemini API Key + Live-Test -->
+            <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2">
+                <label class="font-extrabold text-indigo-950">Google Gemini API-Key (aistudio.google.com/apikey)</label>
+                <div class="flex gap-2">
+                    <input type="password" id="settingsGeminiKeyInput" placeholder="AIzaSy... oder AQ...." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+                    <button type="button" id="testApiBtn" onclick="testGeminiApiConnection()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
+                        API testen
+                    </button>
+                </div>
+                <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold"></div>
+            </div>
+
             <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3.5 flex flex-col gap-2 text-emerald-950">
                 <div class="font-extrabold flex items-center gap-1.5">
                     <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
-                    <span>Deine Inhalte sind unabhängig vom HTML-Code gespeichert</span>
+                    <span>Datensicherung (unabhängig vom HTML-Code auf Server Zürich)</span>
                 </div>
-                <p class="text-[11px] leading-relaxed">
-                    Wenn du später die Oberfläche aktualisierst (neue `planer.html` hochlädst), bleiben alle deine Lektionen, Notizen und Ferien erhalten, weil sie getrennt auf dem Server <strong>Zürich</strong> liegen. Zusätzlich kannst du hier jederzeit ein Komplett-Backup als Datei sichern:
-                </p>
                 <div class="flex gap-2 pt-1">
                     <button type="button" onclick="exportFullBackup()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">
-                        Komplett-Backup herunterladen (.json)
+                        Backup herunterladen (.json)
                     </button>
                     <label class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold cursor-pointer hover:bg-emerald-50">
                         Backup einspielen
                         <input type="file" accept=".json" onchange="importFullBackup(event)" class="hidden">
                     </label>
                 </div>
-            </div>
-
-            <div>
-                <label class="block font-bold text-slate-700 mb-1">Google Gemini API-Key (aistudio.google.com/apikey)</label>
-                <input type="password" id="settingsGeminiKeyInput" placeholder="AQ.... oder AIzaSy..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono text-slate-900">
             </div>
 
             <div>
@@ -604,7 +708,107 @@
         }
 
         // =========================================================================
-        // 1. FIREBASE KONFIGURATION (SERVERSTANDORT ZÜRICH)
+        // 1. ZENTRALE GEMINI API-FUNKTION (UNTERSTÜTZT AIzaSy... UND AQ.... KEYS)
+        // =========================================================================
+        const TEACHER_PERSONA_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch.";
+
+        async function callGeminiUnified(userPrompt, conversationHistory = null) {
+            const rawKey = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
+            const key = rawKey.trim().replace(/^["']|["']$/g, '');
+            if (!key) {
+                throw new Error("Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Schlüssel eingeben.");
+            }
+
+            const contents = conversationHistory
+                ? conversationHistory
+                : [{ role: "user", parts: [{ text: userPrompt }] }];
+
+            const payload = {
+                systemInstruction: { parts: [{ text: TEACHER_PERSONA_PROMPT }] },
+                contents
+            };
+
+            const modelsToTry = [
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-2.5-pro",
+                "gemini-1.5-flash"
+            ];
+
+            let lastError = "Keine Verbindung zur Gemini API möglich.";
+
+            for (const modelName of modelsToTry) {
+                // Variante 1: Standard ?key= Parameter (funktioniert für AIzaSy-Keys)
+                try {
+                    const url1 = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
+                    const res1 = await fetch(url1, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data1 = await res1.json();
+                    if (res1.ok && data1?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        return data1.candidates[0].content.parts[0].text.trim();
+                    }
+                    if (data1?.error?.message) lastError = data1.error.message;
+                } catch (e) {
+                    lastError = e.message;
+                }
+
+                // Variante 2: x-goog-api-key Header (funktioniert zusätzlich für neuere AI-Studio-Keys)
+                try {
+                    const url2 = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+                    const res2 = await fetch(url2, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-goog-api-key': key
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const data2 = await res2.json();
+                    if (res2.ok && data2?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        return data2.candidates[0].content.parts[0].text.trim();
+                    }
+                    if (data2?.error?.message) lastError = data2.error.message;
+                } catch (e) {}
+            }
+
+            throw new Error(lastError);
+        }
+
+        async function testGeminiApiConnection() {
+            const inputVal = document.getElementById('settingsGeminiKeyInput').value.trim();
+            if (!inputVal) {
+                showToast("Bitte zuerst einen Schlüssel eingeben.");
+                return;
+            }
+            geminiApiKey = inputVal;
+            localStorage.setItem('sekPlaner_geminiKey', inputVal);
+
+            const btn = document.getElementById('testApiBtn');
+            const statusBox = document.getElementById('apiTestStatusBox');
+            btn.innerText = "Prüfe...";
+            btn.disabled = true;
+            statusBox.classList.remove('hidden');
+            statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-slate-100 text-slate-700";
+            statusBox.innerText = "Verbinde mit Google Gemini API...";
+
+            try {
+                const reply = await callGeminiUnified("Antworte nur mit: Verbindung erfolgreich!");
+                statusBox.className = "rounded-lg p-2.5 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+                statusBox.innerText = "✅ " + reply;
+            } catch (err) {
+                statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-rose-50 text-rose-900 border border-rose-200";
+                statusBox.innerText = "❌ Fehler: " + err.message + " — Tipp: In Google AI Studio unter «API-Schlüssel erstellen» einen Schlüssel wählen, der mit AIzaSy... beginnt.";
+            } finally {
+                btn.innerText = "API testen";
+                btn.disabled = false;
+            }
+        }
+
+        // =========================================================================
+        // 2. FIREBASE KONFIGURATION (SERVERSTANDORT ZÜRICH)
         // =========================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyBHHhgjAvY0D0trm2IMxauhFp-ssw9ooz4",
@@ -626,7 +830,7 @@
         let geminiApiKey = localStorage.getItem('sekPlaner_geminiKey') || '';
 
         // =========================================================================
-        // 2. DEIN STUNDENPLAN 2026/2027 (SEK MÄTTMI)
+        // 3. STUNDENPLAN & ZUSTAND
         // =========================================================================
         const DEFAULT_WEEKLY_TEMPLATE = [
             { id: "mo-2", day: 0, start: "08:20", end: "09:05", subject: "D", className: "S2Aa", room: "C63" },
@@ -672,8 +876,6 @@
         }
 
         let weeklyTemplate = [...DEFAULT_WEEKLY_TEMPLATE];
-
-        // Ferien & Spezialtage (type: 'holiday' = kein Unterricht, 'special' = Spezialtag/Anlass)
         let calendarEvents = [
             { id: "ev-1", type: "holiday", name: "Herbstferien ZH 2026", start: "2026-10-03", end: "2026-10-18" },
             { id: "ev-2", type: "holiday", name: "Weihnachtsferien ZH 2026/27", start: "2026-12-19", end: "2027-01-03" },
@@ -684,9 +886,7 @@
             { id: "ev-7", type: "holiday", name: "Sommerferien ZH 2027", start: "2027-07-17", end: "2027-08-22" }
         ];
 
-        // Tagesnotizen oben in den Spalten (zusätzlich zu den automatischen Spezialtagen)
         let dayNotesStore = {};
-        // Lektionen: { homeworkDueToday, unit, title, notes, homework, homeworkTargetKey, link, audioClips: [], todos: [] }
         let lessonsStore = {};
 
         let currentMonday = getMonday(new Date());
@@ -695,12 +895,12 @@
         let activeSlotMeta = null;
         let tempAudioClips = [];
         let tempLessonTodos = [];
-        let selectedAiPhase = 'Einstieg (ca. 5-10 Min)';
-        let previewRowsData = [];
+        let selectedAiPhase = 'einstieg';
+        let currentImportCategory = 'sequence';
+        let universalPreviewItems = [];
+        let generalChatHistory = [];
+        let pendingAiHolidays = [];
 
-        // =========================================================================
-        // 3. INITIALISIERUNG & CLOUD-SYNC
-        // =========================================================================
         window.addEventListener('DOMContentLoaded', () => {
             loadLocalFallback();
             connectPrivateFirestoreSync();
@@ -767,7 +967,7 @@
         }
 
         // =========================================================================
-        // 4. REITER-NAVIGATION & DATUMSHELFER
+        // 4. NAVIGATION & WOCHENKARTEN MIT E / H / S LABELS
         // =========================================================================
         function switchMainTab(tab) {
             const planSec = document.getElementById('planViewSection');
@@ -867,9 +1067,26 @@
             saveAllState();
         }
 
-        // =========================================================================
-        // 5. WOCHENRASTER RENDERN (INKL. AUTOMATISCHER SPEZIALTAGE OBEN)
-        // =========================================================================
+        function buildCompactEHSHtml(data) {
+            if (!data) return "";
+            const rows = [];
+            if (data.einstieg) rows.push(`<div><span class="font-extrabold text-indigo-700">E:</span> ${escapeHtml(data.einstieg)}</div>`);
+            if (data.hauptteil) rows.push(`<div><span class="font-extrabold text-indigo-700">H:</span> ${escapeHtml(data.hauptteil)}</div>`);
+            if (data.schluss) rows.push(`<div><span class="font-extrabold text-indigo-700">S:</span> ${escapeHtml(data.schluss)}</div>`);
+            if (rows.length > 0) return rows.join('');
+            if (data.notes) return escapeHtml(data.notes).replace(/\n/g, '<br>');
+            return "";
+        }
+
+        function buildLessonSummaryPlain(data) {
+            if (!data) return "";
+            const parts = [];
+            if (data.einstieg) parts.push(`E: ${data.einstieg}`);
+            if (data.hauptteil) parts.push(`H: ${data.hauptteil}`);
+            if (data.schluss) parts.push(`S: ${data.schluss}`);
+            return parts.length > 0 ? parts.join('\n') : (data.notes || "");
+        }
+
         function renderCalendar() {
             const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
             const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
@@ -920,17 +1137,14 @@
 
                 daySlots.forEach(slot => {
                     const key = `${iso}_${slot.id}`;
-                    const data = lessonsStore[key] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                    const data = lessonsStore[key] || { homeworkDueToday: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     const style = getStyleForSlot(slot.subject, slot.className);
                     const openTodos = (data.todos || []).filter(t => !t.done).length;
+                    const ehsHtml = buildCompactEHSHtml(data);
 
                     const card = document.createElement('div');
                     card.onclick = () => openLessonModal(key, slot, dayDate);
                     card.className = `group bg-white border ${style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${hasHoliday ? 'opacity-65' : ''}`;
-
-                    const formattedNotes = data.notes
-                        ? escapeHtml(data.notes).replace(/\n/g, '<br>')
-                        : `<span class="text-slate-300 italic">Klicken zum Planen...</span>`;
 
                     card.innerHTML = `
                         <div class="${style.headerBg} px-3 py-2 text-white flex items-start justify-between gap-2">
@@ -955,10 +1169,10 @@
                             </div>
                         </div>
 
-                        <div class="p-3 flex-1 flex flex-col gap-1.5 text-xs text-slate-700 leading-relaxed min-h-[105px]">
+                        <div class="p-3 flex-1 flex flex-col gap-1.5 text-xs text-slate-700 leading-relaxed min-h-[110px]">
                             ${data.homeworkDueToday ? `<div class="bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-2 py-1 text-[10.5px] font-extrabold leading-snug">📌 HA auf heute: ${escapeHtml(data.homeworkDueToday)}</div>` : ''}
                             ${data.title ? `<div class="font-extrabold text-slate-900">${escapeHtml(data.title)}</div>` : ''}
-                            <div class="lesson-card-body text-[11.5px] text-slate-600">${formattedNotes}</div>
+                            <div class="lesson-card-body text-[11px] text-slate-600 flex flex-col gap-0.5">${ehsHtml || `<span class="text-slate-300 italic">Klicken zum Planen...</span>`}</div>
                             ${data.homework ? `<div class="mt-auto pt-1.5 border-t border-slate-100 text-[10.5px] font-semibold text-slate-500 truncate">➔ HA auf nächste Lektion: ${escapeHtml(data.homework)}</div>` : ''}
                         </div>
                     `;
@@ -972,7 +1186,7 @@
         }
 
         // =========================================================================
-        // 6. LEKTIONS-EDITOR: HA-VERWEIS, PARALLEL-KOPPLUNG, KI, MEMOS, NOTIZEN
+        // 5. LEKTIONS-EDITOR & PARALLEL-ÜBERTRAGUNG INKL. EIGENER NÄCHSTER HA-LEKTION
         // =========================================================================
         function findUpcomingSlotsForCourse(subject, className, fromISO, fromStart, limit = 8) {
             const results = [];
@@ -1014,6 +1228,8 @@
                     const style = getStyleForSlot(s.subject, s.className);
                     results.push({
                         key: `${iso}_${s.id}`,
+                        slot: s,
+                        iso,
                         isSameSubject: s.subject === currentSlot.subject,
                         label: `${style.label} ${s.className} • ${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start})`
                     });
@@ -1025,7 +1241,7 @@
             activeLessonKey = key;
             activeSlotMeta = { slot, dayDate };
             const iso = formatDateISO(dayDate);
-            const data = lessonsStore[key] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
+            const data = lessonsStore[key] || { homeworkDueToday: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
             const style = getStyleForSlot(slot.subject, slot.className);
 
             const header = document.getElementById('modalHeaderBar');
@@ -1036,7 +1252,9 @@
             document.getElementById('editLessonHomeworkToday').value = data.homeworkDueToday || "";
             document.getElementById('editLessonUnit').value = data.unit || "";
             document.getElementById('editLessonTitle').value = data.title || "";
-            document.getElementById('editLessonNotes').value = data.notes || "";
+            document.getElementById('editPhaseEinstieg').value = data.einstieg || "";
+            document.getElementById('editPhaseHauptteil').value = data.hauptteil || data.notes || "";
+            document.getElementById('editPhaseSchluss').value = data.schluss || "";
             document.getElementById('editLessonLink').value = data.link || "";
             document.getElementById('editLessonHomework').value = data.homework || "";
             document.getElementById('lessonAiResultBox').classList.add('hidden');
@@ -1049,14 +1267,15 @@
 
             const parSelect = document.getElementById('parallelTargetLessonSelect');
             const parallelSlots = findParallelSlotsInSameWeek(slot, getMonday(dayDate));
-            parSelect.innerHTML = `<option value="">— Keine parallele Lektion ausgewählt —</option>` +
-                parallelSlots.map(ps => `<option value="${ps.key}">${ps.label}</option>`).join('');
+            parSelect.innerHTML = parallelSlots.map(ps => `<option value="${ps.key}">${ps.label}</option>`).join('') +
+                `<option value="">— Keine Übertragung —</option>`;
 
             tempAudioClips = Array.isArray(data.audioClips) ? [...data.audioClips] : [];
             tempLessonTodos = Array.isArray(data.todos) ? JSON.parse(JSON.stringify(data.todos)) : [];
 
             renderAudioClipsList();
             renderModalTodosList();
+            updateParallelPreview();
 
             document.getElementById('lessonModal').classList.remove('hidden');
             refreshIcons();
@@ -1067,68 +1286,136 @@
             document.getElementById('lessonModal').classList.add('hidden');
         }
 
+        function updateParallelPreview() {
+            const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
+            const parMode = document.getElementById('parallelSyncModeSelect').value;
+            const currentBox = document.getElementById('parallelCurrentContent');
+            const previewBox = document.getElementById('parallelResultPreview');
+
+            if (!parTargetKey) {
+                currentBox.innerText = "Keine Ziel-Lektion ausgewählt";
+                previewBox.innerText = "—";
+                return;
+            }
+
+            const existing = lessonsStore[parTargetKey] || {};
+            const existingText = [existing.title, buildLessonSummaryPlain(existing)].filter(Boolean).join('\n') || "(Aktuell leer)";
+            currentBox.innerText = existingText;
+
+            const newTitle = document.getElementById('editLessonTitle').value.trim();
+            const newSummary = buildLessonSummaryPlain({
+                einstieg: document.getElementById('editPhaseEinstieg').value.trim(),
+                hauptteil: document.getElementById('editPhaseHauptteil').value.trim(),
+                schluss: document.getElementById('editPhaseSchluss').value.trim()
+            });
+            const hw = document.getElementById('editLessonHomework').value.trim();
+            const incomingText = [newTitle, newSummary, hw ? `HA: ${hw} (wird an nächste Lektion dieser Klasse verknüpft)` : ''].filter(Boolean).join('\n') || "(Noch kein neuer Inhalt eingegeben)";
+
+            if (parMode === 'overwrite' || existingText === "(Aktuell leer)") {
+                previewBox.innerText = incomingText;
+            } else {
+                previewBox.innerText = `${existingText}\n--- ergänzt mit ---\n${incomingText}`;
+            }
+        }
+
+        function applyParallelTransferNow() {
+            const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
+            if (!parTargetKey) return;
+            const parMode = document.getElementById('parallelSyncModeSelect').value;
+            const unit = document.getElementById('editLessonUnit').value.trim();
+            const title = document.getElementById('editLessonTitle').value.trim();
+            const einstieg = document.getElementById('editPhaseEinstieg').value.trim();
+            const hauptteil = document.getElementById('editPhaseHauptteil').value.trim();
+            const schluss = document.getElementById('editPhaseSchluss').value.trim();
+            const homework = document.getElementById('editLessonHomework').value.trim();
+            const link = document.getElementById('editLessonLink').value.trim();
+
+            const [parIso, parSlotId] = parTargetKey.split('_');
+            const parSlot = weeklyTemplate.find(s => s.id === parSlotId);
+            let parNextHwKey = "";
+            if (homework && parSlot) {
+                const upcomingForPar = findUpcomingSlotsForCourse(parSlot.subject, parSlot.className, parIso, parSlot.start, 1);
+                if (upcomingForPar.length > 0) {
+                    parNextHwKey = upcomingForPar[0].key;
+                    const targetNextLesson = lessonsStore[parNextHwKey] || { homeworkDueToday: "", unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                    targetNextLesson.homeworkDueToday = `${homework} (aufgegeben am ${formatDateCH(parIso)})`;
+                    lessonsStore[parNextHwKey] = targetNextLesson;
+                }
+            }
+
+            const existingPar = lessonsStore[parTargetKey] || { homeworkDueToday: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+
+            if (parMode === 'overwrite') {
+                lessonsStore[parTargetKey] = {
+                    ...existingPar,
+                    unit,
+                    title,
+                    einstieg,
+                    hauptteil,
+                    schluss,
+                    homework,
+                    homeworkTargetKey: parNextHwKey || existingPar.homeworkTargetKey,
+                    link
+                };
+            } else {
+                lessonsStore[parTargetKey] = {
+                    ...existingPar,
+                    unit: existingPar.unit || unit,
+                    title: existingPar.title ? (title && !existingPar.title.includes(title) ? `${existingPar.title} / ${title}` : existingPar.title) : title,
+                    einstieg: existingPar.einstieg ? (einstieg ? `${existingPar.einstieg}\n${einstieg}` : existingPar.einstieg) : einstieg,
+                    hauptteil: existingPar.hauptteil ? (hauptteil ? `${existingPar.hauptteil}\n${hauptteil}` : existingPar.hauptteil) : hauptteil,
+                    schluss: existingPar.schluss ? (schluss ? `${existingPar.schluss}\n${schluss}` : existingPar.schluss) : schluss,
+                    homework: existingPar.homework || homework,
+                    homeworkTargetKey: existingPar.homeworkTargetKey || parNextHwKey,
+                    link: existingPar.link || link
+                };
+            }
+
+            updateParallelPreview();
+            renderCalendar();
+            saveAllState();
+            showToast("Inhalt & Hausaufgaben-Verweis auf parallele Lektion übertragen!");
+        }
+
         function saveLessonModal() {
             if (!activeLessonKey) return;
             const homeworkDueToday = document.getElementById('editLessonHomeworkToday').value.trim();
             const unit = document.getElementById('editLessonUnit').value.trim();
             const title = document.getElementById('editLessonTitle').value.trim();
-            const notes = document.getElementById('editLessonNotes').value.trim();
+            const einstieg = document.getElementById('editPhaseEinstieg').value.trim();
+            const hauptteil = document.getElementById('editPhaseHauptteil').value.trim();
+            const schluss = document.getElementById('editPhaseSchluss').value.trim();
             const link = document.getElementById('editLessonLink').value.trim();
             const homework = document.getElementById('editLessonHomework').value.trim();
             const hwTargetKey = document.getElementById('homeworkTargetLessonSelect').value;
 
-            const currentSaved = {
+            lessonsStore[activeLessonKey] = {
                 homeworkDueToday,
                 unit,
                 title,
-                notes,
+                einstieg,
+                hauptteil,
+                schluss,
+                notes: "",
                 link,
                 homework,
                 homeworkTargetKey: hwTargetKey,
                 audioClips: tempAudioClips,
                 todos: tempLessonTodos
             };
-            lessonsStore[activeLessonKey] = currentSaved;
 
-            // 1. Hausaufgabe auf nächste Lektion oben in der Ziel-Lektion als "Hausaufgabe auf heute" eintragen
             if (homework && hwTargetKey) {
                 const sourceDateCH = formatDateCH(activeLessonKey.split('_')[0]);
-                const targetLesson = lessonsStore[hwTargetKey] || { homeworkDueToday: "", unit: unit, title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                const targetLesson = lessonsStore[hwTargetKey] || { homeworkDueToday: "", unit: unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                 targetLesson.homeworkDueToday = `${homework} (aufgegeben am ${sourceDateCH})`;
                 if (!targetLesson.unit && unit) targetLesson.unit = unit;
                 lessonsStore[hwTargetKey] = targetLesson;
             }
 
-            // 2. Parallele Lektion koppeln (Ergänzen oder Überschreiben)
-            const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
-            const parMode = document.getElementById('parallelSyncModeSelect').value;
-            if (parTargetKey) {
-                const existingPar = lessonsStore[parTargetKey] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
-                if (parMode === 'overwrite') {
-                    lessonsStore[parTargetKey] = {
-                        ...existingPar,
-                        unit,
-                        title,
-                        notes,
-                        homework,
-                        link
-                    };
-                } else {
-                    lessonsStore[parTargetKey] = {
-                        ...existingPar,
-                        unit: existingPar.unit || unit,
-                        title: existingPar.title ? (title && !existingPar.title.includes(title) ? `${existingPar.title} / ${title}` : existingPar.title) : title,
-                        notes: existingPar.notes ? (notes && !existingPar.notes.includes(notes) ? `${existingPar.notes}\n---\n${notes}` : existingPar.notes) : notes,
-                        homework: existingPar.homework || homework,
-                        link: existingPar.link || link
-                    };
-                }
-            }
-
             closeLessonModal();
             renderCalendar();
             saveAllState();
-            showToast(parTargetKey ? "Gespeichert & auf parallele Lektion übertragen!" : "Lektion gespeichert!");
+            showToast("Lektion gespeichert!");
         }
 
         function clearCurrentLesson() {
@@ -1140,7 +1427,498 @@
             showToast("Lektion geleert.");
         }
 
-        // --- Notizen / Pendenzen ---
+        // --- Direkter KI-Tutor in der Lektion ---
+        function selectAiPhase(phaseKey) {
+            selectedAiPhase = phaseKey;
+            const map = {
+                einstieg: { btn: 'aiPhaseEinstieg', label: 'Einstieg' },
+                hauptteil: { btn: 'aiPhaseHauptteil', label: 'Hauptteil' },
+                schluss: { btn: 'aiPhaseSchluss', label: 'Schluss' }
+            };
+            Object.entries(map).forEach(([k, info]) => {
+                document.getElementById(info.btn).className = k === phaseKey
+                    ? "px-2.5 py-1 rounded-md bg-indigo-600 text-white"
+                    : "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
+            });
+            document.getElementById('aiInsertReplaceBtn').innerText = `In «${map[phaseKey].label}» einsetzen (ersetzen)`;
+            document.getElementById('aiInsertAppendBtn').innerText = `+ An «${map[phaseKey].label}» anhängen`;
+        }
+
+        async function runLessonAiAssistant() {
+            const topic = document.getElementById('lessonAiPromptInput').value.trim() || document.getElementById('editLessonTitle').value.trim();
+            if (!topic) {
+                showToast("Bitte ein Thema oder Stichwort eingeben.");
+                return;
+            }
+
+            const slot = activeSlotMeta?.slot || { subject: "Fach", className: "Sek A" };
+            const style = getStyleForSlot(slot.subject, slot.className);
+            const unit = document.getElementById('editLessonUnit').value.trim();
+            const btn = document.getElementById('lessonAiRunBtn');
+            const resultBox = document.getElementById('lessonAiResultBox');
+            const resultEditor = document.getElementById('lessonAiResultEditor');
+            btn.innerText = "Generiere...";
+            btn.disabled = true;
+
+            const phaseDescriptions = {
+                einstieg: "Einstieg (ca. 5–10 Minuten, motivierend, Vorwissen aktivierend)",
+                hauptteil: "Hauptteil / Erarbeitung (ca. 25 Minuten, klare Aufgabenstellung, Sozialform & Differenzierung Niveau A)",
+                schluss: "Schluss / Sicherung (ca. 5–10 Minuten, Ergebnissicherung, Exit-Ticket oder Ausblick)"
+            };
+
+            const prompt = `Aktuelles Fach: ${style.label} (${slot.className})${unit ? `, Einheit/Unit: ${unit}` : ''}.
+Gewünschte Unterrichtsphase: ${phaseDescriptions[selectedAiPhase]}.
+Thema / Auftrag: "${topic}".
+Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Keine Einleitung, kein Schlusswort.`;
+
+            try {
+                const reply = await callGeminiUnified(prompt);
+                resultEditor.value = reply;
+                resultBox.classList.remove('hidden');
+            } catch (err) {
+                resultEditor.value = "⚠️ " + err.message;
+                resultBox.classList.remove('hidden');
+            } finally {
+                btn.innerText = "Generieren";
+                btn.disabled = false;
+            }
+        }
+
+        function insertAiIntoPhase(mode) {
+            const text = document.getElementById('lessonAiResultEditor').value.trim();
+            if (!text) return;
+            const fieldMap = { einstieg: 'editPhaseEinstieg', hauptteil: 'editPhaseHauptteil', schluss: 'editPhaseSchluss' };
+            const targetEl = document.getElementById(fieldMap[selectedAiPhase]);
+            targetEl.value = (mode === 'replace' || !targetEl.value.trim()) ? text : `${targetEl.value.trim()}\n${text}`;
+            updateParallelPreview();
+            showToast("In das gewählte Phasen-Feld übernommen!");
+        }
+
+        // =========================================================================
+        // 6. ALLGEMEINER KI-CHAT (MIT VERLAUF & IN LEKTION ÜBERNEHMEN)
+        // =========================================================================
+        function openGeneralAiChatModal() {
+            const select = document.getElementById('generalChatTargetLesson');
+            const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
+            const options = [];
+            for (let w = 0; w < 4; w++) {
+                const mon = new Date(currentMonday);
+                mon.setDate(currentMonday.getDate() + w * 7);
+                weeklyTemplate.sort((a, b) => a.day - b.day || a.start.localeCompare(b.start)).forEach(s => {
+                    const d = new Date(mon);
+                    d.setDate(mon.getDate() + s.day);
+                    const iso = formatDateISO(d);
+                    const st = getStyleForSlot(s.subject, s.className);
+                    options.push(`<option value="${iso}_${s.id}">${dayShort[s.day]}, ${formatDateCH(iso)} • ${st.label} ${s.className} (${s.start})</option>`);
+                });
+            }
+            select.innerHTML = options.join('');
+            document.getElementById('generalAiChatModal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeGeneralAiChatModal() {
+            document.getElementById('generalAiChatModal').classList.add('hidden');
+        }
+
+        function clearGeneralAiChat() {
+            generalChatHistory = [];
+            document.getElementById('generalChatMessages').innerHTML = `
+                <div class="bg-white border border-slate-200 rounded-xl p-3 text-slate-700 leading-relaxed">
+                    Chatverlauf geleert. Wie kann ich dir für deinen Unterricht (D, Mu, GS, GG, MI, E) helfen?
+                </div>`;
+        }
+
+        async function sendGeneralAiChat() {
+            const input = document.getElementById('generalChatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = "";
+
+            const box = document.getElementById('generalChatMessages');
+            const userBubble = document.createElement('div');
+            userBubble.className = "self-end max-w-[85%] bg-purple-700 text-white rounded-2xl rounded-br-xs px-3.5 py-2.5 leading-relaxed shadow-2xs";
+            userBubble.innerText = msg;
+            box.appendChild(userBubble);
+            box.scrollTop = box.scrollHeight;
+
+            generalChatHistory.push({ role: "user", parts: [{ text: msg }] });
+
+            const btn = document.getElementById('generalChatSendBtn');
+            btn.innerText = "...";
+            btn.disabled = true;
+
+            try {
+                const reply = await callGeminiUnified(msg, generalChatHistory);
+                generalChatHistory.push({ role: "model", parts: [{ text: reply }] });
+
+                const aiBubble = document.createElement('div');
+                aiBubble.className = "self-start max-w-[92%] bg-white border border-slate-200 rounded-2xl rounded-bl-xs p-3.5 text-slate-800 leading-relaxed shadow-2xs flex flex-col gap-2";
+                const safeId = "chatReply_" + Date.now();
+                aiBubble.innerHTML = `
+                    <div id="${safeId}" class="whitespace-pre-line">${escapeHtml(reply)}</div>
+                    <div class="flex justify-end pt-1 border-t border-slate-100">
+                        <button type="button" onclick="copyChatReplyToLesson('${safeId}')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-bold text-[11px]">
+                            + In ausgewählte Lektion übernehmen
+                        </button>
+                    </div>
+                `;
+                box.appendChild(aiBubble);
+                box.scrollTop = box.scrollHeight;
+            } catch (err) {
+                const errBubble = document.createElement('div');
+                errBubble.className = "self-start bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-3 text-[11px]";
+                errBubble.innerText = "⚠️ " + err.message;
+                box.appendChild(errBubble);
+            } finally {
+                btn.innerText = "Senden";
+                btn.disabled = false;
+            }
+        }
+
+        function copyChatReplyToLesson(elId) {
+            const text = document.getElementById(elId)?.innerText.trim();
+            const targetKey = document.getElementById('generalChatTargetLesson').value;
+            if (!text || !targetKey) return;
+
+            const existing = lessonsStore[targetKey] || { homeworkDueToday: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+            existing.hauptteil = existing.hauptteil ? `${existing.hauptteil}\n---\n${text}` : text;
+            lessonsStore[targetKey] = existing;
+            renderCalendar();
+            saveAllState();
+            showToast("Antwort direkt in die gewählte Lektion übernommen!");
+        }
+
+        // =========================================================================
+        // 7. KI-CHAT IM REITER FERIEN & SPEZIALTAGE
+        // =========================================================================
+        async function parseHolidaysWithAi() {
+            const text = document.getElementById('holidayAiInput').value.trim();
+            if (!text) return;
+            const btn = document.getElementById('holidayAiBtn');
+            btn.innerText = "Analysiere...";
+            btn.disabled = true;
+
+            const prompt = `Extrahiere alle Termine, Ferien oder Spezialtage aus folgendem Text (Kontext: Kanton Zürich, Schuljahr 2026/2027).
+Antworte AUSSCHLIESSLICH als gültiges JSON-Array ohne Markdown-Codeblock, exakt in diesem Format:
+[{"name":"Bezeichnung","start":"YYYY-MM-DD","end":"YYYY-MM-DD","type":"special"}]
+Nutze "type":"holiday" nur wenn schulfrei/Ferien ist, sonst "type":"special".
+Text: "${text}"`;
+
+            try {
+                const raw = await callGeminiUnified(prompt);
+                const cleaned = raw.replace(/```json|```/g, '').trim();
+                const parsed = JSON.parse(cleaned);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    pendingAiHolidays = parsed;
+                    document.getElementById('holidayAiPreviewList').innerHTML = parsed.map(p =>
+                        `<div class="text-xs font-semibold text-slate-800">• <strong>${formatDateCH(p.start)}${p.end && p.end !== p.start ? ' – ' + formatDateCH(p.end) : ''}</strong>: ${escapeHtml(p.name)} (${p.type === 'holiday' ? 'Schulfrei' : 'Spezialtag'})</div>`
+                    ).join('');
+                    document.getElementById('holidayAiPreviewBox').classList.remove('hidden');
+                }
+            } catch (err) {
+                showToast("KI-Hinweis: " + err.message);
+            } finally {
+                btn.innerText = "Mit KI erkennen";
+                btn.disabled = false;
+            }
+        }
+
+        function confirmAiHolidays() {
+            pendingAiHolidays.forEach((p, i) => {
+                calendarEvents.push({
+                    id: `ev-ai-${Date.now()}-${i}`,
+                    type: p.type === 'holiday' ? 'holiday' : 'special',
+                    name: p.name,
+                    start: p.start,
+                    end: p.end || p.start
+                });
+            });
+            pendingAiHolidays = [];
+            document.getElementById('holidayAiInput').value = "";
+            document.getElementById('holidayAiPreviewBox').classList.add('hidden');
+            renderSpecialDaysTable();
+            saveAllState();
+            showToast("Termine in den Kalender & Wochenplan übernommen!");
+        }
+
+        // =========================================================================
+        // 8. DATEI HOCHLADEN (LEKTIONENABLAUF ODER LEHRMITTEL) & INDIVIDUELLE ZUORDNUNG
+        // =========================================================================
+        function openUniversalImportModal() {
+            const select = document.getElementById('seqTargetCourse');
+            const uniqueCourses = Array.from(new Set(weeklyTemplate.map(s => `${s.subject}|${s.className}`)));
+            select.innerHTML = uniqueCourses.map(c => {
+                const [subj, cls] = c.split('|');
+                const st = getStyleForSlot(subj, cls);
+                return `<option value="${c}">${st.label} (${cls})</option>`;
+            }).join('');
+
+            document.getElementById('seqStartDate').value = formatDateISO(currentMonday);
+            setImportCategory('sequence');
+            document.getElementById('universalImportModal').classList.remove('hidden');
+            refreshIcons();
+        }
+
+        function closeUniversalImportModal() {
+            document.getElementById('universalImportModal').classList.add('hidden');
+        }
+
+        function setImportCategory(cat) {
+            currentImportCategory = cat;
+            ['sequence', 'lehrmittel', 'schedule', 'holidays'].forEach(c => {
+                const btn = document.getElementById(`impTypeBtn_${c}`);
+                btn.className = c === cat
+                    ? "p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all"
+                    : "p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all";
+            });
+            document.getElementById('importOptionsSequence').classList.toggle('hidden', cat !== 'sequence' && cat !== 'lehrmittel');
+            document.getElementById('importOptionsLehrmittel').classList.toggle('hidden', cat !== 'lehrmittel');
+            rebuildUniversalPreview();
+        }
+
+        async function handleUniversalFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const textarea = document.getElementById('universalRawTextarea');
+            showToast(`Lese ${file.name} ein...`);
+
+            try {
+                if (file.name.endsWith('.docx') && window.mammoth) {
+                    const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+                    textarea.value = res.value.trim();
+                } else if (file.name.endsWith('.pdf') && window.pdfjsLib) {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+                    let text = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const content = await page.getTextContent();
+                        text += content.items.map(it => it.str).join(" ") + "\n";
+                    }
+                    textarea.value = text.trim();
+                } else if ((file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) && window.XLSX) {
+                    const wb = XLSX.read(await file.arrayBuffer());
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                    textarea.value = rows.filter(r => r.length > 0).map(r => r.join(' | ')).join('\n');
+                } else {
+                    textarea.value = await file.text();
+                }
+                rebuildUniversalPreview();
+                showToast("Datei eingelesen! Wähle oben, ob es ein Lektionenablauf oder Lehrmittel ist.");
+            } catch (e) {
+                showToast("Datei konnte nicht gelesen werden: " + e.message);
+            }
+        }
+
+        async function analyzeLehrmittelWithAi() {
+            const raw = document.getElementById('universalRawTextarea').value.trim();
+            if (!raw) {
+                showToast("Bitte zuerst ein Lehrmittel-Kapitel hochladen oder Text einfügen.");
+                return;
+            }
+            const count = parseInt(document.getElementById('lehrmittelLessonCount').value, 10) || 5;
+            const courseLabel = document.getElementById('seqTargetCourse').selectedOptions[0]?.text || "Sek A";
+            const btn = document.getElementById('analyzeLehrmittelBtn');
+            btn.innerText = "KI erstellt Lektionen...";
+            btn.disabled = true;
+
+            const prompt = `Analysiere diesen Lehrmittel-Auszug und erstelle daraus genau ${count} konkrete Lektionen à 45 Min für ${courseLabel} (Sekundarstufe I Kanton Zürich, Niveau A).
+Trenne jede Lektion mit einer Leerzeile und beginne jeweils mit «Lektion 1: [Titel]», «Lektion 2: [Titel]» usw., darunter knappe Stichpunkte zu Einstieg, Hauptteil und Schluss.
+Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
+
+            try {
+                const structured = await callGeminiUnified(prompt);
+                document.getElementById('universalRawTextarea').value = structured;
+                rebuildUniversalPreview();
+                showToast("Lehrmittel in Lektionen zerlegt! Unten den Terminen zuordnen.");
+            } catch (err) {
+                showToast("KI-Fehler: " + err.message);
+            } finally {
+                btn.innerText = "Lehrmittel mit KI in Lektionen zerlegen";
+                btn.disabled = false;
+            }
+        }
+
+        async function analyzeRawTextWithAi() {
+            const raw = document.getElementById('universalRawTextarea').value.trim();
+            if (!raw) return;
+            showToast("KI gliedert den Text in Lektionen...");
+            const prompt = `Gliedere den folgenden Unterrichtstext sauber in einzelne 45-Minuten-Lektionen. Beginne jede Lektion mit «Lektion 1: [Titel]», «Lektion 2: [Titel]» usw. und trenne die Lektionen durch genau eine Leerzeile. Keine Einleitung.\n\nText:\n${raw.slice(0, 9000)}`;
+            try {
+                const structured = await callGeminiUnified(prompt);
+                document.getElementById('universalRawTextarea').value = structured;
+                rebuildUniversalPreview();
+                showToast("Text in einzelne Lektionen gegliedert!");
+            } catch (err) {
+                showToast("KI-Fehler: " + err.message);
+            }
+        }
+
+        function rebuildUniversalPreview() {
+            const rawText = document.getElementById('universalRawTextarea').value.trim();
+            const thead = document.getElementById('universalPreviewThead');
+            const tbody = document.getElementById('universalPreviewTbody');
+            universalPreviewItems = [];
+
+            if (!rawText) {
+                thead.innerHTML = '';
+                tbody.innerHTML = `<tr><td class="py-6 text-center text-slate-400 italic">Bitte oben eine Datei hochladen oder Text einfügen.</td></tr>`;
+                return;
+            }
+
+            if (currentImportCategory === 'sequence' || currentImportCategory === 'lehrmittel') {
+                thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3 w-56">Ziel-Lektion (Datum frei wählbar)</th><th class="py-2 px-3">Lektionsinhalt</th><th class="py-2 px-3 w-36">Modus</th></tr>`;
+                const blocks = (/^Lektion\s+\d+/im.test(rawText)
+                    ? rawText.split(/(?=^Lektion\s+\d+)/im)
+                    : rawText.split(/\n\s*\n/)).map(b => b.trim()).filter(Boolean);
+
+                const courseVal = document.getElementById('seqTargetCourse').value;
+                const startDateStr = document.getElementById('seqStartDate').value;
+                if (!courseVal || !startDateStr) return;
+
+                const [targetSubject, targetClass] = courseVal.split('|');
+                const startMonday = getMonday(new Date(startDateStr));
+                const availableSlots = [];
+                const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
+
+                for (let w = 0; w < 24 && availableSlots.length < blocks.length + 10; w++) {
+                    const mon = new Date(startMonday);
+                    mon.setDate(startMonday.getDate() + w * 7);
+                    weeklyTemplate
+                        .filter(s => s.subject === targetSubject && s.className === targetClass)
+                        .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
+                        .forEach(s => {
+                            const d = new Date(mon);
+                            d.setDate(mon.getDate() + s.day);
+                            const iso = formatDateISO(d);
+                            if (iso >= startDateStr && !isHolidayDate(iso)) {
+                                availableSlots.push({
+                                    key: `${iso}_${s.id}`,
+                                    label: `${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start}–${s.end})`
+                                });
+                            }
+                        });
+                }
+
+                universalPreviewItems = blocks.map((block, idx) => {
+                    const defaultSlot = availableSlots[idx] || availableSlots[0];
+                    const existing = defaultSlot ? lessonsStore[defaultSlot.key] : null;
+                    const hasExisting = existing && (existing.title || buildLessonSummaryPlain(existing));
+                    return {
+                        selected: true,
+                        block,
+                        targetKey: defaultSlot ? defaultSlot.key : "",
+                        mode: hasExisting ? 'append' : 'replace'
+                    };
+                });
+
+                tbody.innerHTML = universalPreviewItems.map((it, i) => `
+                    <tr class="bg-white">
+                        <td class="py-2 px-3"><input type="checkbox" checked onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
+                        <td class="py-2 px-3">
+                            <select onchange="universalPreviewItems[${i}].targetKey = this.value" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 font-bold text-[11px] text-slate-900">
+                                ${availableSlots.map(sl => `<option value="${sl.key}" ${sl.key === it.targetKey ? 'selected' : ''}>${sl.label}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="py-2 px-3"><div class="line-clamp-3 text-slate-800 whitespace-pre-line">${escapeHtml(it.block)}</div></td>
+                        <td class="py-2 px-3">
+                            <select onchange="universalPreviewItems[${i}].mode = this.value" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-bold text-[11px]">
+                                <option value="append" ${it.mode === 'append' ? 'selected' : ''}>Hinzufügen</option>
+                                <option value="replace" ${it.mode === 'replace' ? 'selected' : ''}>Ersetzen</option>
+                            </select>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } else if (currentImportCategory === 'schedule') {
+                thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Tag</th><th class="py-2 px-3">Zeit</th><th class="py-2 px-3">Fach</th><th class="py-2 px-3">Klasse</th></tr>`;
+                const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+                const timeSlots = [
+                    { start: "07:30", end: "08:15" }, { start: "08:20", end: "09:05" }, { start: "09:10", end: "09:55" },
+                    { start: "10:15", end: "11:00" }, { start: "11:05", end: "11:50" }, { start: "11:55", end: "12:40" },
+                    { start: "12:50", end: "13:35" }, { start: "13:45", end: "14:30" }, { start: "14:35", end: "15:20" },
+                    { start: "15:35", end: "16:20" }, { start: "16:25", end: "17:10" }
+                ];
+                const regex = /\b(RZG|Econ|RKE|BO|MI|Mu|D|E)\s+(S[123][A-Za-z]+|Wahlfach\s*E)\b/g;
+                let match;
+                let autoIdx = 0;
+                while ((match = regex.exec(rawText)) !== null) {
+                    const ts = timeSlots[autoIdx % timeSlots.length];
+                    universalPreviewItems.push({ selected: true, day: autoIdx % 5, start: ts.start, end: ts.end, subject: match[1], className: match[2], room: "C63" });
+                    autoIdx++;
+                }
+                tbody.innerHTML = universalPreviewItems.map((it, i) => `
+                    <tr class="bg-white">
+                        <td class="py-2 px-3"><input type="checkbox" checked onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
+                        <td class="py-2 px-3"><select onchange="universalPreviewItems[${i}].day = parseInt(this.value,10)" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 font-bold">${dayNames.map((dn, dIdx) => `<option value="${dIdx}" ${it.day === dIdx ? 'selected' : ''}>${dn}</option>`).join('')}</select></td>
+                        <td class="py-2 px-3 font-semibold">${it.start} – ${it.end}</td>
+                        <td class="py-2 px-3 font-extrabold text-indigo-900">${escapeHtml(it.subject)}</td>
+                        <td class="py-2 px-3 font-bold">${escapeHtml(it.className)}</td>
+                    </tr>
+                `).join('');
+
+            } else {
+                thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Datum</th><th class="py-2 px-3">Bezeichnung</th><th class="py-2 px-3">Typ</th></tr>`;
+                const parsed = parseSwissDatesFromText(rawText);
+                universalPreviewItems = parsed.map(p => ({ ...p, selected: true }));
+                tbody.innerHTML = universalPreviewItems.map((it, i) => `
+                    <tr class="bg-white">
+                        <td class="py-2 px-3"><input type="checkbox" checked onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
+                        <td class="py-2 px-3 font-bold whitespace-nowrap">${formatDateCH(it.start)}${it.end !== it.start ? ` – ${formatDateCH(it.end)}` : ''}</td>
+                        <td class="py-2 px-3 font-semibold">${escapeHtml(it.name)}</td>
+                        <td class="py-2 px-3"><select onchange="universalPreviewItems[${i}].type = this.value" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 font-bold"><option value="special" ${it.type === 'special' ? 'selected' : ''}>Spezialtag</option><option value="holiday" ${it.type === 'holiday' ? 'selected' : ''}>Ferien</option></select></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function toggleAllUniversalItems(state) {
+            universalPreviewItems.forEach(it => it.selected = state);
+            document.querySelectorAll('#universalPreviewTbody input[type="checkbox"]').forEach(cb => cb.checked = state);
+        }
+
+        function applyUniversalImportSelection() {
+            const chosen = universalPreviewItems.filter(it => it.selected);
+            if (chosen.length === 0) return;
+
+            if (currentImportCategory === 'sequence' || currentImportCategory === 'lehrmittel') {
+                const unitTitle = document.getElementById('seqUnitTitle').value.trim();
+                chosen.forEach(row => {
+                    if (!row.targetKey) return;
+                    const lines = row.block.split('\n');
+                    const newTitle = lines[0];
+                    const newBody = lines.slice(1).join('\n') || lines[0];
+                    const existing = lessonsStore[row.targetKey] || { homeworkDueToday: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+
+                    if (row.mode === 'append' && (existing.title || existing.hauptteil)) {
+                        lessonsStore[row.targetKey] = {
+                            ...existing,
+                            unit: existing.unit || unitTitle,
+                            title: existing.title ? `${existing.title} / ${newTitle}` : newTitle,
+                            hauptteil: existing.hauptteil ? `${existing.hauptteil}\n---\n${newBody}` : newBody
+                        };
+                    } else {
+                        lessonsStore[row.targetKey] = { ...existing, unit: unitTitle || existing.unit, title: newTitle, einstieg: "", hauptteil: newBody, schluss: "" };
+                    }
+                });
+                showToast(`${chosen.length} Lektionen im Wochenplan gespeichert!`);
+            } else if (currentImportCategory === 'schedule') {
+                chosen.forEach((it, idx) => weeklyTemplate.push({ id: `imp-${Date.now()}-${idx}`, day: it.day, start: it.start, end: it.end, subject: it.subject, className: it.className, room: it.room }));
+                showToast(`${chosen.length} Stundenplan-Slots übernommen!`);
+            } else {
+                chosen.forEach(it => calendarEvents.push({ id: it.id, type: it.type, name: it.name, start: it.start, end: it.end }));
+                showToast(`${chosen.length} Termine übernommen!`);
+            }
+
+            closeUniversalImportModal();
+            renderCalendar();
+            saveAllState();
+        }
+
+        // =========================================================================
+        // 9. NOTIZEN, SPRACHMEMO, BUMP, FERIEN & SETTINGS
+        // =========================================================================
         function addLessonTodo() {
             const input = document.getElementById('newLessonTodoInput');
             const text = input.value.trim();
@@ -1162,7 +1940,7 @@
             list.innerHTML = '';
             tempLessonTodos.forEach((t, idx) => {
                 const row = document.createElement('div');
-                row.className = "bg-white border border-amber-200/80 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2";
+                row.className = "bg-white border border-amber-200/80 rounded-lg px-2.5 py-1 flex items-center justify-between gap-2";
                 row.innerHTML = `
                     <label class="flex items-center gap-2 cursor-pointer flex-1">
                         <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleModalTodo(${idx})" class="rounded text-amber-600">
@@ -1174,7 +1952,6 @@
             });
         }
 
-        // --- Separater Reiter: Pendenzen & Sprachmemo-Transkriptionen ---
         function updateOpenNotesBadge() {
             let count = 0;
             Object.values(lessonsStore).forEach(lesson => {
@@ -1202,68 +1979,51 @@
             Object.entries(lessonsStore).forEach(([key, lesson]) => {
                 const [isoDate, slotId] = key.split('_');
                 const slot = weeklyTemplate.find(s => s.id === slotId) || { subject: "Fach", className: "", start: "" };
-
                 if (Array.isArray(lesson.todos)) {
                     lesson.todos.forEach((todo, todoIdx) => {
                         if (!showDone && todo.done) return;
                         todoEntries.push({ key, isoDate, slot, todo, todoIdx });
                     });
                 }
-
                 if (Array.isArray(lesson.audioClips)) {
-                    lesson.audioClips.forEach((clip, clipIdx) => {
-                        transcriptEntries.push({ key, isoDate, slot, clip, clipIdx });
-                    });
+                    lesson.audioClips.forEach((clip, clipIdx) => transcriptEntries.push({ key, isoDate, slot, clip, clipIdx }));
                 }
             });
 
-            todoEntries.sort((a, b) => a.isoDate.localeCompare(b.isoDate) || (a.slot.start || '').localeCompare(b.slot.start || ''));
+            todoEntries.sort((a, b) => a.isoDate.localeCompare(b.isoDate));
             transcriptEntries.sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
-            if (todoEntries.length === 0) {
-                list.innerHTML = `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Notizen oder vergessenen Abgaben.</div>`;
-            } else {
-                todoEntries.forEach(item => {
+            list.innerHTML = todoEntries.length === 0
+                ? `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Notizen.</div>`
+                : todoEntries.map(item => {
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
-                    const row = document.createElement('div');
-                    row.className = `border ${item.todo.done ? 'bg-slate-50 border-slate-200 opacity-65' : 'bg-white border-amber-200 shadow-2xs'} rounded-xl p-3 flex items-center justify-between gap-3 text-xs`;
-                    row.innerHTML = `
-                        <label class="flex items-center gap-3 cursor-pointer flex-1">
-                            <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo('${item.key}', ${item.todoIdx})" class="w-4 h-4 rounded text-indigo-600">
-                            <div class="flex flex-col">
-                                <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'}">${escapeHtml(item.todo.text)}</span>
-                                <span class="text-[11px] text-slate-500 mt-0.5">
-                                    <strong>${formatDateCH(item.isoDate)}</strong> (${item.slot.start || ''}) •
-                                    <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span>
-                                </span>
-                            </div>
-                        </label>
-                        <button type="button" onclick="deleteGlobalTodo('${item.key}', ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
-                    `;
-                    list.appendChild(row);
-                });
-            }
+                    return `
+                        <div class="border ${item.todo.done ? 'bg-slate-50 border-slate-200 opacity-65' : 'bg-white border-amber-200 shadow-2xs'} rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo('${item.key}', ${item.todoIdx})" class="w-4 h-4 rounded text-indigo-600">
+                                <div class="flex flex-col">
+                                    <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'}">${escapeHtml(item.todo.text)}</span>
+                                    <span class="text-[11px] text-slate-500 mt-0.5"><strong>${formatDateCH(item.isoDate)}</strong> (${item.slot.start || ''}) • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
+                                </div>
+                            </label>
+                            <button type="button" onclick="deleteGlobalTodo('${item.key}', ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
+                        </div>`;
+                }).join('');
 
-            if (transcriptEntries.length === 0) {
-                transcriptsList.innerHTML = `<div class="py-8 text-center text-xs text-slate-400 italic">Noch keine Sprachmemos aufgenommen.</div>`;
-            } else {
-                transcriptEntries.forEach(item => {
+            transcriptsList.innerHTML = transcriptEntries.length === 0
+                ? `<div class="py-8 text-center text-xs text-slate-400 italic">Noch keine Sprachmemos aufgenommen.</div>`
+                : transcriptEntries.map(item => {
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
-                    const card = document.createElement('div');
-                    card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 text-xs";
-                    card.innerHTML = `
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-[11px] font-bold text-slate-600">${formatDateCH(item.isoDate)} • ${item.clip.createdAt || ''}</span>
-                            <span class="px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span>
-                        </div>
-                        <div class="bg-white border border-slate-200/80 rounded-lg p-2.5 text-slate-800 leading-relaxed">
-                            ${item.clip.transcript ? escapeHtml(item.clip.transcript) : '<span class="italic text-slate-400">Ohne Text-Transkription</span>'}
-                        </div>
-                        ${item.clip.audioDataUrl ? `<audio controls src="${item.clip.audioDataUrl}" class="w-full h-7"></audio>` : ''}
-                    `;
-                    transcriptsList.appendChild(card);
-                });
-            }
+                    return `
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 text-xs">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[11px] font-bold text-slate-600">${formatDateCH(item.isoDate)} • ${item.clip.createdAt || ''}</span>
+                                <span class="px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span>
+                            </div>
+                            <div class="bg-white border border-slate-200/80 rounded-lg p-2.5 text-slate-800 leading-relaxed">${item.clip.transcript ? escapeHtml(item.clip.transcript) : '<span class="italic text-slate-400">Ohne Text-Transkription</span>'}</div>
+                            ${item.clip.audioDataUrl ? `<audio controls src="${item.clip.audioDataUrl}" class="w-full h-7"></audio>` : ''}
+                        </div>`;
+                }).join('');
         }
 
         function toggleGlobalTodo(lessonKey, todoIdx) {
@@ -1273,7 +2033,6 @@
                 renderNotesOverview();
             }
         }
-
         function deleteGlobalTodo(lessonKey, todoIdx) {
             if (lessonsStore[lessonKey]?.todos) {
                 lessonsStore[lessonKey].todos.splice(todoIdx, 1);
@@ -1282,110 +2041,6 @@
             }
         }
 
-        // --- KI-Tutor ---
-        function selectAiPhase(phaseLabel) {
-            selectedAiPhase = phaseLabel;
-            const btnE = document.getElementById('aiPhaseEinstieg');
-            const btnH = document.getElementById('aiPhaseHauptteil');
-            const btnS = document.getElementById('aiPhaseSchluss');
-            [btnE, btnH, btnS].forEach(b => b.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900");
-            if (phaseLabel.startsWith('Einstieg')) btnE.className = "px-2.5 py-1 rounded-md bg-indigo-600 text-white";
-            if (phaseLabel.startsWith('Hauptteil')) btnH.className = "px-2.5 py-1 rounded-md bg-indigo-600 text-white";
-            if (phaseLabel.startsWith('Schluss')) btnS.className = "px-2.5 py-1 rounded-md bg-indigo-600 text-white";
-        }
-
-        async function runLessonAiAssistant() {
-            const rawKey = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
-            const key = rawKey.trim().replace(/^["']|["']$/g, '');
-            if (!key) {
-                showToast("Bitte zuerst oben rechts unter Einstellungen deinen Gemini API-Key hinterlegen.");
-                openSettingsModal();
-                return;
-            }
-
-            const topic = document.getElementById('lessonAiPromptInput').value.trim() || document.getElementById('editLessonTitle').value.trim();
-            if (!topic) {
-                showToast("Bitte ein Thema oder Stichwort eingeben.");
-                return;
-            }
-
-            const slot = activeSlotMeta?.slot || { subject: "Fach", className: "Sek A" };
-            const style = getStyleForSlot(slot.subject, slot.className);
-            const unit = document.getElementById('editLessonUnit').value.trim();
-            const btn = document.getElementById('lessonAiRunBtn');
-            const resultBox = document.getElementById('lessonAiResultBox');
-            const resultText = document.getElementById('lessonAiResultText');
-            btn.innerText = "Denke nach...";
-            btn.disabled = true;
-
-            const prompt = `Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch.
-Aktuelles Fach: ${style.label} (${slot.className})${unit ? `, Einheit/Unit: ${unit}` : ''}.
-Gewünschte Unterrichtsphase: ${selectedAiPhase}.
-Thema / Auftrag: "${topic}".
-Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Keine Einleitung, kein Schlusswort.`;
-
-            let lastError = "Unbekannter Fehler";
-            let successReply = "";
-
-            try {
-                let modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-flash-latest"];
-                try {
-                    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
-                    const listData = await listRes.json();
-                    if (listRes.ok && Array.isArray(listData.models)) {
-                        const available = listData.models
-                            .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
-                            .map(m => m.name.replace(/^models\//, ""));
-                        if (available.length > 0) {
-                            const preferred = available.filter(n => n.includes("flash") || n.includes("pro"));
-                            modelsToTry = [...new Set([...preferred, ...available])];
-                        }
-                    } else if (listData?.error?.message) {
-                        lastError = listData.error.message;
-                    }
-                } catch (e) {}
-
-                for (const modelName of modelsToTry.slice(0, 5)) {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
-                    const data = await res.json();
-                    if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        successReply = data.candidates[0].content.parts[0].text.trim();
-                        break;
-                    } else if (data?.error?.message) {
-                        lastError = data.error.message;
-                    }
-                }
-
-                if (successReply) {
-                    resultText.innerText = successReply;
-                    resultBox.classList.remove('hidden');
-                } else {
-                    resultText.innerText = "⚠️ API-Rückmeldung: " + lastError + "\n\nHinweis: Prüfe unter aistudio.google.com/apikey, ob der Schlüssel aktiv ist.";
-                    resultBox.classList.remove('hidden');
-                }
-            } catch (e) {
-                resultText.innerText = "⚠️ Netzwerkfehler: " + e.message;
-                resultBox.classList.remove('hidden');
-            } finally {
-                btn.innerText = "Generieren";
-                btn.disabled = false;
-            }
-        }
-
-        function appendAiResultToLesson() {
-            const generated = document.getElementById('lessonAiResultText').innerText.trim();
-            if (!generated) return;
-            const notesEl = document.getElementById('editLessonNotes');
-            const phaseShort = selectedAiPhase.split(' ')[0];
-            notesEl.value = (notesEl.value ? notesEl.value + "\n\n" : "") + `${phaseShort}:\n${generated}`;
-            showToast("In Lektionsablauf übernommen!");
-        }
-
-        // --- Sprachmemo ---
         let mediaRecorder = null;
         let audioChunks = [];
         let speechRecognizer = null;
@@ -1395,7 +2050,6 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
             const startBtn = document.getElementById('startVoiceBtn');
             const stopBtn = document.getElementById('stopVoiceBtn');
             const liveBox = document.getElementById('voiceLivePreview');
-
             currentTranscript = "";
             liveBox.innerText = "Mikrofon aktiv – sprich jetzt...";
             liveBox.classList.remove('hidden');
@@ -1428,12 +2082,11 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                     const blob = new Blob(audioChunks, { type: 'audio/webm' });
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        const transcriptText = currentTranscript.trim();
                         tempAudioClips.push({
                             id: Date.now(),
                             createdAt: new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }),
                             audioDataUrl: reader.result,
-                            transcript: transcriptText
+                            transcript: currentTranscript.trim()
                         });
                         renderAudioClipsList();
                     };
@@ -1442,7 +2095,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                 };
                 mediaRecorder.start();
             } catch (err) {
-                showToast("Mikrofon-Zugriff im Browser bitte erlauben.");
+                showToast("Mikrofon-Zugriff bitte erlauben.");
                 stopVoiceMemo();
             }
         }
@@ -1457,24 +2110,17 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
 
         function renderAudioClipsList() {
             const list = document.getElementById('audioClipsList');
-            list.innerHTML = '';
-            tempAudioClips.forEach((clip, idx) => {
-                const row = document.createElement('div');
-                row.className = "bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5";
-                row.innerHTML = `
+            list.innerHTML = tempAudioClips.map((clip, idx) => `
+                <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[11px] font-bold text-slate-600">Memo (${clip.createdAt})</span>
-                        <audio controls src="${clip.audioDataUrl}" class="h-7 max-w-[230px]"></audio>
-                        <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 hover:underline text-[11px] font-bold">Löschen</button>
+                        <span class="text-[10.5px] font-bold text-slate-600">Memo (${clip.createdAt})</span>
+                        <audio controls src="${clip.audioDataUrl}" class="h-6 max-w-[160px]"></audio>
+                        <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 text-[10.5px] font-bold">✕</button>
                     </div>
-                    <div class="text-[11px] text-slate-700 bg-slate-50 p-1.5 rounded border border-slate-100">
-                        <strong>Transkription:</strong> ${clip.transcript ? escapeHtml(clip.transcript) : '<span class="italic text-slate-400">Keine Sprache erkannt</span>'}
-                    </div>
-                `;
-                list.appendChild(row);
-            });
+                    <div class="text-[10.5px] text-slate-700 bg-slate-50 p-1 rounded">${clip.transcript ? escapeHtml(clip.transcript) : '<span class="italic text-slate-400">Kein Text</span>'}</div>
+                </div>
+            `).join('');
         }
-
         function removeAudioClip(idx) {
             tempAudioClips.splice(idx, 1);
             renderAudioClipsList();
@@ -1513,26 +2159,15 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
             showToast(`Alle ${slot.subject} ${slot.className}-Lektionen um 1 Slot geschoben!`);
         }
 
-        // =========================================================================
-        // 7. FERIEN & SPEZIALTAGE REITER (DATEI- & URL-IMPORT)
-        // =========================================================================
         function renderSpecialDaysTable() {
             const tbody = document.getElementById('allSpecialDaysTbody');
             const sorted = [...calendarEvents].sort((a, b) => a.start.localeCompare(b.start));
             tbody.innerHTML = sorted.map(ev => `
                 <tr class="hover:bg-slate-50">
-                    <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">
-                        ${formatDateCH(ev.start)}${ev.end && ev.end !== ev.start ? ` – ${formatDateCH(ev.end)}` : ''}
-                    </td>
+                    <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">${formatDateCH(ev.start)}${ev.end && ev.end !== ev.start ? ` – ${formatDateCH(ev.end)}` : ''}</td>
                     <td class="py-2 px-3 font-semibold text-slate-900">${escapeHtml(ev.name)}</td>
-                    <td class="py-2 px-3">
-                        <span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold ${ev.type === 'holiday' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}">
-                            ${ev.type === 'holiday' ? 'Ferien / Schulfrei' : 'Spezialtag / Anlass'}
-                        </span>
-                    </td>
-                    <td class="py-2 px-3 text-right">
-                        <button type="button" onclick="deleteCalendarEvent('${ev.id}')" class="text-rose-600 hover:underline font-bold">Löschen</button>
-                    </td>
+                    <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold ${ev.type === 'holiday' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}">${ev.type === 'holiday' ? 'Ferien / Schulfrei' : 'Spezialtag / Anlass'}</span></td>
+                    <td class="py-2 px-3 text-right"><button type="button" onclick="deleteCalendarEvent('${ev.id}')" class="text-rose-600 hover:underline font-bold">Löschen</button></td>
                 </tr>
             `).join('');
         }
@@ -1542,16 +2177,12 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
             const start = document.getElementById('newEventStart').value;
             const end = document.getElementById('newEventEnd').value || start;
             const name = document.getElementById('newEventName').value.trim();
-
-            if (!start || !name) {
-                showToast("Bitte Datum und Bezeichnung eingeben.");
-                return;
-            }
+            if (!start || !name) return;
             calendarEvents.push({ id: `ev-${Date.now()}`, type, name, start, end });
             document.getElementById('newEventName').value = "";
             renderSpecialDaysTable();
             saveAllState();
-            showToast("Termin eingetragen – erscheint automatisch im Tagesfeld!");
+            showToast("Termin hinzugefügt!");
         }
 
         function deleteCalendarEvent(id) {
@@ -1564,7 +2195,6 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
             const found = [];
             const lines = rawText.split(/\r?\n/);
             const dateRegex = /(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s*(?:-|–|bis)\s*(\d{1,2})\.(\d{1,2})\.(\d{4}))?/;
-
             lines.forEach(line => {
                 const clean = line.trim();
                 if (clean.length < 10) return;
@@ -1574,250 +2204,12 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                     const endISO = m[4] ? `${m[6]}-${m[5].padStart(2, '0')}-${m[4].padStart(2, '0')}` : startISO;
                     const title = clean.replace(dateRegex, '').replace(/^[:\-–\s]+|[:\-–\s]+$/g, '').trim() || "Schulanlass / Termin";
                     const isHol = /ferien|auffahrt|pfingst|knabenschiessen|sechseläuten|schulfrei/i.test(title);
-                    found.push({
-                        id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                        type: isHol ? 'holiday' : 'special',
-                        name: title.slice(0, 80),
-                        start: startISO,
-                        end: endISO
-                    });
+                    found.push({ id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type: isHol ? 'holiday' : 'special', name: title.slice(0, 80), start: startISO, end: endISO });
                 }
             });
             return found;
         }
 
-        async function handleSpecialDaysFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            let text = "";
-            try {
-                if (file.name.endsWith('.docx') && window.mammoth) {
-                    const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-                    text = res.value;
-                } else if (file.name.endsWith('.pdf') && window.pdfjsLib) {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        text += content.items.map(it => it.str).join(" ") + "\n";
-                    }
-                } else if ((file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) && window.XLSX) {
-                    const wb = XLSX.read(await file.arrayBuffer());
-                    text = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
-                } else {
-                    text = await file.text();
-                }
-
-                const extracted = parseSwissDatesFromText(text);
-                if (extracted.length > 0) {
-                    calendarEvents.push(...extracted);
-                    renderSpecialDaysTable();
-                    saveAllState();
-                    showToast(`${extracted.length} Termine aus ${file.name} übernommen!`);
-                } else {
-                    showToast("Keine Datumsangaben (TT.MM.JJJJ) im Dokument gefunden.");
-                }
-            } catch (e) {
-                showToast("Fehler beim Lesen der Datei: " + e.message);
-            }
-        }
-
-        async function fetchSpecialDaysFromUrl() {
-            const url = document.getElementById('specialDaysWebsiteUrl').value.trim();
-            if (!url) return;
-            const btn = document.getElementById('fetchWebEventsBtn');
-            btn.innerText = "Lese...";
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-                const json = await res.json();
-                if (json && json.contents) {
-                    const tmpDiv = document.createElement('div');
-                    tmpDiv.innerHTML = json.contents;
-                    const plainText = tmpDiv.innerText || tmpDiv.textContent || "";
-                    const extracted = parseSwissDatesFromText(plainText);
-                    if (extracted.length > 0) {
-                        calendarEvents.push(...extracted);
-                        renderSpecialDaysTable();
-                        saveAllState();
-                        showToast(`${extracted.length} Termine von Website übernommen!`);
-                    } else {
-                        showToast("Auf dieser Unterseite wurden keine direkten Datumszeilen (TT.MM.JJJJ) gefunden – bitte Unterseite mit Jahresprogramm verlinken.");
-                    }
-                }
-            } catch (e) {
-                showToast("Website konnte nicht direkt abgerufen werden.");
-            } finally {
-                btn.innerText = "Einlesen";
-                btn.disabled = false;
-            }
-        }
-
-        // =========================================================================
-        // 8. SEQUENZ-IMPORT MIT KONTROLLTABELLE
-        // =========================================================================
-        function openSequenceModal() {
-            const select = document.getElementById('seqTargetCourse');
-            const uniqueCourses = Array.from(new Set(weeklyTemplate.map(s => `${s.subject}|${s.className}`)));
-            select.innerHTML = uniqueCourses.map(c => {
-                const [subj, cls] = c.split('|');
-                const st = getStyleForSlot(subj, cls);
-                return `<option value="${c}">${st.label} (${cls})</option>`;
-            }).join('');
-
-            document.getElementById('seqStartDate').value = formatDateISO(currentMonday);
-            document.getElementById('sequenceModal').classList.remove('hidden');
-            buildSequencePreviewTable();
-            refreshIcons();
-        }
-        function closeSequenceModal() {
-            document.getElementById('sequenceModal').classList.add('hidden');
-        }
-
-        async function handleSequenceDocUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const textarea = document.getElementById('seqBlocksTextarea');
-            try {
-                if (file.name.endsWith('.docx') && window.mammoth) {
-                    const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-                    textarea.value = result.value.trim();
-                } else if (file.name.endsWith('.pdf') && window.pdfjsLib) {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-                    let text = "";
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        text += content.items.map(it => it.str).join(" ") + "\n\n";
-                    }
-                    textarea.value = text.trim();
-                } else if ((file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) && window.XLSX) {
-                    const wb = XLSX.read(await file.arrayBuffer());
-                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                    textarea.value = rows.filter(r => r.length > 0).map(r => r.join('\n')).join('\n\n');
-                } else {
-                    textarea.value = await file.text();
-                }
-                buildSequencePreviewTable();
-            } catch (e) {
-                showToast("Datei konnte nicht gelesen werden.");
-            }
-        }
-
-        function parseSequenceBlocks(rawText) {
-            const trimmed = rawText.trim();
-            if (!trimmed) return [];
-            if (/^Lektion\s+\d+/im.test(trimmed)) return trimmed.split(/(?=^Lektion\s+\d+)/im).map(b => b.trim()).filter(Boolean);
-            return trimmed.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
-        }
-
-        function buildSequencePreviewTable() {
-            const tbody = document.getElementById('sequencePreviewTbody');
-            const courseVal = document.getElementById('seqTargetCourse').value;
-            const startDateStr = document.getElementById('seqStartDate').value;
-            const blocks = parseSequenceBlocks(document.getElementById('seqBlocksTextarea').value);
-
-            if (!courseVal || !startDateStr || blocks.length === 0) {
-                previewRowsData = [];
-                tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400 italic">Oben Datei hochladen oder Text einfügen, um die Kontrolltabelle zu sehen.</td></tr>`;
-                return;
-            }
-
-            const [targetSubject, targetClass] = courseVal.split('|');
-            const startMonday = getMonday(new Date(startDateStr));
-            const matchingSlots = [];
-
-            for (let w = 0; w < 30 && matchingSlots.length < blocks.length; w++) {
-                const mon = new Date(startMonday);
-                mon.setDate(startMonday.getDate() + w * 7);
-                weeklyTemplate
-                    .filter(s => s.subject === targetSubject && s.className === targetClass)
-                    .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
-                    .forEach(s => {
-                        if (matchingSlots.length >= blocks.length) return;
-                        const d = new Date(mon);
-                        d.setDate(mon.getDate() + s.day);
-                        const iso = formatDateISO(d);
-                        if (iso >= startDateStr && !isHolidayDate(iso)) {
-                            matchingSlots.push({ iso, slot: s, key: `${iso}_${s.id}` });
-                        }
-                    });
-            }
-
-            const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
-            previewRowsData = blocks.map((block, idx) => {
-                const target = matchingSlots[idx];
-                const existing = target ? lessonsStore[target.key] : null;
-                const hasExisting = existing && (existing.title || existing.notes);
-                return { idx, block, target, existing, hasExisting, action: hasExisting ? 'append' : 'replace' };
-            });
-
-            tbody.innerHTML = previewRowsData.map((row, i) => {
-                if (!row.target) return '';
-                const existingSummary = row.hasExisting
-                    ? `<div class="bg-amber-50 border border-amber-200 rounded p-1.5 text-amber-950"><strong>${escapeHtml(row.existing.title || '')}</strong><br><span class="text-[10.5px] line-clamp-2">${escapeHtml(row.existing.notes || '')}</span></div>`
-                    : `<span class="text-slate-400 italic">Leer (frei)</span>`;
-                return `
-                    <tr class="${row.hasExisting ? 'bg-amber-50/30' : 'bg-white'}">
-                        <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">${dayShort[row.target.slot.day]}, ${formatDateCH(row.target.iso)}<br><span class="text-[10.5px] font-normal text-slate-500">${row.target.slot.start} – ${row.target.slot.end}</span></td>
-                        <td class="py-2 px-3 max-w-[220px]">${existingSummary}</td>
-                        <td class="py-2 px-3 max-w-[260px]"><div class="line-clamp-3 text-slate-700 whitespace-pre-line">${escapeHtml(row.block)}</div></td>
-                        <td class="py-2 px-3">
-                            <select onchange="previewRowsData[${i}].action = this.value" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-bold text-[11px] ${row.hasExisting ? 'text-amber-900 border-amber-400' : 'text-emerald-800'}">
-                                <option value="append" ${row.action === 'append' ? 'selected' : ''}>Hinzufügen</option>
-                                <option value="replace" ${row.action === 'replace' ? 'selected' : ''}>Ersetzen</option>
-                                <option value="skip" ${row.action === 'skip' ? 'selected' : ''}>Überspringen</option>
-                            </select>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function setAllPreviewModes(mode) {
-            previewRowsData.forEach(r => r.action = (mode === 'skip' && !r.hasExisting) ? 'replace' : mode);
-            document.querySelectorAll('#sequencePreviewTbody select').forEach((sel, idx) => {
-                if (previewRowsData[idx]) sel.value = previewRowsData[idx].action;
-            });
-        }
-
-        function confirmAndApplySequence() {
-            if (previewRowsData.length === 0) return;
-            const unitTitle = document.getElementById('seqUnitTitle').value.trim();
-            let appliedCount = 0;
-
-            previewRowsData.forEach(row => {
-                if (!row.target || row.action === 'skip') return;
-                const lines = row.block.split('\n');
-                const newTitle = lines[0];
-                const newNotes = lines.slice(1).join('\n') || lines[0];
-                const existing = lessonsStore[row.target.key] || { homeworkDueToday: "", unit: "", title: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
-
-                if (row.action === 'append' && row.hasExisting) {
-                    lessonsStore[row.target.key] = {
-                        ...existing,
-                        unit: existing.unit || unitTitle,
-                        title: existing.title ? `${existing.title} / ${newTitle}` : newTitle,
-                        notes: `${existing.notes}\n---\n${row.block}`.trim()
-                    };
-                } else {
-                    lessonsStore[row.target.key] = { ...existing, unit: unitTitle || existing.unit, title: newTitle, notes: newNotes };
-                }
-                appliedCount++;
-            });
-
-            closeSequenceModal();
-            renderCalendar();
-            saveAllState();
-            showToast(`${appliedCount} Lektionen übernommen!`);
-        }
-
-        // =========================================================================
-        // 9. MANUELLER STUNDENPLAN & EINSTELLUNGEN
-        // =========================================================================
         function openScheduleEditorModal() {
             renderManualScheduleEditor();
             document.getElementById('scheduleEditorModal').classList.remove('hidden');
@@ -1869,6 +2261,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         function openSettingsModal() {
             document.getElementById('settingsGeminiKeyInput').value = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey;
             document.getElementById('privateSyncKeyInput').value = privateSyncKey;
+            document.getElementById('apiTestStatusBox').classList.add('hidden');
             document.getElementById('settingsModal').classList.remove('hidden');
             refreshIcons();
         }
