@@ -103,21 +103,25 @@
                 <button type="button" id="viewBtnDay" onclick="setViewMode('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
             </div>
 
+            <!-- DATEI HOCHLADEN / SEQUENZ & LEHRMITTEL -->
             <button type="button" onclick="openUniversalImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
                 <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
                 <span>Datei / Sequenz</span>
             </button>
 
+            <!-- Stundenplan -->
             <button type="button" onclick="openScheduleEditorModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors">
                 <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-slate-500"></i>
                 <span>Stundenplan</span>
             </button>
 
+            <!-- KI-Chat Sidebar Ein-/Ausklappen -->
             <button type="button" id="toggleAiSidebarBtn" onclick="toggleAiSidebar()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
                 <i data-lucide="panel-right" class="w-3.5 h-3.5"></i>
                 <span>KI-Chat</span>
             </button>
 
+            <!-- Einstellungen & API-Check -->
             <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="API-Key testen, Backup & Zürich Sync">
                 <span id="syncLed" class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
@@ -129,6 +133,8 @@
     <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS       -->
     <!-- ===================================================================== -->
     <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
+
+        <!-- ANSICHT 1: WOCHENRASTER (5 SPALTEN MO–FR NEBENEINANDER) -->
         <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
             <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1080px]"></div>
         </main>
@@ -151,17 +157,20 @@
                 </div>
             </div>
 
+            <!-- Chat-Verlauf -->
             <div id="generalChatMessages" class="flex-1 p-3.5 overflow-y-auto custom-scroll flex flex-col gap-2.5 bg-slate-50/70">
                 <div class="bg-white border border-slate-200 rounded-xl p-3 text-slate-700 leading-relaxed">
                     Hallo! Frag mich nach Unterrichtsideen, Einstiegen, Differenzierungen für Niveau A oder Formulierungshilfen (D, Mu, GS, GG, MI, E). Jede Antwort kannst du direkt in eine Lektion übernehmen.
                 </div>
             </div>
 
+            <!-- Ziel-Lektion Auswahl zum direkten Einfügen -->
             <div class="px-3.5 py-2 bg-purple-50 border-t border-purple-100 flex flex-col gap-1">
                 <span class="font-bold text-purple-950 text-[10.5px]">Ziel-Lektion für Übernahme:</span>
                 <select id="generalChatTargetLesson" class="w-full bg-white border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800"></select>
             </div>
 
+            <!-- Eingabezeile -->
             <div class="p-3 bg-white border-t border-slate-200 flex gap-1.5">
                 <input type="text" id="generalChatInput" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGeneralAiChat();}" placeholder="Schnell etwas fragen oder erstellen..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">
                 <button type="button" id="generalChatSendBtn" onclick="sendGeneralAiChat()" class="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold shrink-0">
@@ -215,6 +224,7 @@
                 </p>
             </div>
 
+            <!-- KI-Chat für Ferien & Spezialtage -->
             <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 flex flex-col gap-2.5">
                 <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
                     <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
@@ -236,6 +246,7 @@
                 </div>
             </div>
 
+            <!-- Manuelle Eingabe -->
             <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-wrap items-end gap-2.5">
                 <div>
                     <label class="block font-bold text-amber-950 mb-1">Typ</label>
@@ -293,6 +304,7 @@
             </div>
 
             <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
+                <!-- 1. HAUSAUFGABE AUF HEUTE (GANZ OBEN) -->
                 <div class="bg-sky-100/80 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
                     <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
                         <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
@@ -301,6 +313,7 @@
                     <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
 
+                <!-- 2. GEFÄSS (Z.B. LITERATUR / SCHREIBEN), UNIT & STUNDENTHEMA -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div class="sm:col-span-3">
                         <label class="block font-bold text-slate-600 mb-1">Gefäss / Schwerpunkt</label>
@@ -316,7 +329,7 @@
                     </div>
                 </div>
 
-                <!-- DIREKTER KI-TUTOR MIT KONTROLLFENSTER -->
+                <!-- 3. DIREKTER KI-TUTOR MIT KONTROLLFENSTER -->
                 <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2.5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
@@ -353,7 +366,7 @@
                     </div>
                 </div>
 
-                <!-- 3 PHASEN -->
+                <!-- 4. LEKTIONSABLAUF UNTERTEILT IN EINSTIEG / HAUPTTEIL / SCHLUSS -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
                         <label class="font-extrabold text-indigo-900 flex items-center justify-between">
@@ -378,24 +391,28 @@
                     </div>
                 </div>
 
-                <!-- HAUSAUFGABEN -->
+                <!-- 5. HAUSAUFGABEN FÜRS NÄCHSTE MAL (ALLE LEKTIONEN DESSELBEN FACHS DER NÄCHSTEN 4 WOCHEN) -->
                 <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 flex flex-col gap-2">
-                    <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
-                        <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
-                        <span>Hausaufgaben fürs nächste Mal (alle Lektionen desselben Fachs der nächsten Wochen)</span>
-                    </label>
+                    <div class="flex flex-wrap items-center justify-between gap-1">
+                        <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
+                            <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
+                            <span>Hausaufgaben fürs nächste Mal (alle Lektionen desselben Fachs der nächsten Wochen)</span>
+                        </label>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <input type="text" id="editLessonHomework" oninput="updateParallelPreview()" placeholder="z. B. S. 24 Nr. 1–3 fertig lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                         <select id="homeworkTargetLessonSelect" class="sm:col-span-5 bg-white border border-sky-200 rounded-lg px-2.5 py-2 font-bold text-sky-950"></select>
                     </div>
                 </div>
 
-                <!-- PARALLELE KLASSE -->
+                <!-- 6. PARALLELE KLASSE ÜBERTRAGEN (NUR DASSELBE FACH DER NÄCHSTEN 2 WOCHEN + LIVE-VORSCHAU) -->
                 <div class="bg-purple-50/80 border border-purple-200 rounded-xl p-3.5 flex flex-col gap-2.5">
-                    <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
-                        <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
-                        <span>Auf parallele Klasse übertragen (nur dasselbe Fach • nächste 2 Wochen)</span>
-                    </span>
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
+                            <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
+                            <span>Auf parallele Klasse übertragen (nur dasselbe Fach • nächste 2 Wochen)</span>
+                        </span>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <select id="parallelTargetLessonSelect" onchange="updateParallelPreview()" class="sm:col-span-6 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-purple-950"></select>
                         <select id="parallelSyncModeSelect" onchange="updateParallelPreview()" class="sm:col-span-4 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
@@ -419,7 +436,7 @@
                     </div>
                 </div>
 
-                <!-- NOTIZEN & SPRACHMEMO -->
+                <!-- 7. NOTIZEN / PENDENZEN & SPRACHMEMO -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
                         <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
@@ -449,6 +466,7 @@
                     </div>
                 </div>
 
+                <!-- 8. GOOGLE DRIVE / LEHRMITTEL-LINKS -->
                 <div>
                     <label class="block font-bold text-slate-600 mb-1">Google Drive / Lehrmittel-Link</label>
                     <input type="url" id="editLessonLink" placeholder="https://drive.google.com/..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -457,7 +475,7 @@
 
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
+                    <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors" title="Schiebt nur Lektionen desselben Fachs und Gefässes um 1 Slot nach hinten">
                         <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
                         <span id="bumpBtnLabel">+1 Lektion schieben</span>
                     </button>
@@ -515,6 +533,7 @@
                         <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
 
+                    <!-- Steuerfelder: Jede Änderung aktualisiert sofort die Kontrolltabelle unten -->
                     <div id="importOptionsSequence" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200/80">
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Ziel-Fach, Klasse &amp; Gefäss</label>
@@ -549,6 +568,7 @@
                     </div>
                 </div>
 
+                <!-- Live-Kontrolltabelle -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (passt sich bei Datums-/Fachwechsel oben sofort an):</span>
@@ -652,7 +672,7 @@
             <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2">
                 <label class="font-extrabold text-indigo-950">Google Gemini API-Key (aistudio.google.com/apikey)</label>
                 <div class="flex gap-2">
-                    <input type="password" id="settingsGeminiKeyInput" placeholder="AQ.... oder AIzaSy..." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+                    <input type="password" id="settingsGeminiKeyInput" placeholder="AIzaSy... oder AQ...." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
                     <button type="button" id="testApiBtn" onclick="testGeminiApiConnection()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
                         API testen
                     </button>
@@ -702,57 +722,59 @@
         }
 
         // =========================================================================
-        // 1. ZENTRALE GEMINI API-FUNKTION (OHNE 1.5-FLASH, MIT LIVE-MODELL-CHECK)
+        // 1. ZENTRALE GEMINI API-FUNKTION (AKTUELLE 2026-MODELLE & LIVE-DISCOVERY)
         // =========================================================================
-        const TEACHER_CONTEXT = "Rolle: Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung (Sekundarstufe I, Niveau A, Lehrplan 21, Fächer: Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch).";
+        const TEACHER_SYSTEM_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch. Du kennst den Lehrplan 21 des Kantons Zürich und antwortest praxisnah, direkt umsetzbar und ohne unnötige Floskeln.";
 
         async function callGeminiUnified(userPrompt, conversationHistory = null) {
             const rawKey = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
             const key = rawKey.trim().replace(/^["']|["']$/g, '');
             if (!key) {
-                throw new Error("Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Schlüssel eingeben.");
+                throw new Error("Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Gemini-Schlüssel eingeben.");
             }
 
             let contents;
             if (conversationHistory && conversationHistory.length > 0) {
                 contents = conversationHistory.map((item, idx) => {
                     if (idx === 0 && item.role === "user") {
-                        return { role: "user", parts: [{ text: `${TEACHER_CONTEXT}\n\n${item.parts[0].text}` }] };
+                        return { role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${item.parts[0].text}` }] };
                     }
                     return item;
                 });
             } else {
-                contents = [{ role: "user", parts: [{ text: `${TEACHER_CONTEXT}\n\n${userPrompt}` }] }];
+                contents = [{ role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${userPrompt}` }] }];
             }
 
             const payload = { contents };
+            let errorDetails = [];
 
-            // 1. Aktive Modelle für diesen API-Key abfragen (filtert abgeschaltete 1.5-Modelle aus)
-            let modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-2.0-flash"];
-            let errorLog = [];
-
+            // Schritt 1: Aktive Modelle über ListModels direkt für diesen Key abfragen
+            let modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-flash-latest"];
             try {
-                const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
+                const listRes = await fetch(listUrl, {
+                    headers: { 'x-goog-api-key': key }
+                });
                 const listData = await listRes.json();
                 if (listRes.ok && Array.isArray(listData.models)) {
                     const available = listData.models
                         .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
                         .map(m => m.name.replace(/^models\//, ""))
-                        .filter(n => !n.includes("1.5") && !n.includes("embedding") && !n.includes("imagen") && !n.includes("veo"));
+                        .filter(n => !n.includes("1.5") && !n.includes("embedding") && !n.includes("imagen") && !n.includes("veo") && !n.includes("tts") && !n.includes("robotics"));
                     if (available.length > 0) {
-                        const flashFirst = available.filter(n => n.includes("flash"));
-                        const proNext = available.filter(n => n.includes("pro"));
-                        modelsToTry = [...new Set([...flashFirst, ...proNext, ...available])];
+                        const flashModels = available.filter(n => n.includes("flash"));
+                        const proModels = available.filter(n => n.includes("pro"));
+                        modelsToTry = [...new Set([...flashModels, ...proModels, ...available])];
                     }
                 } else if (listData?.error?.message) {
-                    errorLog.push(`ListModels: ${listData.error.message}`);
+                    errorDetails.push(`Schlüsselprüfung: ${listData.error.message}`);
                 }
             } catch (e) {
-                errorLog.push(`Netzwerk (ListModels): ${e.message}`);
+                errorDetails.push(`Verbindung: ${e.message}`);
             }
 
-            // 2. Modelle testen (sowohl ?key= als auch x-goog-api-key Header)
-            for (const modelName of modelsToTry.slice(0, 5)) {
+            // Schritt 2: Gefundene aktive Modelle der Reihe nach testen
+            for (const modelName of modelsToTry.slice(0, 6)) {
                 try {
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
                     const res = await fetch(url, {
@@ -768,19 +790,22 @@
                         return data.candidates[0].content.parts[0].text.trim();
                     }
                     if (data?.error?.message) {
-                        errorLog.push(`${modelName}: ${data.error.message}`);
+                        errorDetails.push(`[${modelName}] ${data.error.message}`);
                     }
                 } catch (e) {
-                    errorLog.push(`${modelName}: ${e.message}`);
+                    errorDetails.push(`[${modelName}] ${e.message}`);
                 }
             }
 
-            throw new Error(errorLog.length > 0 ? errorLog.join("\n") : "Keine Antwort von der Gemini API erhalten.");
+            throw new Error(errorDetails.length > 0 ? errorDetails.join("\n") : "Keine Antwort von der Gemini API.");
         }
 
         async function testGeminiApiConnection() {
             const inputVal = document.getElementById('settingsGeminiKeyInput').value.trim();
-            if (!inputVal) return;
+            if (!inputVal) {
+                showToast("Bitte zuerst einen API-Key eingeben.");
+                return;
+            }
             geminiApiKey = inputVal;
             localStorage.setItem('sekPlaner_geminiKey', inputVal);
 
@@ -793,12 +818,12 @@
             statusBox.innerText = "Verbinde mit Google Gemini API...";
 
             try {
-                const reply = await callGeminiUnified("Antworte nur mit: Verbindung erfolgreich!");
+                const reply = await callGeminiUnified("Antworte exakt mit einem Satz: Verbindung als Sek-A-Tutor erfolgreich!");
                 statusBox.className = "rounded-lg p-2.5 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
                 statusBox.innerText = "✅ " + reply;
             } catch (err) {
                 statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-rose-50 text-rose-900 border border-rose-200 whitespace-pre-line";
-                statusBox.innerText = "❌ Detail-Diagnose:\n" + err.message;
+                statusBox.innerText = "❌ Diagnose:\n" + err.message;
             } finally {
                 btn.innerText = "API testen";
                 btn.disabled = false;
