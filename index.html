@@ -6,41 +6,25 @@
     <title>Wochenplaner Sek A (ZH) – Unterrichtscockpit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Mammoth.js für Word (.docx) Import -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-    <!-- SheetJS für Excel (.xls/.xlsx/.csv) Import -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- PDF.js für PDF-Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- Firebase SDKs (Serverstandort Zürich europe-west6) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-
-        .lesson-card-body {
-            display: -webkit-box;
-            -webkit-line-clamp: 6;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        .lesson-card-body { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-
-        @keyframes pulseRec {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.45; transform: scale(1.15); }
-        }
+        @keyframes pulseRec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.15); } }
         .recording-dot { animation: pulseRec 1.1s infinite; }
     </style>
 </head>
 <body class="bg-[#F4F6FA] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
-    <!-- ===================================================================== -->
-    <!-- TOP HEADER                                                            -->
-    <!-- ===================================================================== -->
+    <!-- TOP HEADER -->
     <header class="w-full bg-white border-b border-slate-200/90 py-2.5 px-4 md:px-6 flex flex-wrap justify-between items-center gap-3 sticky top-0 z-30 shadow-2xs">
         <div class="flex items-center flex-wrap gap-2">
             <div class="flex items-center gap-2 mr-1">
@@ -50,7 +34,6 @@
                 <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden sm:inline">Planboard Sek A</span>
             </div>
 
-            <!-- Schuljahr Dropdown -->
             <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1 text-xs font-extrabold text-indigo-950">
                 <span class="text-[10.5px] text-indigo-700 font-bold">SJ:</span>
                 <select id="schoolYearSelect" onchange="switchSchoolYear(this.value)" class="bg-transparent font-extrabold text-indigo-950 focus:outline-none cursor-pointer">
@@ -80,7 +63,6 @@
             </div>
         </div>
 
-        <!-- Rechts: Reiter + Import + Stundenplan + KI-Sidebar Toggle + Settings -->
         <div class="flex items-center flex-wrap gap-2">
             <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
                 <button type="button" id="mainTabPlan" onclick="switchMainTab('plan')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-2xs flex items-center gap-1.5">
@@ -103,25 +85,21 @@
                 <button type="button" id="viewBtnDay" onclick="setViewMode('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
             </div>
 
-            <!-- DATEI HOCHLADEN / SEQUENZ & LEHRMITTEL -->
             <button type="button" onclick="openUniversalImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
                 <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
                 <span>Datei / Sequenz</span>
             </button>
 
-            <!-- Stundenplan -->
             <button type="button" onclick="openScheduleEditorModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors">
                 <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-slate-500"></i>
                 <span>Stundenplan</span>
             </button>
 
-            <!-- KI-Chat Sidebar Ein-/Ausklappen -->
             <button type="button" id="toggleAiSidebarBtn" onclick="toggleAiSidebar()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
                 <i data-lucide="panel-right" class="w-3.5 h-3.5"></i>
                 <span>KI-Chat</span>
             </button>
 
-            <!-- Einstellungen & API-Check -->
             <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="API-Key testen, Backup & Zürich Sync">
                 <span id="syncLed" class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
@@ -129,17 +107,12 @@
         </div>
     </header>
 
-    <!-- ===================================================================== -->
-    <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS       -->
-    <!-- ===================================================================== -->
+    <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS -->
     <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
-
-        <!-- ANSICHT 1: WOCHENRASTER (5 SPALTEN MO–FR NEBENEINANDER) -->
         <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
             <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1080px]"></div>
         </main>
 
-        <!-- RECHTE EIN- UND AUSKLAPPBARE KI-CHAT-SEITENLEISTE -->
         <aside id="aiRightSidebar" class="hidden w-full sm:w-[370px] shrink-0 bg-white border-l border-slate-200 flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-20 shadow-lg text-xs">
             <div class="px-4 py-3 bg-purple-700 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -157,20 +130,17 @@
                 </div>
             </div>
 
-            <!-- Chat-Verlauf -->
             <div id="generalChatMessages" class="flex-1 p-3.5 overflow-y-auto custom-scroll flex flex-col gap-2.5 bg-slate-50/70">
                 <div class="bg-white border border-slate-200 rounded-xl p-3 text-slate-700 leading-relaxed">
                     Hallo! Frag mich nach Unterrichtsideen, Einstiegen, Differenzierungen für Niveau A oder Formulierungshilfen (D, Mu, GS, GG, MI, E). Jede Antwort kannst du direkt in eine Lektion übernehmen.
                 </div>
             </div>
 
-            <!-- Ziel-Lektion Auswahl zum direkten Einfügen -->
             <div class="px-3.5 py-2 bg-purple-50 border-t border-purple-100 flex flex-col gap-1">
                 <span class="font-bold text-purple-950 text-[10.5px]">Ziel-Lektion für Übernahme:</span>
                 <select id="generalChatTargetLesson" class="w-full bg-white border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800"></select>
             </div>
 
-            <!-- Eingabezeile -->
             <div class="p-3 bg-white border-t border-slate-200 flex gap-1.5">
                 <input type="text" id="generalChatInput" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGeneralAiChat();}" placeholder="Schnell etwas fragen oder erstellen..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">
                 <button type="button" id="generalChatSendBtn" onclick="sendGeneralAiChat()" class="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold shrink-0">
@@ -180,9 +150,7 @@
         </aside>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- ANSICHT 2: SEPARATER NOTIZ- & SPRACHMEMO-TRANSKRIPTIONSREITER         -->
-    <!-- ===================================================================== -->
+    <!-- ANSICHT 2: NOTIZEN & MEMOS -->
     <section id="notesViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             <div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
@@ -212,9 +180,7 @@
         </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- ANSICHT 3: FERIEN, FEIERTAGE & SPEZIALTAGE (MIT KI-CHAT-EINGABE)      -->
-    <!-- ===================================================================== -->
+    <!-- ANSICHT 3: FERIEN & SPEZIALTAGE -->
     <section id="holidaysViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
         <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-5 text-xs">
             <div class="border-b border-slate-100 pb-3">
@@ -224,7 +190,6 @@
                 </p>
             </div>
 
-            <!-- KI-Chat für Ferien & Spezialtage -->
             <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 flex flex-col gap-2.5">
                 <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
                     <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
@@ -246,7 +211,6 @@
                 </div>
             </div>
 
-            <!-- Manuelle Eingabe -->
             <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-wrap items-end gap-2.5">
                 <div>
                     <label class="block font-bold text-amber-950 mb-1">Typ</label>
@@ -288,9 +252,7 @@
         </div>
     </section>
 
-    <!-- ===================================================================== -->
-    <!-- MODAL 1: LEKTIONS-EDITOR (MIT GEFÄSS, 3 PHASEN, KI, HA, PARALLEL)     -->
-    <!-- ===================================================================== -->
+    <!-- MODAL 1: LEKTIONS-EDITOR -->
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             <div id="modalHeaderBar" class="px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
@@ -304,7 +266,6 @@
             </div>
 
             <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
-                <!-- 1. HAUSAUFGABE AUF HEUTE (GANZ OBEN) -->
                 <div class="bg-sky-100/80 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
                     <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
                         <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
@@ -313,7 +274,6 @@
                     <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
 
-                <!-- 2. GEFÄSS (Z.B. LITERATUR / SCHREIBEN), UNIT & STUNDENTHEMA -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div class="sm:col-span-3">
                         <label class="block font-bold text-slate-600 mb-1">Gefäss / Schwerpunkt</label>
@@ -329,7 +289,7 @@
                     </div>
                 </div>
 
-                <!-- 3. DIREKTER KI-TUTOR MIT KONTROLLFENSTER -->
+                <!-- DIREKTER KI-TUTOR MIT KONTROLLFENSTER -->
                 <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2.5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
@@ -366,7 +326,7 @@
                     </div>
                 </div>
 
-                <!-- 4. LEKTIONSABLAUF UNTERTEILT IN EINSTIEG / HAUPTTEIL / SCHLUSS -->
+                <!-- 3 PHASEN -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
                         <label class="font-extrabold text-indigo-900 flex items-center justify-between">
@@ -391,28 +351,24 @@
                     </div>
                 </div>
 
-                <!-- 5. HAUSAUFGABEN FÜRS NÄCHSTE MAL (ALLE LEKTIONEN DESSELBEN FACHS DER NÄCHSTEN 4 WOCHEN) -->
+                <!-- HAUSAUFGABEN -->
                 <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 flex flex-col gap-2">
-                    <div class="flex flex-wrap items-center justify-between gap-1">
-                        <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
-                            <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
-                            <span>Hausaufgaben fürs nächste Mal (alle Lektionen desselben Fachs der nächsten Wochen)</span>
-                        </label>
-                    </div>
+                    <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
+                        <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
+                        <span>Hausaufgaben fürs nächste Mal (alle Lektionen desselben Fachs der nächsten Wochen)</span>
+                    </label>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <input type="text" id="editLessonHomework" oninput="updateParallelPreview()" placeholder="z. B. S. 24 Nr. 1–3 fertig lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                         <select id="homeworkTargetLessonSelect" class="sm:col-span-5 bg-white border border-sky-200 rounded-lg px-2.5 py-2 font-bold text-sky-950"></select>
                     </div>
                 </div>
 
-                <!-- 6. PARALLELE KLASSE ÜBERTRAGEN (NUR DASSELBE FACH DER NÄCHSTEN 2 WOCHEN + LIVE-VORSCHAU) -->
+                <!-- PARALLELE KLASSE -->
                 <div class="bg-purple-50/80 border border-purple-200 rounded-xl p-3.5 flex flex-col gap-2.5">
-                    <div class="flex items-center justify-between">
-                        <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
-                            <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
-                            <span>Auf parallele Klasse übertragen (nur dasselbe Fach • nächste 2 Wochen)</span>
-                        </span>
-                    </div>
+                    <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
+                        <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
+                        <span>Auf parallele Klasse übertragen (nur dasselbe Fach • nächste 2 Wochen)</span>
+                    </span>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <select id="parallelTargetLessonSelect" onchange="updateParallelPreview()" class="sm:col-span-6 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-purple-950"></select>
                         <select id="parallelSyncModeSelect" onchange="updateParallelPreview()" class="sm:col-span-4 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
@@ -436,7 +392,7 @@
                     </div>
                 </div>
 
-                <!-- 7. NOTIZEN / PENDENZEN & SPRACHMEMO -->
+                <!-- NOTIZEN & SPRACHMEMO -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
                         <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
@@ -466,7 +422,6 @@
                     </div>
                 </div>
 
-                <!-- 8. GOOGLE DRIVE / LEHRMITTEL-LINKS -->
                 <div>
                     <label class="block font-bold text-slate-600 mb-1">Google Drive / Lehrmittel-Link</label>
                     <input type="url" id="editLessonLink" placeholder="https://drive.google.com/..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -475,7 +430,7 @@
 
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors" title="Schiebt nur Lektionen desselben Fachs und Gefässes um 1 Slot nach hinten">
+                    <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
                         <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
                         <span id="bumpBtnLabel">+1 Lektion schieben</span>
                     </button>
@@ -492,9 +447,7 @@
         </div>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- MODAL 2: UNIVERSELLER DATEI-IMPORT MIT DYNAMISCHER KONTROLLTABELLE    -->
-    <!-- ===================================================================== -->
+    <!-- MODAL 2: UNIVERSELLER DATEI-IMPORT -->
     <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
@@ -533,7 +486,6 @@
                         <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
 
-                    <!-- Steuerfelder: Jede Änderung aktualisiert sofort die Kontrolltabelle unten -->
                     <div id="importOptionsSequence" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200/80">
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">Ziel-Fach, Klasse &amp; Gefäss</label>
@@ -568,7 +520,6 @@
                     </div>
                 </div>
 
-                <!-- Live-Kontrolltabelle -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (passt sich bei Datums-/Fachwechsel oben sofort an):</span>
@@ -598,9 +549,7 @@
         </div>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- MODAL 3: MANUELLER STUNDENPLAN-EDITOR (MIT GEFÄSS / SCHWERPUNKT)      -->
-    <!-- ===================================================================== -->
+    <!-- MODAL 3: STUNDENPLAN-EDITOR -->
     <div id="scheduleEditorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
@@ -657,26 +606,28 @@
         </div>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- MODAL 4: EINSTELLUNGEN, API-VERBINDUNGSTEST & BACKUP                  -->
-    <!-- ===================================================================== -->
+    <!-- MODAL 4: EINSTELLUNGEN (GEMINI + CLAUDE AUSWEICH-KI + BACKUP) -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 flex flex-col gap-4 text-xs">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <h3 class="text-sm font-extrabold text-slate-900">API-Verbindung prüfen, Backup &amp; Zürich Sync</h3>
+                <h3 class="text-sm font-extrabold text-slate-900">KI-Verbindung (Gemini &amp; Claude), Backup &amp; Zürich Sync</h3>
                 <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2">
-                <label class="font-extrabold text-indigo-950">Google Gemini API-Key (aistudio.google.com/apikey)</label>
+                <label class="font-extrabold text-indigo-950">1. Google Gemini API-Key (aistudio.google.com/apikey)</label>
                 <div class="flex gap-2">
-                    <input type="password" id="settingsGeminiKeyInput" placeholder="AIzaSy... oder AQ...." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+                    <input type="password" id="settingsGeminiKeyInput" placeholder="AQ.... oder AIzaSy..." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
                     <button type="button" id="testApiBtn" onclick="testGeminiApiConnection()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
-                        API testen
+                        KI testen
                     </button>
                 </div>
+
+                <label class="font-extrabold text-purple-950 mt-1">2. Optional: Claude API-Key als Ausweich-KI (console.anthropic.com)</label>
+                <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (wird genutzt, falls Gemini überlastet ist)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+
                 <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold whitespace-pre-line"></div>
             </div>
 
@@ -722,92 +673,129 @@
         }
 
         // =========================================================================
-        // 1. ZENTRALE GEMINI API-FUNKTION (AKTUELLE 2026-MODELLE & LIVE-DISCOVERY)
+        // 1. ZENTRALE KI-FUNKTION (GEMINI 3.8 / 2.5-LITE + CLAUDE FALLBACK)
         // =========================================================================
         const TEACHER_SYSTEM_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch. Du kennst den Lehrplan 21 des Kantons Zürich und antwortest praxisnah, direkt umsetzbar und ohne unnötige Floskeln.";
 
         async function callGeminiUnified(userPrompt, conversationHistory = null) {
-            const rawKey = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
-            const key = rawKey.trim().replace(/^["']|["']$/g, '');
-            if (!key) {
-                throw new Error("Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Gemini-Schlüssel eingeben.");
+            const rawGemini = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
+            const key = rawGemini.trim().replace(/^["']|["']$/g, '');
+            const rawClaude = localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey || "";
+            const cKey = rawClaude.trim().replace(/^["']|["']$/g, '');
+
+            if (!key && !cKey) {
+                throw new Error("Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Gemini- oder Claude-Schlüssel eingeben.");
             }
 
-            let contents;
-            if (conversationHistory && conversationHistory.length > 0) {
-                contents = conversationHistory.map((item, idx) => {
-                    if (idx === 0 && item.role === "user") {
-                        return { role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${item.parts[0].text}` }] };
-                    }
-                    return item;
-                });
-            } else {
-                contents = [{ role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${userPrompt}` }] }];
-            }
-
-            const payload = { contents };
             let errorDetails = [];
 
-            // Schritt 1: Aktive Modelle über ListModels direkt für diesen Key abfragen
-            let modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-flash-latest"];
-            try {
-                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
-                const listRes = await fetch(listUrl, {
-                    headers: { 'x-goog-api-key': key }
-                });
-                const listData = await listRes.json();
-                if (listRes.ok && Array.isArray(listData.models)) {
-                    const available = listData.models
-                        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
-                        .map(m => m.name.replace(/^models\//, ""))
-                        .filter(n => !n.includes("1.5") && !n.includes("embedding") && !n.includes("imagen") && !n.includes("veo") && !n.includes("tts") && !n.includes("robotics"));
-                    if (available.length > 0) {
-                        const flashModels = available.filter(n => n.includes("flash"));
-                        const proModels = available.filter(n => n.includes("pro"));
-                        modelsToTry = [...new Set([...flashModels, ...proModels, ...available])];
-                    }
-                } else if (listData?.error?.message) {
-                    errorDetails.push(`Schlüsselprüfung: ${listData.error.message}`);
+            if (key) {
+                let contents;
+                if (conversationHistory && conversationHistory.length > 0) {
+                    contents = conversationHistory.map((item, idx) => {
+                        if (idx === 0 && item.role === "user") {
+                            return { role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${item.parts[0].text}` }] };
+                        }
+                        return item;
+                    });
+                } else {
+                    contents = [{ role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${userPrompt}` }] }];
                 }
-            } catch (e) {
-                errorDetails.push(`Verbindung: ${e.message}`);
+
+                const payload = { contents };
+                const savedWorkingModel = localStorage.getItem('sekPlaner_workingModel');
+                let modelsToTry = ["gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.0-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-2.0-flash"];
+
+                try {
+                    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
+                    const listRes = await fetch(listUrl, { headers: { 'x-goog-api-key': key } });
+                    const listData = await listRes.json();
+                    if (listRes.ok && Array.isArray(listData.models)) {
+                        const available = listData.models
+                            .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+                            .map(m => m.name.replace(/^models\//, ""))
+                            .filter(n => !n.includes("1.5") && !n.includes("2.5-flash") && !n.includes("latest") && !n.includes("embedding") && !n.includes("imagen") && !n.includes("veo") && !n.includes("tts") && !n.includes("robotics"));
+                        if (available.length > 0) {
+                            const v3 = available.filter(n => n.includes("3."));
+                            const flash = available.filter(n => n.includes("flash"));
+                            modelsToTry = [...new Set([...(savedWorkingModel ? [savedWorkingModel] : []), ...v3, ...flash, ...available])];
+                        }
+                    } else if (listData?.error?.message) {
+                        errorDetails.push(`Gemini Key-Check: ${listData.error.message}`);
+                    }
+                } catch (e) {}
+
+                for (const modelName of modelsToTry) {
+                    try {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            localStorage.setItem('sekPlaner_workingModel', modelName);
+                            return data.candidates[0].content.parts[0].text.trim();
+                        }
+                        if (data?.error?.message) {
+                            errorDetails.push(`[${modelName}] ${data.error.message}`);
+                        }
+                    } catch (e) {
+                        errorDetails.push(`[${modelName}] ${e.message}`);
+                    }
+                }
             }
 
-            // Schritt 2: Gefundene aktive Modelle der Reihe nach testen
-            for (const modelName of modelsToTry.slice(0, 6)) {
+            // Optionaler Fallback auf Claude API (falls hinterlegt)
+            if (cKey) {
                 try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
-                    const res = await fetch(url, {
-                        method: 'POST',
+                    const claudeMessages = conversationHistory && conversationHistory.length > 0
+                        ? conversationHistory.map(m => ({ role: m.role === "model" ? "assistant" : "user", content: m.parts[0].text }))
+                        : [{ role: "user", content: userPrompt }];
+
+                    const cRes = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
                         headers: {
-                            'Content-Type': 'application/json',
-                            'x-goog-api-key': key
+                            "Content-Type": "application/json",
+                            "x-api-key": cKey,
+                            "anthropic-version": "2023-06-01",
+                            "anthropic-dangerous-direct-browser-access": "true"
                         },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-5",
+                            max_tokens: 1500,
+                            system: TEACHER_SYSTEM_PROMPT,
+                            messages: claudeMessages
+                        })
                     });
-                    const data = await res.json();
-                    if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        return data.candidates[0].content.parts[0].text.trim();
+                    const cData = await cRes.json();
+                    if (cRes.ok && cData?.content?.[0]?.text) {
+                        return cData.content[0].text.trim();
                     }
-                    if (data?.error?.message) {
-                        errorDetails.push(`[${modelName}] ${data.error.message}`);
+                    if (cData?.error?.message) {
+                        errorDetails.push(`[Claude] ${cData.error.message}`);
                     }
                 } catch (e) {
-                    errorDetails.push(`[${modelName}] ${e.message}`);
+                    errorDetails.push(`[Claude] ${e.message}`);
                 }
             }
 
-            throw new Error(errorDetails.length > 0 ? errorDetails.join("\n") : "Keine Antwort von der Gemini API.");
+            throw new Error(errorDetails.length > 0 ? errorDetails.join("\n") : "Keine Antwort von der KI-Schnittstelle.");
         }
 
         async function testGeminiApiConnection() {
-            const inputVal = document.getElementById('settingsGeminiKeyInput').value.trim();
-            if (!inputVal) {
-                showToast("Bitte zuerst einen API-Key eingeben.");
+            const gVal = document.getElementById('settingsGeminiKeyInput').value.trim();
+            const cVal = document.getElementById('settingsClaudeKeyInput').value.trim();
+            if (!gVal && !cVal) {
+                showToast("Bitte zuerst einen Gemini- oder Claude-Key eingeben.");
                 return;
             }
-            geminiApiKey = inputVal;
-            localStorage.setItem('sekPlaner_geminiKey', inputVal);
+            geminiApiKey = gVal;
+            claudeApiKey = cVal;
+            localStorage.setItem('sekPlaner_geminiKey', gVal);
+            localStorage.setItem('sekPlaner_claudeKey', cVal);
+            localStorage.removeItem('sekPlaner_workingModel');
 
             const btn = document.getElementById('testApiBtn');
             const statusBox = document.getElementById('apiTestStatusBox');
@@ -815,17 +803,18 @@
             btn.disabled = true;
             statusBox.classList.remove('hidden');
             statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-slate-100 text-slate-700";
-            statusBox.innerText = "Verbinde mit Google Gemini API...";
+            statusBox.innerText = "Verbinde mit KI-Schnittstelle...";
 
             try {
                 const reply = await callGeminiUnified("Antworte exakt mit einem Satz: Verbindung als Sek-A-Tutor erfolgreich!");
+                const activeModel = localStorage.getItem('sekPlaner_workingModel') || "Claude";
                 statusBox.className = "rounded-lg p-2.5 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
-                statusBox.innerText = "✅ " + reply;
+                statusBox.innerText = `✅ [${activeModel}] ${reply}`;
             } catch (err) {
                 statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-rose-50 text-rose-900 border border-rose-200 whitespace-pre-line";
                 statusBox.innerText = "❌ Diagnose:\n" + err.message;
             } finally {
-                btn.innerText = "API testen";
+                btn.innerText = "KI testen";
                 btn.disabled = false;
             }
         }
@@ -851,10 +840,11 @@
 
         let privateSyncKey = localStorage.getItem('sekPlaner_privateKey') || 'zh-sekA-krapf-948271';
         let geminiApiKey = localStorage.getItem('sekPlaner_geminiKey') || '';
+        let claudeApiKey = localStorage.getItem('sekPlaner_claudeKey') || '';
         let currentSchoolYear = localStorage.getItem('sekPlaner_schoolYear') || '2026/27';
 
         // =========================================================================
-        // 3. STUNDENPLAN (MIT GEFÄSSEN / TRACKS) & SCHULJAHRES-DATEN
+        // 3. STUNDENPLAN & SCHULJAHRES-DATEN
         // =========================================================================
         const DEFAULT_WEEKLY_TEMPLATE = [
             { id: "mo-2", day: 0, start: "08:20", end: "09:05", subject: "D", className: "S2Aa", track: "", room: "C63" },
@@ -2422,6 +2412,7 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
 
         function openSettingsModal() {
             document.getElementById('settingsGeminiKeyInput').value = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey;
+            document.getElementById('settingsClaudeKeyInput').value = localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey;
             document.getElementById('privateSyncKeyInput').value = privateSyncKey;
             document.getElementById('apiTestStatusBox').classList.add('hidden');
             document.getElementById('settingsModal').classList.remove('hidden');
@@ -2432,9 +2423,13 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
         }
         function saveSettingsModal() {
             const gKey = document.getElementById('settingsGeminiKeyInput').value.trim();
+            const cKey = document.getElementById('settingsClaudeKeyInput').value.trim();
             const sKey = document.getElementById('privateSyncKeyInput').value.trim();
             geminiApiKey = gKey;
+            claudeApiKey = cKey;
             localStorage.setItem('sekPlaner_geminiKey', gKey);
+            localStorage.setItem('sekPlaner_claudeKey', cKey);
+            localStorage.removeItem('sekPlaner_workingModel');
             if (sKey.length >= 8) {
                 privateSyncKey = sKey;
                 localStorage.setItem('sekPlaner_privateKey', sKey);
