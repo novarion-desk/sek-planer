@@ -1207,10 +1207,10 @@
             firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    if (data.lessonsStore) lessonsStore = data.lessonsStore;
-                    if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
-                    if (data.calendarEvents) calendarEvents = data.calendarEvents;
-                    if (data.dayNotesStore) dayNotesStore = data.dayNotesStore;
+                if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
+                if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
+                if (data.calendarEvents) calendarEvents = data.calendarEvents;
+                if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
                     renderCalendar();
                     updateOpenNotesBadge();
                     if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
