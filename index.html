@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Wochenplaner Sek A (ZH) – Unterrichtscockpit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -10,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -24,233 +26,275 @@
 </head>
 <body class="bg-[#F4F6FA] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
-    <!-- TOP HEADER -->
-    <header class="w-full bg-white border-b border-slate-200/90 py-2.5 px-4 md:px-6 flex flex-wrap justify-between items-center gap-3 sticky top-0 z-30 shadow-2xs">
-        <div class="flex items-center flex-wrap gap-2">
-            <div class="flex items-center gap-2 mr-1">
-                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+    <!-- ===================================================================== -->
+    <!-- FIREBASE LOGIN-BILDSCHIRM (SCHÜTZT DEN GESAMTEN WOCHENPLANER)          -->
+    <!-- ===================================================================== -->
+    <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                    <i data-lucide="lock" class="w-5 h-5"></i>
                 </div>
-                <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden sm:inline">Planboard Sek A</span>
+                <div>
+                    <h1 class="text-base font-extrabold text-slate-900">Planboard Sek A</h1>
+                    <p class="text-xs text-slate-500">Geschützter Lehrerbereich (Zürich)</p>
+                </div>
             </div>
 
-            <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1 text-xs font-extrabold text-indigo-950">
-                <span class="text-[10.5px] text-indigo-700 font-bold">SJ:</span>
-                <select id="schoolYearSelect" onchange="switchSchoolYear(this.value)" class="bg-transparent font-extrabold text-indigo-950 focus:outline-none cursor-pointer">
-                    <option value="2026/27">2026/27</option>
-                    <option value="2027/28">2027/28</option>
-                    <option value="2028/29">2028/29</option>
-                </select>
-            </div>
-
-            <button type="button" onclick="jumpToCurrentWeek()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-2xs">
-                Diese Woche
-            </button>
-
-            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/80">
-                <button type="button" onclick="changeWeek(-1)" class="p-1.5 hover:bg-white rounded-md text-slate-600 transition-colors" title="Vorherige Woche">
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <form onsubmit="handleFirebaseLogin(event)" class="flex flex-col gap-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
+                    <input type="email" id="loginEmailInput" required autocomplete="email" placeholder="deine@email.ch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Passwort</label>
+                    <input type="password" id="loginPasswordInput" required autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5 text-[11px] font-semibold"></div>
+                <button type="submit" id="loginSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition-colors mt-1">
+                    Anmelden
                 </button>
-                <button type="button" onclick="changeWeek(1)" class="p-1.5 hover:bg-white rounded-md text-slate-600 transition-colors" title="Nächste Woche">
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <div class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/70">
-                <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i>
-                <span id="weekTitleDisplay" class="text-xs md:text-sm font-extrabold text-slate-900">Woche</span>
-                <span id="kwBadge" class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">KW</span>
-            </div>
+            </form>
         </div>
-
-        <div class="flex items-center flex-wrap gap-2">
-            <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
-                <button type="button" id="mainTabPlan" onclick="switchMainTab('plan')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-2xs flex items-center gap-1.5">
-                    <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-600"></i>
-                    <span>Wochenplan</span>
-                </button>
-                <button type="button" id="mainTabNotes" onclick="switchMainTab('notes')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
-                    <i data-lucide="check-square" class="w-3.5 h-3.5 text-amber-600"></i>
-                    <span>Notizen &amp; Memos</span>
-                    <span id="openNotesBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-extrabold">0</span>
-                </button>
-                <button type="button" id="mainTabHolidays" onclick="switchMainTab('holidays')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
-                    <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-rose-600"></i>
-                    <span>Ferien &amp; Spezialtage</span>
-                </button>
-            </div>
-
-            <div id="weekDayToggleWrap" class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
-                <button type="button" id="viewBtnWeek" onclick="setViewMode('week')" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs">Woche</button>
-                <button type="button" id="viewBtnDay" onclick="setViewMode('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
-            </div>
-
-            <button type="button" onclick="openUniversalImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
-                <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
-                <span>Datei / Sequenz</span>
-            </button>
-
-            <button type="button" onclick="openScheduleEditorModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors">
-                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-slate-500"></i>
-                <span>Stundenplan</span>
-            </button>
-
-            <button type="button" id="toggleAiSidebarBtn" onclick="toggleAiSidebar()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
-                <i data-lucide="panel-right" class="w-3.5 h-3.5"></i>
-                <span>KI-Chat</span>
-            </button>
-
-            <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="API-Key testen, Backup & Zürich Sync">
-                <span id="syncLed" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS -->
-    <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
-        <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
-            <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1080px]"></div>
-        </main>
-
-        <aside id="aiRightSidebar" class="hidden w-full sm:w-[370px] shrink-0 bg-white border-l border-slate-200 flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-20 shadow-lg text-xs">
-            <div class="px-4 py-3 bg-purple-700 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i>
-                    <div>
-                        <div class="font-extrabold text-xs">KI-Unterrichtsassistent</div>
-                        <div class="text-[10px] opacity-85">Sek A ZH • D, Mu, GS, GG, MI, E</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="clearGeneralAiChat()" class="px-2 py-0.5 bg-white/15 hover:bg-white/25 rounded text-[10.5px] font-bold">Leeren</button>
-                    <button type="button" onclick="toggleAiSidebar()" class="p-1 rounded hover:bg-white/20" title="Zuklappen">
-                        <i data-lucide="panel-right-close" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div id="generalChatMessages" class="flex-1 p-3.5 overflow-y-auto custom-scroll flex flex-col gap-2.5 bg-slate-50/70">
-                <div class="bg-white border border-slate-200 rounded-xl p-3 text-slate-700 leading-relaxed">
-                    Hallo! Frag mich nach Unterrichtsideen, Einstiegen, Differenzierungen für Niveau A oder Formulierungshilfen (D, Mu, GS, GG, MI, E). Jede Antwort kannst du direkt in eine Lektion übernehmen.
-                </div>
-            </div>
-
-            <div class="px-3.5 py-2 bg-purple-50 border-t border-purple-100 flex flex-col gap-1">
-                <span class="font-bold text-purple-950 text-[10.5px]">Ziel-Lektion für Übernahme:</span>
-                <select id="generalChatTargetLesson" class="w-full bg-white border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800"></select>
-            </div>
-
-            <div class="p-3 bg-white border-t border-slate-200 flex gap-1.5">
-                <input type="text" id="generalChatInput" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGeneralAiChat();}" placeholder="Schnell etwas fragen oder erstellen..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <button type="button" id="generalChatSendBtn" onclick="sendGeneralAiChat()" class="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold shrink-0">
-                    Senden
-                </button>
-            </div>
-        </aside>
     </div>
 
-    <!-- ANSICHT 2: NOTIZEN & MEMOS -->
-    <section id="notesViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            <div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
-                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                        <h2 class="text-base font-extrabold text-slate-900">Pendenzen &amp; Vergessene Abgaben</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">Chronologisch nach Datum und Lektion gesammelt.</p>
+    <!-- ===================================================================== -->
+    <!-- APP-CONTAINER (WIRD ERST NACH ERFOLGREICHEM LOGIN SICHTBAR)           -->
+    <!-- ===================================================================== -->
+    <div id="protectedAppContainer" class="hidden flex-1 flex flex-col">
+
+        <!-- TOP HEADER -->
+        <header class="w-full bg-white border-b border-slate-200/90 py-2.5 px-4 md:px-6 flex flex-wrap justify-between items-center gap-3 sticky top-0 z-30 shadow-2xs">
+            <div class="flex items-center flex-wrap gap-2">
+                <div class="flex items-center gap-2 mr-1">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                        <i data-lucide="calendar-days" class="w-4 h-4"></i>
                     </div>
-                    <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-                        <input type="checkbox" id="showDoneNotesCheck" onchange="renderNotesOverview()" class="rounded text-indigo-600">
-                        <span>Erledigte zeigen</span>
-                    </label>
+                    <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden sm:inline">Planboard Sek A</span>
                 </div>
-                <div id="aggregatedNotesList" class="flex flex-col gap-2.5"></div>
-            </div>
 
-            <div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
-                <div class="border-b border-slate-100 pb-3">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
-                        <h2 class="text-base font-extrabold text-slate-900">Sprachmemo-Transkriptionen</h2>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Alle eingesprochenen Memos mit Text und Audio-Player.</p>
-                </div>
-                <div id="aggregatedTranscriptsList" class="flex flex-col gap-2.5"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ANSICHT 3: FERIEN & SPEZIALTAGE -->
-    <section id="holidaysViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
-        <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-5 text-xs">
-            <div class="border-b border-slate-100 pb-3">
-                <h2 class="text-base font-extrabold text-slate-900">Ferien, Feiertage &amp; Spezialtage (<span id="holidayTitleSjLabel">SJ 2026/27</span>)</h2>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    Alle hier eingetragenen Daten erscheinen am konkreten Tag automatisch oben im gelben Tages-Notizfeld des Wochenplans.
-                </p>
-            </div>
-
-            <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 flex flex-col gap-2.5">
-                <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-                    <span>KI-Assistent für Termine &amp; Ferien (einfach in Alltagssprache hineinschreiben)</span>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="holidayAiInput" onkeydown="if(event.key==='Enter'){event.preventDefault();parseHolidaysWithAi();}" placeholder="z. B. «Trage den Elternbesuchstag am 18. März 2027 ein und Projektwoche vom 7. bis 11. Juni 2027»" class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button type="button" id="holidayAiBtn" onclick="parseHolidaysWithAi()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
-                        Mit KI erkennen
-                    </button>
-                </div>
-                <div id="holidayAiPreviewBox" class="hidden bg-white border border-indigo-200 rounded-lg p-3 flex flex-col gap-2">
-                    <div class="font-bold text-indigo-950">Erkannte Termine – Bitte bestätigen:</div>
-                    <div id="holidayAiPreviewList" class="flex flex-col gap-1"></div>
-                    <div class="flex justify-end gap-2">
-                        <button type="button" onclick="document.getElementById('holidayAiPreviewBox').classList.add('hidden')" class="px-3 py-1 bg-slate-100 rounded font-bold text-slate-600">Verwerfen</button>
-                        <button type="button" onclick="confirmAiHolidays()" class="px-3 py-1 bg-emerald-600 text-white rounded font-bold">In Kalender übernehmen</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-wrap items-end gap-2.5">
-                <div>
-                    <label class="block font-bold text-amber-950 mb-1">Typ</label>
-                    <select id="newEventType" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
-                        <option value="special">Spezialtag / Anlass (Unterricht findet statt)</option>
-                        <option value="holiday">Ferien / Schulfrei (kein Unterricht)</option>
+                <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1 text-xs font-extrabold text-indigo-950">
+                    <span class="text-[10.5px] text-indigo-700 font-bold">SJ:</span>
+                    <select id="schoolYearSelect" onchange="switchSchoolYear(this.value)" class="bg-transparent font-extrabold text-indigo-950 focus:outline-none cursor-pointer">
+                        <option value="2026/27">2026/27</option>
+                        <option value="2027/28">2027/28</option>
+                        <option value="2028/29">2028/29</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block font-bold text-amber-950 mb-1">Von Datum</label>
-                    <input type="date" id="newEventStart" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
-                </div>
-                <div>
-                    <label class="block font-bold text-amber-950 mb-1">Bis Datum</label>
-                    <input type="date" id="newEventEnd" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
-                </div>
-                <div class="flex-1 min-w-[180px]">
-                    <label class="block font-bold text-amber-950 mb-1">Bezeichnung</label>
-                    <input type="text" id="newEventName" placeholder="z. B. Elternbesuchstag Sek Mättmi" class="w-full bg-white border border-amber-200 rounded-lg px-3 py-1.5 font-bold">
-                </div>
-                <button type="button" onclick="addManualCalendarEvent()" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">
-                    + Hinzufügen
+
+                <button type="button" onclick="jumpToCurrentWeek()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-2xs">
+                    Diese Woche
                 </button>
+
+                <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/80">
+                    <button type="button" onclick="changeWeek(-1)" class="p-1.5 hover:bg-white rounded-md text-slate-600 transition-colors" title="Vorherige Woche">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" onclick="changeWeek(1)" class="p-1.5 hover:bg-white rounded-md text-slate-600 transition-colors" title="Nächste Woche">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/70">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    <span id="weekTitleDisplay" class="text-xs md:text-sm font-extrabold text-slate-900">Woche</span>
+                    <span id="kwBadge" class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">KW</span>
+                </div>
             </div>
 
-            <div class="border border-slate-200 rounded-xl overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200">
-                        <tr>
-                            <th class="py-2 px-3">Datum</th>
-                            <th class="py-2 px-3">Bezeichnung</th>
-                            <th class="py-2 px-3">Kategorie</th>
-                            <th class="py-2 px-3 text-right">Aktion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="allSpecialDaysTbody" class="divide-y divide-slate-100"></tbody>
-                </table>
+            <div class="flex items-center flex-wrap gap-2">
+                <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
+                    <button type="button" id="mainTabPlan" onclick="switchMainTab('plan')" class="px-3 py-1 rounded-md bg-white text-slate-900 shadow-2xs flex items-center gap-1.5">
+                        <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span>Wochenplan</span>
+                    </button>
+                    <button type="button" id="mainTabNotes" onclick="switchMainTab('notes')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+                        <i data-lucide="check-square" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span>Notizen &amp; Memos</span>
+                        <span id="openNotesBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-extrabold">0</span>
+                    </button>
+                    <button type="button" id="mainTabHolidays" onclick="switchMainTab('holidays')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+                        <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-rose-600"></i>
+                        <span>Ferien &amp; Spezialtage</span>
+                    </button>
+                </div>
+
+                <div id="weekDayToggleWrap" class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
+                    <button type="button" id="viewBtnWeek" onclick="setViewMode('week')" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs">Woche</button>
+                    <button type="button" id="viewBtnDay" onclick="setViewMode('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
+                </div>
+
+                <button type="button" onclick="openUniversalImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                    <span>Datei / Sequenz</span>
+                </button>
+
+                <button type="button" onclick="openScheduleEditorModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Stundenplan</span>
+                </button>
+
+                <button type="button" id="toggleAiSidebarBtn" onclick="toggleAiSidebar()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
+                    <i data-lucide="panel-right" class="w-3.5 h-3.5"></i>
+                    <span>KI-Chat</span>
+                </button>
+
+                <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="API-Key testen, Backup & Zürich Sync">
+                    <span id="syncLed" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                </button>
+
+                <button type="button" onclick="handleFirebaseLogout()" class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors" title="Abmelden">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
+        </header>
+
+        <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS -->
+        <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
+            <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
+                <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1080px]"></div>
+            </main>
+
+            <aside id="aiRightSidebar" class="hidden w-full sm:w-[370px] shrink-0 bg-white border-l border-slate-200 flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-20 shadow-lg text-xs">
+                <div class="px-4 py-3 bg-purple-700 text-white flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <div>
+                            <div class="font-extrabold text-xs">KI-Unterrichtsassistent</div>
+                            <div class="text-[10px] opacity-85">Sek A ZH • D, Mu, GS, GG, MI, E</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="clearGeneralAiChat()" class="px-2 py-0.5 bg-white/15 hover:bg-white/25 rounded text-[10.5px] font-bold">Leeren</button>
+                        <button type="button" onclick="toggleAiSidebar()" class="p-1 rounded hover:bg-white/20" title="Zuklappen">
+                            <i data-lucide="panel-right-close" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="generalChatMessages" class="flex-1 p-3.5 overflow-y-auto custom-scroll flex flex-col gap-2.5 bg-slate-50/70">
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 text-slate-700 leading-relaxed">
+                        Hallo! Frag mich nach Unterrichtsideen, Einstiegen, Differenzierungen für Niveau A oder Formulierungshilfen (D, Mu, GS, GG, MI, E). Jede Antwort kannst du direkt in eine Lektion übernehmen.
+                    </div>
+                </div>
+
+                <div class="px-3.5 py-2 bg-purple-50 border-t border-purple-100 flex flex-col gap-1">
+                    <span class="font-bold text-purple-950 text-[10.5px]">Ziel-Lektion für Übernahme:</span>
+                    <select id="generalChatTargetLesson" class="w-full bg-white border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800"></select>
+                </div>
+
+                <div class="p-3 bg-white border-t border-slate-200 flex gap-1.5">
+                    <input type="text" id="generalChatInput" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGeneralAiChat();}" placeholder="Schnell etwas fragen oder erstellen..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button type="button" id="generalChatSendBtn" onclick="sendGeneralAiChat()" class="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold shrink-0">
+                        Senden
+                    </button>
+                </div>
+            </aside>
         </div>
-    </section>
+
+        <!-- ANSICHT 2: NOTIZEN & MEMOS -->
+        <section id="notesViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                <div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 class="text-base font-extrabold text-slate-900">Pendenzen &amp; Vergessene Abgaben</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Chronologisch nach Datum und Lektion gesammelt.</p>
+                        </div>
+                        <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                            <input type="checkbox" id="showDoneNotesCheck" onchange="renderNotesOverview()" class="rounded text-indigo-600">
+                            <span>Erledigte zeigen</span>
+                        </label>
+                    </div>
+                    <div id="aggregatedNotesList" class="flex flex-col gap-2.5"></div>
+                </div>
+
+                <div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
+                            <h2 class="text-base font-extrabold text-slate-900">Sprachmemo-Transkriptionen</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Alle eingesprochenen Memos mit Text und Audio-Player.</p>
+                    </div>
+                    <div id="aggregatedTranscriptsList" class="flex flex-col gap-2.5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ANSICHT 3: FERIEN & SPEZIALTAGE -->
+        <section id="holidaysViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-5 text-xs">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="text-base font-extrabold text-slate-900">Ferien, Feiertage &amp; Spezialtage (<span id="holidayTitleSjLabel">SJ 2026/27</span>)</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Alle hier eingetragenen Daten erscheinen am konkreten Tag automatisch oben im gelben Tages-Notizfeld des Wochenplans.
+                    </p>
+                </div>
+
+                <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 flex flex-col gap-2.5">
+                    <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+                        <span>KI-Assistent für Termine &amp; Ferien (einfach in Alltagssprache hineinschreiben)</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="holidayAiInput" onkeydown="if(event.key==='Enter'){event.preventDefault();parseHolidaysWithAi();}" placeholder="z. B. «Trage den Elternbesuchstag am 18. März 2027 ein und Projektwoche vom 7. bis 11. Juni 2027»" class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" id="holidayAiBtn" onclick="parseHolidaysWithAi()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
+                            Mit KI erkennen
+                        </button>
+                    </div>
+                    <div id="holidayAiPreviewBox" class="hidden bg-white border border-indigo-200 rounded-lg p-3 flex flex-col gap-2">
+                        <div class="font-bold text-indigo-950">Erkannte Termine – Bitte bestätigen:</div>
+                        <div id="holidayAiPreviewList" class="flex flex-col gap-1"></div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="document.getElementById('holidayAiPreviewBox').classList.add('hidden')" class="px-3 py-1 bg-slate-100 rounded font-bold text-slate-600">Verwerfen</button>
+                            <button type="button" onclick="confirmAiHolidays()" class="px-3 py-1 bg-emerald-600 text-white rounded font-bold">In Kalender übernehmen</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-wrap items-end gap-2.5">
+                    <div>
+                        <label class="block font-bold text-amber-950 mb-1">Typ</label>
+                        <select id="newEventType" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
+                            <option value="special">Spezialtag / Anlass (Unterricht findet statt)</option>
+                            <option value="holiday">Ferien / Schulfrei (kein Unterricht)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-amber-950 mb-1">Von Datum</label>
+                        <input type="date" id="newEventStart" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-amber-950 mb-1">Bis Datum</label>
+                        <input type="date" id="newEventEnd" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
+                    </div>
+                    <div class="flex-1 min-w-[180px]">
+                        <label class="block font-bold text-amber-950 mb-1">Bezeichnung</label>
+                        <input type="text" id="newEventName" placeholder="z. B. Elternbesuchstag Sek Mättmi" class="w-full bg-white border border-amber-200 rounded-lg px-3 py-1.5 font-bold">
+                    </div>
+                    <button type="button" onclick="addManualCalendarEvent()" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">
+                        + Hinzufügen
+                    </button>
+                </div>
+
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200">
+                            <tr>
+                                <th class="py-2 px-3">Datum</th>
+                                <th class="py-2 px-3">Bezeichnung</th>
+                                <th class="py-2 px-3">Kategorie</th>
+                                <th class="py-2 px-3 text-right">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allSpecialDaysTbody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <!-- MODAL 1: LEKTIONS-EDITOR -->
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
@@ -606,7 +650,7 @@
         </div>
     </div>
 
-    <!-- MODAL 4: EINSTELLUNGEN (GEMINI + CLAUDE AUSWEICH-KI + BACKUP) -->
+    <!-- MODAL 4: EINSTELLUNGEN -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 flex flex-col gap-4 text-xs">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -626,7 +670,7 @@
                 </div>
 
                 <label class="font-extrabold text-purple-950 mt-1">2. Optional: Claude API-Key als Ausweich-KI (console.anthropic.com)</label>
-                <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (wird genutzt, falls Gemini überlastet ist)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+                <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (optional)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
 
                 <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold whitespace-pre-line"></div>
             </div>
@@ -648,7 +692,7 @@
             </div>
 
             <div>
-                <label class="block font-bold text-slate-700 mb-1">Privater Sync-Schlüssel (Mac &amp; Galaxy Tab)</label>
+                <label class="block font-bold text-slate-700 mb-1">Dokument-ID in Zürich (nur mit deinem Login lesbar)</label>
                 <input type="text" id="privateSyncKeyInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900">
             </div>
 
@@ -673,7 +717,7 @@
         }
 
         // =========================================================================
-        // 1. ZENTRALE KI-FUNKTION (GEMINI 3.8 / 2.5-LITE + CLAUDE FALLBACK)
+        // 1. ZENTRALE KI-FUNKTION (GEMINI 3.8 / 3.5-LITE + CLAUDE FALLBACK)
         // =========================================================================
         const TEACHER_SYSTEM_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch. Du kennst den Lehrplan 21 des Kantons Zürich und antwortest praxisnah, direkt umsetzbar und ohne unnötige Floskeln.";
 
@@ -704,7 +748,7 @@
 
                 const payload = { contents };
                 const savedWorkingModel = localStorage.getItem('sekPlaner_workingModel');
-                let modelsToTry = ["gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.0-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-2.0-flash"];
+                let modelsToTry = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash-lite", "gemini-3.0-flash", "gemini-2.0-flash"];
 
                 try {
                     const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
@@ -714,11 +758,12 @@
                         const available = listData.models
                             .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
                             .map(m => m.name.replace(/^models\//, ""))
-                            .filter(n => !n.includes("1.5") && !n.includes("2.5-flash") && !n.includes("latest") && !n.includes("embedding") && !n.includes("imagen") && !n.includes("veo") && !n.includes("tts") && !n.includes("robotics"));
+                            .filter(n => !n.includes("1.5") && !n.includes("2.5") && !n.includes("latest") && !n.includes("preview") && !n.includes("image") && !n.includes("embedding") && !n.includes("veo") && !n.includes("tts") && !n.includes("robotics"));
                         if (available.length > 0) {
-                            const v3 = available.filter(n => n.includes("3."));
-                            const flash = available.filter(n => n.includes("flash"));
-                            modelsToTry = [...new Set([...(savedWorkingModel ? [savedWorkingModel] : []), ...v3, ...flash, ...available])];
+                            const v38 = available.filter(n => n.includes("3.8"));
+                            const v35 = available.filter(n => n.includes("3.5"));
+                            const other3 = available.filter(n => n.includes("3."));
+                            modelsToTry = [...new Set([...(savedWorkingModel ? [savedWorkingModel] : []), ...v38, ...v35, ...other3, ...available, ...modelsToTry])];
                         }
                     } else if (listData?.error?.message) {
                         errorDetails.push(`Gemini Key-Check: ${listData.error.message}`);
@@ -747,7 +792,6 @@
                 }
             }
 
-            // Optionaler Fallback auf Claude API (falls hinterlegt)
             if (cKey) {
                 try {
                     const claudeMessages = conversationHistory && conversationHistory.length > 0
@@ -820,7 +864,7 @@
         }
 
         // =========================================================================
-        // 2. FIREBASE KONFIGURATION (SERVERSTANDORT ZÜRICH)
+        // 2. FIREBASE AUTHENTICATION & FIRESTORE (ZÜRICH)
         // =========================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyBHHhgjAvY0D0trm2IMxauhFp-ssw9ooz4",
@@ -833,19 +877,54 @@
         };
 
         let db = null;
+        let auth = null;
+        let currentUser = null;
+        let firestoreUnsubscribe = null;
+
         try {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
             db = firebase.firestore();
         } catch (e) {}
 
+        async function handleFirebaseLogin(event) {
+            event.preventDefault();
+            if (!auth) return;
+            const email = document.getElementById('loginEmailInput').value.trim();
+            const password = document.getElementById('loginPasswordInput').value;
+            const errBox = document.getElementById('loginErrorBox');
+            const btn = document.getElementById('loginSubmitBtn');
+
+            errBox.classList.add('hidden');
+            btn.innerText = "Anmelden...";
+            btn.disabled = true;
+
+            try {
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (err) {
+                errBox.innerText = "Anmeldung fehlgeschlagen: Bitte E-Mail und Passwort prüfen.";
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.innerText = "Anmelden";
+                btn.disabled = false;
+            }
+        }
+
+        async function handleFirebaseLogout() {
+            if (!auth) return;
+            if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
+            await auth.signOut();
+        }
+
+        // =========================================================================
+        // 3. STUNDENPLAN & SCHULJAHRES-DATEN
+        // =========================================================================
         let privateSyncKey = localStorage.getItem('sekPlaner_privateKey') || 'zh-sekA-krapf-948271';
         let geminiApiKey = localStorage.getItem('sekPlaner_geminiKey') || '';
         let claudeApiKey = localStorage.getItem('sekPlaner_claudeKey') || '';
         let currentSchoolYear = localStorage.getItem('sekPlaner_schoolYear') || '2026/27';
 
-        // =========================================================================
-        // 3. STUNDENPLAN & SCHULJAHRES-DATEN
-        // =========================================================================
         const DEFAULT_WEEKLY_TEMPLATE = [
             { id: "mo-2", day: 0, start: "08:20", end: "09:05", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-3", day: 0, start: "09:10", end: "09:55", subject: "D", className: "S2Aa", track: "", room: "C63" },
@@ -926,12 +1005,26 @@
         let pendingAiHolidays = [];
 
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('schoolYearSelect').value = currentSchoolYear;
-            loadSchoolYearData(currentSchoolYear);
-            connectPrivateFirestoreSync();
-            renderCalendar();
-            updateOpenNotesBadge();
             refreshIcons();
+            if (auth) {
+                auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    if (user) {
+                        document.getElementById('authGateOverlay').classList.add('hidden');
+                        document.getElementById('protectedAppContainer').classList.remove('hidden');
+                        document.getElementById('schoolYearSelect').value = currentSchoolYear;
+                        loadSchoolYearData(currentSchoolYear);
+                        connectPrivateFirestoreSync();
+                        renderCalendar();
+                        updateOpenNotesBadge();
+                        refreshIcons();
+                    } else {
+                        document.getElementById('protectedAppContainer').classList.add('hidden');
+                        document.getElementById('authGateOverlay').classList.remove('hidden');
+                        refreshIcons();
+                    }
+                });
+            }
         });
 
         function getStoragePrefix() {
@@ -992,10 +1085,11 @@
 
             updateOpenNotesBadge();
 
-            if (db && privateSyncKey) {
+            if (db && currentUser && privateSyncKey) {
                 const baseId = "planer_" + btoa(privateSyncKey).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
                 const docId = currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
                 db.collection('sekSync').doc(docId).set({
+                    ownerUid: currentUser.uid,
                     lessonsStore,
                     weeklyTemplate,
                     calendarEvents,
@@ -1010,10 +1104,11 @@
         }
 
         function connectPrivateFirestoreSync() {
-            if (!db || !privateSyncKey) return;
+            if (!db || !currentUser || !privateSyncKey) return;
+            if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
             const baseId = "planer_" + btoa(privateSyncKey).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
             const docId = currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
-            db.collection('sekSync').doc(docId).onSnapshot((doc) => {
+            firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     if (data.lessonsStore) lessonsStore = data.lessonsStore;
@@ -1025,6 +1120,8 @@
                     if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
                     if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
                 }
+            }, () => {
+                document.getElementById('syncLed').className = "w-2 h-2 rounded-full bg-rose-500";
             });
         }
 
