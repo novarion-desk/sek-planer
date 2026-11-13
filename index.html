@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Wochenplaner Sek A (ZH) – Unterrichtscockpit</title>
+    <title>Sek Planer (ZH) – Unterrichtscockpit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
@@ -22,12 +22,23 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
         @keyframes pulseRec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.15); } }
         .recording-dot { animation: pulseRec 1.1s infinite; }
+
+        /* Druckansicht für Stellvertretungen (ohne private Schüler-Pendenzen & Modals) */
+        @media print {
+            body { background: #ffffff !important; }
+            header, #aiRightSidebar, #toast, .no-print { display: none !important; }
+            #printHeaderBanner { display: block !important; }
+            #planWithSidebarWrapper, #planViewSection { overflow: visible !important; padding: 0 !important; }
+            #weekGridContainer { min-width: 100% !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 6px !important; }
+            .lesson-card-body { -webkit-line-clamp: unset !important; overflow: visible !important; }
+            input[type="text"] { border: none !important; background: transparent !important; }
+        }
     </style>
 </head>
 <body class="bg-[#F4F6FA] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
     <!-- ===================================================================== -->
-    <!-- FIREBASE LOGIN-BILDSCHIRM (SCHÜTZT DEN GESAMTEN WOCHENPLANER)          -->
+    <!-- FIREBASE LOGIN-BILDSCHIRM (ANMELDEN + PASSWORT VERGESSEN, OHNE REG.)  -->
     <!-- ===================================================================== -->
     <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4">
@@ -36,7 +47,7 @@
                     <i data-lucide="lock" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h1 class="text-base font-extrabold text-slate-900">Planboard Sek A</h1>
+                    <h1 class="text-base font-extrabold text-slate-900">Sek Planer</h1>
                     <p class="text-xs text-slate-500">Geschützter Lehrerbereich (Zürich)</p>
                 </div>
             </div>
@@ -47,10 +58,16 @@
                     <input type="email" id="loginEmailInput" required autocomplete="email" placeholder="deine@email.ch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Passwort</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="font-bold text-slate-700">Passwort</label>
+                        <button type="button" onclick="handlePasswordReset()" class="text-[11px] font-bold text-indigo-600 hover:underline">
+                            Passwort vergessen?
+                        </button>
+                    </div>
                     <input type="password" id="loginPasswordInput" required autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5 text-[11px] font-semibold"></div>
+                <div id="loginInfoBox" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2.5 text-[11px] font-semibold"></div>
                 <button type="submit" id="loginSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition-colors mt-1">
                     Anmelden
                 </button>
@@ -63,6 +80,14 @@
     <!-- ===================================================================== -->
     <div id="protectedAppContainer" class="hidden flex-1 flex flex-col">
 
+        <!-- Druck-Kopfzeile (nur im Ausdruck / PDF für Stellvertretungen sichtbar) -->
+        <div id="printHeaderBanner" class="hidden border-b-2 border-slate-800 pb-2 mb-3">
+            <div class="flex justify-between items-baseline">
+                <h1 class="text-lg font-extrabold text-slate-900">Sek Planer – Wochenübersicht (Stellvertretung)</h1>
+                <span id="printWeekSubTitle" class="text-xs font-bold text-slate-600"></span>
+            </div>
+        </div>
+
         <!-- TOP HEADER -->
         <header class="w-full bg-white border-b border-slate-200/90 py-2.5 px-4 md:px-6 flex flex-wrap justify-between items-center gap-3 sticky top-0 z-30 shadow-2xs">
             <div class="flex items-center flex-wrap gap-2">
@@ -70,7 +95,7 @@
                     <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                         <i data-lucide="calendar-days" class="w-4 h-4"></i>
                     </div>
-                    <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden sm:inline">Planboard Sek A</span>
+                    <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden sm:inline">Sek Planer</span>
                 </div>
 
                 <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1 text-xs font-extrabold text-indigo-950">
@@ -134,6 +159,13 @@
                     <span>Stundenplan</span>
                 </button>
 
+                <!-- Stellvertretungs-Druckansicht -->
+                <button type="button" onclick="printSubstitutePlan()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors" title="Druckansicht / PDF für Stellvertretung (ohne private Pendenzen)">
+                    <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span class="hidden xl:inline">Stellvertretung</span>
+                </button>
+
+                <!-- Allgemeiner KI-Chat bleibt voll erhalten -->
                 <button type="button" id="toggleAiSidebarBtn" onclick="toggleAiSidebar()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
                     <i data-lucide="panel-right" class="w-3.5 h-3.5"></i>
                     <span>KI-Chat</span>
@@ -296,7 +328,9 @@
         </section>
     </div>
 
-    <!-- MODAL 1: LEKTIONS-EDITOR -->
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: LEKTIONS-EDITOR (INKL. PRÜFUNGS-MARKIERUNG & DIREKT-KI-TUTOR)  -->
+    <!-- ===================================================================== -->
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             <div id="modalHeaderBar" class="px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
@@ -310,12 +344,23 @@
             </div>
 
             <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
-                <div class="bg-sky-100/80 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
-                    <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
-                        <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
-                        <span>Hausaufgabe auf heute (automatisch aus vorheriger Lektion übertragen)</span>
-                    </label>
-                    <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <!-- Oberste Zeile: HA auf heute + Prüfungs-Umschalter -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
+                    <div class="sm:col-span-8 bg-sky-100/80 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
+                        <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
+                            <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
+                            <span>Hausaufgabe auf heute (automatisch aus vorheriger Lektion übertragen)</span>
+                        </label>
+                        <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+
+                    <div class="sm:col-span-4 bg-rose-50/90 border border-rose-200 rounded-xl p-3 flex flex-col justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer font-extrabold text-rose-950 text-[11.5px]">
+                            <input type="checkbox" id="editLessonIsExam" class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
+                            <span>📝 Prüfung / Lernkontrolle</span>
+                        </label>
+                        <span class="text-[10.5px] text-rose-800/80 leading-snug mt-1">Hebt die Karte im Wochenplan rot hervor.</span>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
@@ -491,6 +536,30 @@
         </div>
     </div>
 
+    <!-- ===================================================================== -->
+    <!-- MODAL 1B: SCHNELL-NOTIZ DIREKT AUF DER LEKTIONSKARTE (OHNE GROSSMODAL)-->
+    <!-- ===================================================================== -->
+    <div id="quickNoteModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-slate-200 flex flex-col gap-3 text-xs">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+                    <span id="quickNoteTitle">Schnell-Pendenz hinzufügen</span>
+                </div>
+                <button type="button" onclick="closeQuickNoteModal()" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="quickNoteExistingList" class="flex flex-col gap-1 max-h-40 overflow-y-auto custom-scroll"></div>
+            <form onsubmit="saveQuickNote(event)" class="flex gap-2">
+                <input type="text" id="quickNoteInput" required placeholder="z. B. Lea: Vortrag nachholen / Blatt abgeben..." class="flex-1 bg-amber-50/60 border border-amber-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <button type="submit" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shrink-0">
+                    Merken
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL 2: UNIVERSELLER DATEI-IMPORT -->
     <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
@@ -508,7 +577,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button type="button" id="impTypeBtn_sequence" onclick="setImportCategory('sequence')" class="p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-indigo-950 text-xs">1. Lektionenablauf</span>
-                        <span class="text-[10.5px] text-indigo-800">Mehrwöchige Planung (z. B. 7 Wochen Literatur) live zuordnen</span>
+                        <span class="text-[10.5px] text-indigo-800">Chalk-PDF / Word / Text auf Lektionen verteilen</span>
                     </button>
                     <button type="button" id="impTypeBtn_lehrmittel" onclick="setImportCategory('lehrmittel')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">2. Lehrmittel / PDF</span>
@@ -526,7 +595,7 @@
 
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-bold text-slate-800">Datei hochladen (.docx, .pdf, .xls, .xlsx, .txt):</span>
+                        <span class="font-bold text-slate-800">Datei hochladen (.pdf, .docx, .xls, .xlsx, .txt):</span>
                         <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
 
@@ -557,7 +626,7 @@
 
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="font-bold text-slate-600">Ausgelesener Inhalt (oder Ablauf direkt hineinkopieren):</label>
+                            <label class="font-bold text-slate-600">Ausgelesener Inhalt (z. B. aus Chalk-PDF oder Copy-Paste):</label>
                             <button type="button" onclick="analyzeRawTextWithAi()" class="text-[11px] font-bold text-indigo-600 hover:underline">Mit KI sauber in einzelne Lektionen gliedern</button>
                         </div>
                         <textarea id="universalRawTextarea" oninput="rebuildUniversalPreview()" rows="4" placeholder="Hier erscheint der Text deiner hochgeladenen Datei – oder kopiere deinen Lektionenablauf direkt hinein..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
@@ -893,9 +962,11 @@
             const email = document.getElementById('loginEmailInput').value.trim();
             const password = document.getElementById('loginPasswordInput').value;
             const errBox = document.getElementById('loginErrorBox');
+            const infoBox = document.getElementById('loginInfoBox');
             const btn = document.getElementById('loginSubmitBtn');
 
             errBox.classList.add('hidden');
+            infoBox.classList.add('hidden');
             btn.innerText = "Anmelden...";
             btn.disabled = true;
 
@@ -908,6 +979,30 @@
             } finally {
                 btn.innerText = "Anmelden";
                 btn.disabled = false;
+            }
+        }
+
+        async function handlePasswordReset() {
+            if (!auth) return;
+            const email = document.getElementById('loginEmailInput').value.trim();
+            const errBox = document.getElementById('loginErrorBox');
+            const infoBox = document.getElementById('loginInfoBox');
+            errBox.classList.add('hidden');
+            infoBox.classList.add('hidden');
+
+            if (!email) {
+                errBox.innerText = "Bitte gib zuerst oben deine E-Mail-Adresse ein und klicke dann auf «Passwort vergessen?».";
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                infoBox.innerText = `Ein Link zum Zurücksetzen des Passworts wurde an ${email} gesendet.`;
+                infoBox.classList.remove('hidden');
+            } catch (err) {
+                errBox.innerText = "Konnte keine E-Mail senden: Bitte E-Mail-Adresse prüfen.";
+                errBox.classList.remove('hidden');
             }
         }
 
@@ -996,6 +1091,7 @@
         let viewMode = 'week';
         let activeLessonKey = null;
         let activeSlotMeta = null;
+        let activeQuickNoteKey = null;
         let tempAudioClips = [];
         let tempLessonTodos = [];
         let selectedAiPhase = 'einstieg';
@@ -1126,8 +1222,13 @@
         }
 
         // =========================================================================
-        // 4. NAVIGATION, SIDEBAR TOGGLE & WOCHENRASTER
+        // 4. NAVIGATION, SIDEBAR TOGGLE, DRUCKANSICHT & WOCHENRASTER
         // =========================================================================
+        function printSubstitutePlan() {
+            document.getElementById('printWeekSubTitle').innerText = document.getElementById('weekTitleDisplay').innerText + " • " + document.getElementById('kwBadge').innerText;
+            window.print();
+        }
+
         function toggleAiSidebar() {
             const sidebar = document.getElementById('aiRightSidebar');
             if (sidebar.classList.contains('hidden')) {
@@ -1333,7 +1434,7 @@
 
                 daySlots.forEach(slot => {
                     const key = `${iso}_${slot.id}`;
-                    const data = lessonsStore[key] || { homeworkDueToday: "", trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                    const data = lessonsStore[key] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     const style = getStyleForSlot(slot.subject, slot.className);
                     const openTodos = (data.todos || []).filter(t => !t.done).length;
                     const ehsHtml = buildCompactEHSHtml(data);
@@ -1341,7 +1442,7 @@
 
                     const card = document.createElement('div');
                     card.onclick = () => openLessonModal(key, slot, dayDate);
-                    card.className = `group bg-white border ${style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${hasHoliday ? 'opacity-65' : ''}`;
+                    card.className = `group bg-white border ${data.isExam ? 'border-rose-500 ring-2 ring-rose-200' : style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${hasHoliday ? 'opacity-65' : ''}`;
 
                     card.innerHTML = `
                         <div class="${style.headerBg} px-3 py-2 text-white flex items-start justify-between gap-2">
@@ -1351,9 +1452,11 @@
                                 </div>
                                 <div class="text-[10px] opacity-90 font-medium mt-0.5">${slot.start} – ${slot.end} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}</div>
                             </div>
-                            <div class="flex items-center gap-1 shrink-0">
-                                ${openTodos > 0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-amber-950 font-extrabold text-[10px]" title="Offene Notizen">${openTodos}</span>` : ''}
-                                <i data-lucide="edit-3" class="w-3.5 h-3.5 opacity-75 group-hover:opacity-100"></i>
+                            <div class="flex items-center gap-1 shrink-0 no-print">
+                                <button type="button" onclick="event.stopPropagation(); openQuickNoteModal('${key}', '${escapeHtml(style.label)} ${escapeHtml(slot.className)}')" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">
+                                    + Notiz
+                                </button>
+                                ${openTodos > 0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-amber-950 font-extrabold text-[10px]" title="Offene Pendenzen">${openTodos}</span>` : ''}
                             </div>
                         </div>
 
@@ -1362,13 +1465,14 @@
                                 <span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600 font-bold text-[10px]">Unit</span>
                                 <span class="font-semibold ${data.unit ? 'text-slate-700' : 'text-slate-400'} truncate">${escapeHtml(data.unit || 'Ohne Einheit')}</span>
                             </div>
-                            <div class="flex items-center gap-1 shrink-0">
+                            <div class="flex items-center gap-1 shrink-0 no-print">
                                 ${data.audioClips && data.audioClips.length > 0 ? `<span title="Sprachmemo" class="text-rose-600"><i data-lucide="mic" class="w-3 h-3"></i></span>` : ''}
                                 ${data.link ? `<span title="Drive/Link" class="text-indigo-600"><i data-lucide="link" class="w-3 h-3"></i></span>` : ''}
                             </div>
                         </div>
 
                         <div class="p-3 flex-1 flex flex-col gap-1.5 text-xs text-slate-700 leading-relaxed min-h-[110px]">
+                            ${data.isExam ? `<div class="bg-rose-600 text-white rounded-lg px-2 py-0.5 text-[10px] font-extrabold tracking-wide uppercase inline-block w-fit">📝 Prüfung / Lernkontrolle</div>` : ''}
                             ${data.homeworkDueToday ? `<div class="bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-2 py-1 text-[10.5px] font-extrabold leading-snug">📌 HA auf heute: ${escapeHtml(data.homeworkDueToday)}</div>` : ''}
                             ${data.title ? `<div class="font-extrabold text-slate-900">${escapeHtml(data.title)}</div>` : ''}
                             <div class="lesson-card-body text-[11px] text-slate-600 flex flex-col gap-0.5">${ehsHtml || `<span class="text-slate-300 italic">Klicken zum Planen...</span>`}</div>
@@ -1382,6 +1486,61 @@
             }
 
             refreshIcons();
+        }
+
+        // =========================================================================
+        // 4B. SCHNELL-NOTIZ / PENDENZ DIREKT AUF DER LEKTIONSKARTE
+        // =========================================================================
+        function openQuickNoteModal(lessonKey, label) {
+            activeQuickNoteKey = lessonKey;
+            document.getElementById('quickNoteTitle').innerText = `Schnell-Pendenz: ${label}`;
+            document.getElementById('quickNoteInput').value = "";
+            renderQuickNoteExisting();
+            document.getElementById('quickNoteModal').classList.remove('hidden');
+            document.getElementById('quickNoteInput').focus();
+            refreshIcons();
+        }
+
+        function closeQuickNoteModal() {
+            document.getElementById('quickNoteModal').classList.add('hidden');
+        }
+
+        function renderQuickNoteExisting() {
+            const box = document.getElementById('quickNoteExistingList');
+            const todos = lessonsStore[activeQuickNoteKey]?.todos || [];
+            if (todos.length === 0) {
+                box.innerHTML = `<div class="text-[11px] text-slate-400 italic">Noch keine Pendenzen in dieser Lektion.</div>`;
+                return;
+            }
+            box.innerHTML = todos.map((t, idx) => `
+                <div class="flex items-center justify-between bg-amber-50/70 border border-amber-200/80 rounded-lg px-2.5 py-1 text-[11px]">
+                    <span class="${t.done ? 'line-through text-slate-400' : 'font-semibold text-slate-800'}">• ${escapeHtml(t.text)}</span>
+                    <button type="button" onclick="toggleQuickTodo(${idx})" class="text-[10px] font-bold text-indigo-600 hover:underline">${t.done ? 'Öffnen' : 'Erledigt'}</button>
+                </div>
+            `).join('');
+        }
+
+        function toggleQuickTodo(idx) {
+            if (lessonsStore[activeQuickNoteKey]?.todos?.[idx]) {
+                lessonsStore[activeQuickNoteKey].todos[idx].done = !lessonsStore[activeQuickNoteKey].todos[idx].done;
+                saveAllState();
+                renderQuickNoteExisting();
+                renderCalendar();
+            }
+        }
+
+        function saveQuickNote(event) {
+            event.preventDefault();
+            const val = document.getElementById('quickNoteInput').value.trim();
+            if (!val || !activeQuickNoteKey) return;
+            const existing = lessonsStore[activeQuickNoteKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+            if (!Array.isArray(existing.todos)) existing.todos = [];
+            existing.todos.push({ id: Date.now(), text: val, done: false });
+            lessonsStore[activeQuickNoteKey] = existing;
+            saveAllState();
+            renderCalendar();
+            closeQuickNoteModal();
+            showToast("Schnell-Pendenz gespeichert!");
         }
 
         // =========================================================================
@@ -1461,7 +1620,7 @@
             activeLessonKey = key;
             activeSlotMeta = { slot, dayDate };
             const iso = formatDateISO(dayDate);
-            const data = lessonsStore[key] || { homeworkDueToday: "", trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
+            const data = lessonsStore[key] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
             const style = getStyleForSlot(slot.subject, slot.className);
             const activeTrack = getEffectiveTrack(data, slot);
 
@@ -1471,6 +1630,7 @@
             document.getElementById('modalDateTime').innerText = `• ${dayDate.getDate()}.${dayDate.getMonth() + 1}.${dayDate.getFullYear()} (${slot.start} – ${slot.end})`;
 
             document.getElementById('editLessonHomeworkToday').value = data.homeworkDueToday || "";
+            document.getElementById('editLessonIsExam').checked = Boolean(data.isExam);
             document.getElementById('editLessonTrack').value = activeTrack;
             document.getElementById('editLessonUnit').value = data.unit || "";
             document.getElementById('editLessonTitle').value = data.title || "";
@@ -1552,6 +1712,7 @@
             const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
             if (!parTargetKey) return;
             const parMode = document.getElementById('parallelSyncModeSelect').value;
+            const isExam = document.getElementById('editLessonIsExam').checked;
             const unit = document.getElementById('editLessonUnit').value.trim();
             const title = document.getElementById('editLessonTitle').value.trim();
             const einstieg = document.getElementById('editPhaseEinstieg').value.trim();
@@ -1569,17 +1730,18 @@
                 const upcomingForPar = findUpcomingSlotsForCourse(parSlot.subject, parSlot.className, parTrack, parIso, parSlot.start, 4);
                 if (upcomingForPar.length > 0) {
                     parNextHwKey = upcomingForPar[0].key;
-                    const targetNextLesson = lessonsStore[parNextHwKey] || { homeworkDueToday: "", trackOverride: "", unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                    const targetNextLesson = lessonsStore[parNextHwKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     targetNextLesson.homeworkDueToday = `${homework} (aufgegeben am ${formatDateCH(parIso)})`;
                     lessonsStore[parNextHwKey] = targetNextLesson;
                 }
             }
 
-            const existingPar = lessonsStore[parTargetKey] || { homeworkDueToday: "", trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+            const existingPar = lessonsStore[parTargetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
 
             if (parMode === 'overwrite') {
                 lessonsStore[parTargetKey] = {
                     ...existingPar,
+                    isExam,
                     unit,
                     title,
                     einstieg,
@@ -1592,6 +1754,7 @@
             } else {
                 lessonsStore[parTargetKey] = {
                     ...existingPar,
+                    isExam: existingPar.isExam || isExam,
                     unit: existingPar.unit || unit,
                     title: existingPar.title ? (title && !existingPar.title.includes(title) ? `${existingPar.title} / ${title}` : existingPar.title) : title,
                     einstieg: existingPar.einstieg ? (einstieg ? `${existingPar.einstieg}\n${einstieg}` : existingPar.einstieg) : einstieg,
@@ -1612,6 +1775,7 @@
         function saveLessonModal() {
             if (!activeLessonKey || !activeSlotMeta) return;
             const homeworkDueToday = document.getElementById('editLessonHomeworkToday').value.trim();
+            const isExam = document.getElementById('editLessonIsExam').checked;
             const enteredTrack = document.getElementById('editLessonTrack').value.trim();
             const baseTrack = (activeSlotMeta.slot.track || "").trim();
             const trackOverride = enteredTrack !== baseTrack ? enteredTrack : "";
@@ -1627,6 +1791,7 @@
 
             lessonsStore[activeLessonKey] = {
                 homeworkDueToday,
+                isExam,
                 trackOverride,
                 unit,
                 title,
@@ -1643,7 +1808,7 @@
 
             if (homework && hwTargetKey) {
                 const sourceDateCH = formatDateCH(activeLessonKey.split('_')[0]);
-                const targetLesson = lessonsStore[hwTargetKey] || { homeworkDueToday: "", trackOverride: "", unit: unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                const targetLesson = lessonsStore[hwTargetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                 targetLesson.homeworkDueToday = `${homework} (aufgegeben am ${sourceDateCH})`;
                 if (!targetLesson.unit && unit) targetLesson.unit = unit;
                 lessonsStore[hwTargetKey] = targetLesson;
@@ -1773,7 +1938,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         }
 
         // =========================================================================
-        // 6. RECHTE KI-CHAT-SIDEBAR
+        // 6. RECHTE KI-CHAT-SIDEBAR (ALLGEMEINER KI-ASSISTENT)
         // =========================================================================
         function clearGeneralAiChat() {
             generalChatHistory = [];
@@ -1835,7 +2000,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
             const targetKey = document.getElementById('generalChatTargetLesson').value;
             if (!text || !targetKey) return;
 
-            const existing = lessonsStore[targetKey] || { homeworkDueToday: "", trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+            const existing = lessonsStore[targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
             existing.hauptteil = existing.hauptteil ? `${existing.hauptteil}\n---\n${text}` : text;
             lessonsStore[targetKey] = existing;
             renderCalendar();
@@ -2009,7 +2174,7 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
             const raw = document.getElementById('universalRawTextarea').value.trim();
             if (!raw) return;
             showToast("KI gliedert den Text in Lektionen...");
-            const prompt = `Gliedere den folgenden Unterrichtstext sauber in einzelne 45-Minuten-Lektionen. Beginne jede Lektion mit «Lektion 1: [Titel]», «Lektion 2: [Titel]» usw. und trenne die Lektionen durch genau eine Leerzeile. Keine Einleitung.\n\nText:\n${raw.slice(0, 9000)}`;
+            const prompt = `Gliedere den folgenden Unterrichtstext (z. B. aus Chalk Planboard oder Word) sauber in einzelne 45-Minuten-Lektionen. Entferne Datumsköpfe oder Fusszeilen. Beginne jede Lektion mit «Lektion 1: [Titel]», «Lektion 2: [Titel]» usw. und trenne die Lektionen durch genau eine Leerzeile. Keine Einleitung.\n\nText:\n${raw.slice(0, 9000)}`;
             try {
                 const structured = await callGeminiUnified(prompt);
                 document.getElementById('universalRawTextarea').value = structured;
@@ -2158,7 +2323,7 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
                     const lines = row.block.split('\n');
                     const newTitle = lines[0];
                     const newBody = lines.slice(1).join('\n') || lines[0];
-                    const existing = lessonsStore[row.targetKey] || { homeworkDueToday: "", trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+                    const existing = lessonsStore[row.targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
 
                     if (row.mode === 'append' && (existing.title || existing.hauptteil)) {
                         lessonsStore[row.targetKey] = {
@@ -2543,7 +2708,7 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Planboard_SekA_${currentSchoolYear.replace('/', '-')}_Backup_${formatDateISO(new Date())}.json`;
+            a.download = `Sek_Planer_${currentSchoolYear.replace('/', '-')}_Backup_${formatDateISO(new Date())}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast("Komplett-Backup heruntergeladen!");
