@@ -1207,10 +1207,10 @@
             firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
-                if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
-                if (data.calendarEvents) calendarEvents = data.calendarEvents;
-                if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
+                    if (data.lessonsStore) lessonsStore = data.lessonsStore;
+                    if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
+                    if (data.calendarEvents) calendarEvents = data.calendarEvents;
+                    if (data.dayNotesStore) dayNotesStore = data.dayNotesStore;
                     renderCalendar();
                     updateOpenNotesBadge();
                     if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
@@ -2419,7 +2419,7 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
         }
 
         // =========================================================================
-        // 10. NOTIZEN, SPRACHMEMOS, FERIEN & SETTINGS
+        // 10. NOTIZEN, SPRACHMEMOS, FERIEN & SETTINGS (INKL. MERGE BEI BACKUP)
         // =========================================================================
         function addLessonTodo() {
             const input = document.getElementById('newLessonTodoInput');
@@ -2719,13 +2719,13 @@ Lehrmittel-Text:\n${raw.slice(0, 9000)}`;
             if (!file) return;
             try {
                 const data = JSON.parse(await file.text());
-                if (data.lessonsStore) lessonsStore = data.lessonsStore;
+                if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
                 if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
                 if (data.calendarEvents) calendarEvents = data.calendarEvents;
-                if (data.dayNotesStore) dayNotesStore = data.dayNotesStore;
+                if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
                 saveAllState();
                 renderCalendar();
-                showToast("Backup wiederhergestellt!");
+                showToast("Backup zusammengeführt & wiederhergestellt!");
             } catch (e) {
                 showToast("Ungültige Backup-Datei.");
             }
