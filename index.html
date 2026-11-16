@@ -23,13 +23,11 @@
         @keyframes pulseRec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.15); } }
         .recording-dot { animation: pulseRec 1.1s infinite; }
 
-        /* Rich-Text-Editor Styling (Chalk-Look) */
         .rich-editor-zone { min-height: 82px; outline: none; }
         .rich-editor-zone:empty::before { content: attr(data-placeholder); color: #94a3b8; font-style: italic; pointer-events: none; }
         .rich-editor-zone ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
         .rich-editor-zone ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
 
-        /* Druckansicht für Stellvertretungen */
         @media print {
             body { background: #ffffff !important; }
             header, #aiRightSidebar, #toast, .no-print { display: none !important; }
@@ -44,7 +42,7 @@
 <body class="bg-[#F4F6FA] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
     <!-- ===================================================================== -->
-    <!-- FIREBASE LOGIN & REGISTRIERUNG (MIT ZUGANGSCODE-SCHUTZ)               -->
+    <!-- FIREBASE LOGIN & REGISTRIERUNG                                        -->
     <!-- ===================================================================== -->
     <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4">
@@ -58,13 +56,11 @@
                 </div>
             </div>
 
-            <!-- Umschalter Login / Registrieren -->
             <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
                 <button type="button" id="authTabLoginBtn" onclick="switchAuthMode('login')" class="py-1.5 rounded-lg bg-white text-slate-900 shadow-2xs">Anmelden</button>
                 <button type="button" id="authTabRegisterBtn" onclick="switchAuthMode('register')" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900">Konto erstellen</button>
             </div>
 
-            <!-- Formular 1: Anmelden -->
             <form id="loginForm" onsubmit="handleFirebaseLogin(event)" class="flex flex-col gap-3 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
@@ -84,7 +80,6 @@
                 </button>
             </form>
 
-            <!-- Formular 2: Registrieren / Test-Account -->
             <form id="registerForm" onsubmit="handleFirebaseRegister(event)" class="hidden flex flex-col gap-3 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">E-Mail-Adresse (für Test- oder Zweitkonto)</label>
@@ -255,7 +250,7 @@
             </aside>
         </div>
 
-        <!-- ANSICHT 2: NOTIZEN & MEMOS (MIT KLASSENFILTER, FREIER NOTIZ & TRANSKRIPT→PENDENZ) -->
+        <!-- ANSICHT 2: NOTIZEN & MEMOS -->
         <section id="notesViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                 <div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
@@ -275,7 +270,6 @@
                         </div>
                     </div>
 
-                    <!-- Freie Notiz hinzufügen -->
                     <form onsubmit="addStandaloneNote(event)" class="flex gap-2 bg-amber-50/60 border border-amber-200 rounded-xl p-2.5">
                         <input type="text" id="standaloneNoteInput" required placeholder="+ Allgemeine Pendenz (z. B. Kopierpapier bestellen, Elternbrief)..." class="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
                         <button type="submit" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0">Hinzufügen</button>
@@ -378,7 +372,7 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 1: LEKTIONS-EDITOR (GROSSES CHALK-BLATT + RICH-TEXT + UNDO)     -->
+    <!-- MODAL 1: LEKTIONS-EDITOR                                              -->
     <!-- ===================================================================== -->
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
         <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
@@ -393,7 +387,6 @@
             </div>
 
             <div class="p-4 md:p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
-                <!-- Oberste Zeile: HA auf heute + Prüfungs-Umschalter -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
                     <div class="sm:col-span-8 bg-sky-100/80 border border-sky-300 rounded-xl p-2.5 flex flex-col gap-1">
                         <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
@@ -412,7 +405,6 @@
                     </div>
                 </div>
 
-                <!-- Metadaten: Gefäss, Unit, Stundenthema -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div class="sm:col-span-3">
                         <label class="block font-bold text-slate-600 mb-1">Gefäss / Schwerpunkt</label>
@@ -428,7 +420,6 @@
                     </div>
                 </div>
 
-                <!-- SCHNELLER DIREKTER KI-TUTOR -->
                 <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3 flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
@@ -465,9 +456,8 @@
                     </div>
                 </div>
 
-                <!-- GROSSES ZUSAMMENHÄNGENDES CHALK-BLATT MIT 3 RICH-TEXT-ABSCHNITTEN -->
+                <!-- CHALK-BLATT MIT 3 RICH-TEXT-ABSCHNITTEN -->
                 <div class="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-xs flex flex-col">
-                    <!-- Rich-Text Formatierungsleiste -->
                     <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-1">
                             <button type="button" onmousedown="event.preventDefault(); execRichCmd('bold');" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 rounded font-extrabold text-slate-900 text-xs" title="Fett (Ctrl+B)">B</button>
@@ -478,7 +468,6 @@
                         <span class="text-[10.5px] font-semibold text-slate-500">Unterrichtsverlauf (Chalk-Blatt • Fett &amp; Kursiv aktiv)</span>
                     </div>
 
-                    <!-- Abschnitt 1: Einstieg -->
                     <div class="p-3.5 border-b border-slate-200/80 focus-within:bg-indigo-50/15 transition-colors">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">1. Einstieg (E)</span>
@@ -487,7 +476,6 @@
                         <div id="editPhaseEinstieg" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Ankommen, Vorwissen aktivieren, Problemstellung..." class="rich-editor-zone text-[13px] text-slate-800 leading-relaxed"></div>
                     </div>
 
-                    <!-- Abschnitt 2: Hauptteil (extra gross) -->
                     <div class="p-3.5 border-b border-slate-200/80 focus-within:bg-indigo-50/15 transition-colors">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">2. Hauptteil / Erarbeitung (H)</span>
@@ -496,7 +484,6 @@
                         <div id="editPhaseHauptteil" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Erarbeitung, Üben, Sozialform, Differenzierung..." class="rich-editor-zone min-h-[150px] text-[13px] text-slate-800 leading-relaxed"></div>
                     </div>
 
-                    <!-- Abschnitt 3: Schluss -->
                     <div class="p-3.5 focus-within:bg-indigo-50/15 transition-colors">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">3. Schluss / Sicherung (S)</span>
@@ -518,7 +505,7 @@
                     </div>
                 </div>
 
-                <!-- EINGEKLAPPTES PANEL: AUF PARALLELE KLASSE ÜBERTRAGEN (MIT INHALTS-AUSWAHL) -->
+                <!-- EINGEKLAPPTES PANEL: PARALLELE KLASSE -->
                 <details class="bg-purple-50/70 border border-purple-200 rounded-xl overflow-hidden group">
                     <summary class="px-3.5 py-2.5 cursor-pointer font-extrabold text-purple-950 flex items-center justify-between select-none hover:bg-purple-100/60 transition-colors">
                         <span class="flex items-center gap-2">
@@ -529,7 +516,6 @@
                     </summary>
 
                     <div class="p-3.5 border-t border-purple-200/80 flex flex-col gap-3 bg-white/70">
-                        <!-- Auswahl, WAS übertragen werden soll -->
                         <div class="flex flex-wrap items-center gap-3 bg-purple-50 border border-purple-200/80 rounded-lg p-2.5 text-[11px] font-bold text-purple-950">
                             <span class="text-purple-800">Was übertragen?</span>
                             <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncMeta" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Titel &amp; Unit</label>
@@ -562,7 +548,7 @@
                     </div>
                 </details>
 
-                <!-- NOTIZEN & SPRACHMEMO MIT EDITIERBARER TRANSKRIPTION -->
+                <!-- NOTIZEN & SPRACHMEMO -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
                         <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
@@ -593,7 +579,6 @@
                 </div>
             </div>
 
-            <!-- FOOTER MIT +1 SCHIEBEN, LEEREN & WIEDERHERSTELLEN (UNDO) -->
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
@@ -639,7 +624,7 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT (DRAG & DROP, EDITIERBAR)-->
+    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT                         -->
     <!-- ===================================================================== -->
     <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
         <div class="bg-white rounded-2xl max-w-[1460px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
@@ -662,7 +647,7 @@
                     </button>
                     <button type="button" id="impTypeBtn_schedule" onclick="setImportCategory('schedule')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">2. Stundenplan</span>
-                        <span class="text-[10.5px] text-slate-600">Escola PDF/Excel abgleichen (zeigt neue &amp; wegfallende Lektionen vor dem Übernehmen)</span>
+                        <span class="text-[10.5px] text-slate-600">Escola PDF/Excel einlesen &amp; pro Lektion wählen: Hinzufügen, Ersetzen oder Nicht übernehmen</span>
                     </button>
                     <button type="button" id="impTypeBtn_holidays" onclick="setImportCategory('holidays')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">3. Ferien &amp; Spezialtage</span>
@@ -673,25 +658,27 @@
                 <!-- DRAG & DROP ZONE + FORMAT-ANLEITUNG -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-                        <!-- Drag & Drop Feld -->
+                        <!-- Drag & Drop Feld (klickbar + ziehbar) -->
                         <div id="dropZoneBox"
-                             ondragover="event.preventDefault(); this.classList.add('border-indigo-600', 'bg-indigo-50');"
-                             ondragleave="this.classList.remove('border-indigo-600', 'bg-indigo-50');"
+                             onclick="document.getElementById('universalFileInput').click()"
+                             ondragenter="event.preventDefault(); event.stopPropagation(); this.classList.add('border-indigo-600', 'bg-indigo-50');"
+                             ondragover="event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect='copy'; this.classList.add('border-indigo-600', 'bg-indigo-50');"
+                             ondragleave="event.preventDefault(); event.stopPropagation(); this.classList.remove('border-indigo-600', 'bg-indigo-50');"
                              ondrop="handleFileDrop(event)"
-                             class="lg:col-span-7 border-2 border-dashed border-slate-300 bg-white rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 transition-colors">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                             class="lg:col-span-7 border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-white rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 transition-colors cursor-pointer">
+                            <div class="flex items-center gap-2.5 pointer-events-none">
+                                <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                                     <i data-lucide="file-up" class="w-4 h-4"></i>
                                 </div>
                                 <div>
-                                    <div class="font-extrabold text-slate-900">Datei hierher ziehen (Drag &amp; Drop)</div>
-                                    <div class="text-[10.5px] text-slate-500">Unterstützt: .docx, .txt, .pdf, .xls, .xlsx</div>
+                                    <div id="dropZoneLabel" class="font-extrabold text-slate-900">Datei hierher ziehen (Drag &amp; Drop) oder klicken</div>
+                                    <div class="text-[10.5px] text-slate-500">Unterstützt: .xlsx, .xls, .pdf, .docx, .txt</div>
                                 </div>
                             </div>
-                            <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                            <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onclick="event.stopPropagation()" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                         </div>
 
-                        <!-- Aufklappbare Format-Anleitung & Prompt-Kopierhilfe -->
+                        <!-- Aufklappbare Format-Anleitung -->
                         <details class="lg:col-span-5 bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-[11px]">
                             <summary class="cursor-pointer font-extrabold text-indigo-950 flex items-center justify-between select-none">
                                 <span>ℹ️ Format-Anleitung für optimalen Import (klicken)</span>
@@ -762,14 +749,13 @@ HA: ...</pre>
                         </div>
                     </div>
 
-                    <!-- STEUERUNG FÜR STUNDENPLAN (MIT ABGLEICH-HINWEIS) -->
+                    <!-- STEUERUNG FÜR STUNDENPLAN -->
                     <div id="importOptionsSchedule" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-indigo-50/60 p-2.5 rounded-lg">
-                        <div class="flex flex-wrap items-center gap-3">
-                            <span class="font-bold text-indigo-950">Was soll mit dem alten Stundenplan geschehen?</span>
-                            <select id="scheduleImportMode" onchange="rebuildUniversalPreview()" class="bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-800">
-                                <option value="diff_replace">Abgleich: Neue übernehmen &amp; alte entfernen (nach Auswahl unten)</option>
-                                <option value="append">Nur neue Lektionen zum bestehenden Stundenplan hinzufügen</option>
-                            </select>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-bold text-indigo-950">Standard-Aktion für alle Zeilen:</span>
+                            <button type="button" onclick="setAllScheduleActions('add')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px]">Alle: Hinzufügen</button>
+                            <button type="button" onclick="setAllScheduleActions('replace')" class="px-2.5 py-1 bg-amber-600 text-white rounded-lg font-bold text-[11px]">Alle: Ersetzen</button>
+                            <button type="button" onclick="setAllScheduleActions('skip')" class="px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px]">Alle: Nicht übernehmen</button>
                         </div>
                         <button type="button" id="aiParseScheduleBtn" onclick="analyzeScheduleWithAi()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold flex items-center gap-1.5">
                             <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
@@ -788,7 +774,7 @@ HA: ...</pre>
 
                     <div>
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-                            <label class="font-bold text-slate-600">Ausgelesener Rohtext (falls ohne «Lektion 1:» formatiert, bitte rechts mit KI gliedern):</label>
+                            <label class="font-bold text-slate-600">Ausgelesener Inhalt (wird nach Datei-Upload automatisch hier angezeigt):</label>
                             <button type="button" id="formatSeqAiBtn" onclick="analyzeRawTextWithAi()" class="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
                                 <i data-lucide="sparkles" class="w-3 h-3"></i>
                                 <span>Rohtext mit KI sauber in Lektionen &amp; E/H/S gliedern</span>
@@ -798,10 +784,10 @@ HA: ...</pre>
                     </div>
                 </div>
 
-                <!-- LIVE-KONTROLLTABELLE (DIREKT EDITIERBAR + WOCHEN- & FERIENTRENNER) -->
+                <!-- LIVE-KONTROLLTABELLE -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (Titel, Inhalt &amp; Hausaufgaben sind hier direkt editierbar):</span>
+                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (alle erkannten Einträge sind hier direkt anpassbar):</span>
                         <div class="flex items-center gap-2 text-[11px]">
                             <button type="button" onclick="toggleAllUniversalItems(true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Alle anwählen</button>
                             <button type="button" onclick="toggleAllUniversalItems(false)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Keine</button>
@@ -951,8 +937,18 @@ HA: ...</pre>
             }
         }
 
+        // Globaler Schutz, damit Drag & Drop von Dateien niemals den Browser-Tab überschreibt
+        window.addEventListener('dragover', (e) => { e.preventDefault(); }, false);
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const importModal = document.getElementById('universalImportModal');
+            if (importModal && !importModal.classList.contains('hidden') && e.dataTransfer?.files?.length > 0) {
+                processUploadedFile(e.dataTransfer.files[0]);
+            }
+        }, false);
+
         // =========================================================================
-        // 1. SCHNELLE KI-FUNKTION (DIREKT GEMINI 2.5 FLASH + RICH-TEXT-FORMAT)
+        // 1. ZENTRALE KI-FUNKTION
         // =========================================================================
         const TEACHER_SYSTEM_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch. Du kennst den Lehrplan 21 des Kantons Zürich und antwortest praxisnah, direkt umsetzbar und ohne unnötige Floskeln.";
 
@@ -1004,7 +1000,6 @@ HA: ...</pre>
 
                 const payload = { contents };
                 const savedWorkingModel = localStorage.getItem('sekPlaner_workingModel');
-                // Direkt die echten, schnellsten Gemini-Modelle ansprechen (vermeidet Wartezeit durch ungültige Modellnamen)
                 const modelsToTry = [...new Set([
                     ...(savedWorkingModel ? [savedWorkingModel] : []),
                     "gemini-2.5-flash",
@@ -1050,7 +1045,7 @@ HA: ...</pre>
                         },
                         body: JSON.stringify({
                             model: "claude-sonnet-4-5",
-                            max_tokens: 1500,
+                            max_tokens: 2500,
                             system: TEACHER_SYSTEM_PROMPT,
                             messages: claudeMessages
                         })
@@ -1332,6 +1327,7 @@ HA: ...</pre>
         let universalAllSlots2 = [];
         let generalChatHistory = [];
         let pendingAiHolidays = [];
+        let lastUploadedExcelRows = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             refreshIcons();
@@ -1746,7 +1742,7 @@ HA: ...</pre>
         }
 
         // =========================================================================
-        // 4B. SCHNELL-NOTIZ / PENDENZ DIREKT AUF DER LEKTIONSKARTE
+        // 4B. SCHNELL-NOTIZ
         // =========================================================================
         function openQuickNoteModal(lessonKey, label) {
             activeQuickNoteKey = lessonKey;
@@ -1801,7 +1797,7 @@ HA: ...</pre>
         }
 
         // =========================================================================
-        // 5. LEKTIONS-EDITOR (RICH-TEXT, KI-TUTOR & UNDO BEI LEEREN)
+        // 5. LEKTIONS-EDITOR
         // =========================================================================
         function execRichCmd(command) {
             document.execCommand(command, false, null);
@@ -2106,7 +2102,6 @@ HA: ...</pre>
             showToast("Lektion gespeichert!");
         }
 
-        // Lektion leeren, Fenster OFFEN lassen und Wiederherstellen-Button einblenden
         function clearCurrentLesson() {
             if (!activeLessonKey) return;
             lastClearedLessonBackup = {
@@ -2251,7 +2246,6 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
 
             try {
                 const reply = await callGeminiUnified(prompt);
-                // Wandelt **Wort** direkt in echtes HTML <strong>Wort</strong> um (keine Sternchen!)
                 resultEditor.innerHTML = markdownBoldToHtml(reply);
                 resultBox.classList.remove('hidden');
             } catch (err) {
@@ -2365,8 +2359,8 @@ Text: "${text}"`;
 
             try {
                 const raw = await callGeminiUnified(prompt);
-                const cleaned = raw.replace(/```json|```/g, '').trim();
-                const parsed = JSON.parse(cleaned);
+                const jsonMatch = raw.match(/\[[\s\S]*\]/);
+                const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw.replace(/```json|```/g, '').trim());
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     pendingAiHolidays = parsed;
                     document.getElementById('holidayAiPreviewList').innerHTML = parsed.map(p =>
@@ -2402,7 +2396,7 @@ Text: "${text}"`;
         }
 
         // =========================================================================
-        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT (DRAG&DROP, EDITIERBAR, KONFLIKTE)
+        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT (DRAG&DROP, EXCEL/PDF-PARSER)
         // =========================================================================
         function copyNotebookPrompt() {
             const promptText = `Erstelle aus diesen Unterlagen einen Lektionenablauf für die Sekundarstufe I (Kanton Zürich, Niveau A, 45 Minuten pro Lektion).
@@ -2539,6 +2533,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
         }
 
         function handleRawTextareaManualInput() {
+            lastUploadedExcelRows = null;
             const val = document.getElementById('universalRawTextarea').value;
             if (currentImportCategory === 'sequence') {
                 applyDetectedStartDateIfAvailable(val);
@@ -2548,10 +2543,13 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
         function handleFileDrop(event) {
             event.preventDefault();
+            event.stopPropagation();
             const box = document.getElementById('dropZoneBox');
             box.classList.remove('border-indigo-600', 'bg-indigo-50');
             const file = event.dataTransfer?.files?.[0];
-            if (file) processUploadedFile(file);
+            if (file) {
+                processUploadedFile(file);
+            }
         }
 
         function handleUniversalFileUpload(event) {
@@ -2561,13 +2559,17 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
         async function processUploadedFile(file) {
             const textarea = document.getElementById('universalRawTextarea');
+            const dropLabel = document.getElementById('dropZoneLabel');
+            if (dropLabel) dropLabel.innerText = `Geladen: ${file.name}`;
+            lastUploadedExcelRows = null;
             showToast(`Lese ${file.name} ein...`);
 
             try {
-                if (file.name.endsWith('.docx') && window.mammoth) {
+                const lowerName = file.name.toLowerCase();
+                if (lowerName.endsWith('.docx') && window.mammoth) {
                     const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
                     textarea.value = res.value.trim();
-                } else if (file.name.endsWith('.pdf') && window.pdfjsLib) {
+                } else if (lowerName.endsWith('.pdf') && window.pdfjsLib) {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
                     let text = "";
@@ -2577,22 +2579,79 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                         text += content.items.map(it => it.str).join(" ") + "\n";
                     }
                     textarea.value = text.trim();
-                } else if ((file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) && window.XLSX) {
+                } else if ((lowerName.endsWith('.xls') || lowerName.endsWith('.xlsx')) && window.XLSX) {
                     const wb = XLSX.read(await file.arrayBuffer());
                     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                    textarea.value = rows.filter(r => r.length > 0).map(r => r.join(' | ')).join('\n');
+                    lastUploadedExcelRows = rows;
+                    textarea.value = rows.filter(r => r && r.length > 0).map(r => r.join(' | ')).join('\n');
                 } else {
                     textarea.value = await file.text();
                 }
+
                 document.getElementById('seqFileStartOffset').value = "0";
                 if (currentImportCategory === 'sequence') {
                     applyDetectedStartDateIfAvailable(textarea.value);
                 }
+
                 rebuildUniversalPreview();
+
+                // Wenn Stundenplan-Tab aktiv und es ein PDF ist (ohne strukturierte Excel-Spalten): automatisch KI starten, falls Key vorhanden
+                if (currentImportCategory === 'schedule' && lowerName.endsWith('.pdf')) {
+                    const hasKey = Boolean((localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey || "").trim());
+                    if (hasKey) {
+                        await analyzeScheduleWithAi();
+                        return;
+                    }
+                }
+
                 showToast("Datei eingelesen! Kontrolltabelle unten aktualisiert.");
             } catch (e) {
                 showToast("Datei konnte nicht gelesen werden: " + e.message);
             }
+        }
+
+        // Direkter Parser für strukturierte Excel- oder Pipe-Stundenpläne (funktioniert sofort ohne KI!)
+        function parseStructuredScheduleRows(rawText) {
+            const dayMap = {
+                "montag": 0, "mo": 0,
+                "dienstag": 1, "di": 1,
+                "mittwoch": 2, "mi": 2,
+                "donnerstag": 3, "do": 3,
+                "freitag": 4, "fr": 4
+            };
+            const results = [];
+            const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+            lines.forEach(line => {
+                if (/^total\b/i.test(line) || /^wochentag\b/i.test(line)) return;
+                const cells = line.includes('|') ? line.split('|').map(c => c.trim()) : line.split(/\t|;/).map(c => c.trim());
+                if (cells.length >= 5) {
+                    const dayIdx = dayMap[(cells[0] || "").toLowerCase()];
+                    if (dayIdx !== undefined) {
+                        // Erwartetes Schema aus unserer Excel-Vorlage: Wochentag | Lektion | Start | End | Fach | Klasse | Zimmer | Klassenlehrperson | Gefäss
+                        const hasLessonNumCol = /^\d+$/.test(cells[1] || "");
+                        const start = hasLessonNumCol ? (cells[2] || "08:20") : (cells[1] || "08:20");
+                        const end = hasLessonNumCol ? (cells[3] || "09:05") : (cells[2] || "09:05");
+                        const subject = hasLessonNumCol ? (cells[4] || "") : (cells[3] || "");
+                        const className = hasLessonNumCol ? (cells[5] || "") : (cells[4] || "");
+                        const room = hasLessonNumCol ? (cells[6] || "C63") : (cells[5] || "C63");
+                        const track = hasLessonNumCol ? (cells[8] || "") : (cells[6] || "");
+
+                        if (subject && className && /^\d{1,2}:\d{2}$/.test(start)) {
+                            results.push({
+                                day: dayIdx,
+                                start: start.padStart(5, '0'),
+                                end: end.padStart(5, '0'),
+                                subject,
+                                className,
+                                room,
+                                track
+                            });
+                        }
+                    }
+                }
+            });
+            return results;
         }
 
         async function analyzeRawTextWithAi() {
@@ -2632,29 +2691,38 @@ Text:\n${raw.slice(0, 14000)}`;
 
         async function analyzeScheduleWithAi() {
             const raw = document.getElementById('universalRawTextarea').value.trim();
-            if (!raw) return;
+            if (!raw) {
+                showToast("Bitte zuerst eine Stundenplan-Datei hochladen oder Text einfügen.");
+                return;
+            }
             const btn = document.getElementById('aiParseScheduleBtn');
-            btn.innerText = "Analysiere...";
+            const origHtml = btn.innerHTML;
+            btn.innerText = "KI liest Stundenplan...";
             btn.disabled = true;
 
-            const prompt = `Extrahiere aus diesem Stundenplan-Text alle Unterrichtslektionen mit Wochentag (0=Montag, 1=Dienstag, 2=Mittwoch, 3=Donnerstag, 4=Freitag), Startzeit (HH:MM), Endzeit (HH:MM), Fach-Kürzel (z.B. D, RZG, Mu, E, MI, RKE, BO), Klasse (z.B. S2Aa, S2Ac) und Zimmer.
-Antworte AUSSCHLIESSLICH als gültiges JSON-Array ohne Markdown-Codeblock:
+            const prompt = `Extrahiere aus diesem Stundenplan-Text alle Unterrichtslektionen mit Wochentag (0=Montag, 1=Dienstag, 2=Mittwoch, 3=Donnerstag, 4=Freitag), Startzeit (HH:MM), Endzeit (HH:MM), Fach-Kürzel (z.B. D, RZG, Mu, E, Econ, MI, RKE, BO), Klasse (z.B. S2Aa, S2Ac, Wahlfach E) und Zimmer (z.B. C63, E49).
+Achte genau auf die Spalten/Wochentage und Lektionszeiten (07:30-08:15, 08:20-09:05, 09:10-09:55, 10:15-11:00, 11:05-11:50, 11:55-12:40, 12:50-13:35, 13:45-14:30, 14:35-15:20, 15:35-16:20, 16:25-17:10).
+Antworte AUSSCHLIESSLICH als gültiges JSON-Array ohne Markdown-Codeblock oder Begleittext:
 [{"day":0,"start":"08:20","end":"09:05","subject":"D","className":"S2Aa","room":"C63"}]
 
-Text:\n${raw.slice(0, 12000)}`;
+Text:\n${raw.slice(0, 14000)}`;
 
             try {
                 const res = await callGeminiUnified(prompt);
-                const parsed = JSON.parse(res.replace(/```json|```/g, '').trim());
+                const jsonMatch = res.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) throw new Error("KI hat kein gültiges Tabellen-Format zurückgegeben.");
+                const parsed = JSON.parse(jsonMatch[0]);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    buildScheduleDiffItems(parsed);
+                    buildScheduleActionItems(parsed);
                     renderSchedulePreviewTable();
-                    showToast(`${universalPreviewItems.length} Stundenplan-Einträge abgeglichen!`);
+                    showToast(`${universalPreviewItems.length} Stundenplan-Lektionen erkannt!`);
+                } else {
+                    showToast("Keine Stundenplan-Lektionen erkannt.");
                 }
             } catch (err) {
-                showToast("KI-Fehler: " + err.message);
+                alert("Stundenplan-KI-Hinweis:\n" + err.message);
             } finally {
-                btn.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5"></i><span>Escola-Tabelle mit KI exakt zuordnen</span>`;
+                btn.innerHTML = origHtml;
                 btn.disabled = false;
                 refreshIcons();
             }
@@ -2662,8 +2730,12 @@ Text:\n${raw.slice(0, 12000)}`;
 
         async function analyzeHolidayFileWithAi() {
             const raw = document.getElementById('universalRawTextarea').value.trim();
-            if (!raw) return;
+            if (!raw) {
+                showToast("Bitte zuerst eine Datei hochladen oder Text einfügen.");
+                return;
+            }
             const btn = document.getElementById('aiParseHolidaysBtn');
+            const origHtml = btn.innerHTML;
             btn.innerText = "Analysiere...";
             btn.disabled = true;
 
@@ -2678,27 +2750,26 @@ Text:\n${raw.slice(0, 12000)}`;
 
             try {
                 const res = await callGeminiUnified(prompt);
-                const parsed = JSON.parse(res.replace(/```json|```/g, '').trim());
+                const jsonMatch = res.match(/\[[\s\S]*\]/);
+                const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : res.replace(/```json|```/g, '').trim());
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     buildHolidayConflictItems(parsed);
                     renderHolidayPreviewTable();
                     showToast(`${universalPreviewItems.length} Termine auf Konflikte geprüft!`);
                 }
             } catch (err) {
-                showToast("KI-Fehler: " + err.message);
+                alert("Ferien-KI-Hinweis:\n" + err.message);
             } finally {
-                btn.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5"></i><span>Termine mit KI erkennen</span>`;
+                btn.innerHTML = origHtml;
                 btn.disabled = false;
                 refreshIcons();
             }
         }
 
-        // Schneidet Dokument-Titel/Anleitung VOR dem ersten "Lektion 1:" sauber ab!
         function extractLessonBlocksFromText(rawText) {
             const firstLessonMatch = rawText.match(/(?:^|\n)\s*(Lektion\s+1\b)/i);
             if (firstLessonMatch && typeof firstLessonMatch.index === 'number') {
                 const headerIntro = rawText.slice(0, firstLessonMatch.index).trim();
-                // Falls im Dokument-Kopf ein Titel wie «Die Welle» steht und das Unit-Feld noch leer ist, automatisch übernehmen
                 const unitInput = document.getElementById('seqUnitTitle');
                 if (headerIntro && unitInput && !unitInput.value.trim()) {
                     const firstHeaderLine = headerIntro.split('\n')[0].replace(/–\s*Lektionsplanung.*$/i, '').replace(/[«»"]/g, '').trim();
@@ -2773,7 +2844,6 @@ Text:\n${raw.slice(0, 12000)}`;
             );
         }
 
-        // Sammelt reguläre Unterrichtsslots UND Ferienwochen als sichtbare Orientierungs-Trenner für das Dropdown
         function collectAllSlotsWithHolidayMarkers(courseVal, startDateStr, minCount) {
             if (!courseVal || !startDateStr) return [];
             const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
@@ -2788,7 +2858,6 @@ Text:\n${raw.slice(0, 12000)}`;
                 const weekISO = formatDateISO(mon);
                 const kw = getWeekNumber(mon);
 
-                // Prüfen, ob in dieser Woche Ferien liegen
                 const midWeek = new Date(mon);
                 midWeek.setDate(mon.getDate() + 2);
                 const holidayInWeek = getHolidayEventForDate(formatDateISO(midWeek), targetClass);
@@ -2872,49 +2941,35 @@ Text:\n${raw.slice(0, 12000)}`;
             return [...pureSlots];
         }
 
-        function buildScheduleDiffItems(parsedNewSlots) {
-            const mode = document.getElementById('scheduleImportMode').value;
-            const items = [];
+        // Baut die Stundenplan-Vorschautabelle auf mit Pro-Zeile-Aktion (Hinzufügen / Ersetzen / Nicht übernehmen)
+        function buildScheduleActionItems(parsedSlots) {
+            universalPreviewItems = parsedSlots.map(p => {
+                const existingAtSlot = weeklyTemplate.find(ex => Number(ex.day) === Number(p.day) && ex.start === p.start);
+                const isExactSame = existingAtSlot &&
+                    existingAtSlot.subject.toUpperCase() === (p.subject || "").toUpperCase() &&
+                    existingAtSlot.className.toUpperCase() === (p.className || "").toUpperCase();
 
-            parsedNewSlots.forEach(p => {
-                const isAlreadyThere = weeklyTemplate.some(ex =>
-                    ex.day === Number(p.day) && ex.start === p.start && ex.subject.toUpperCase() === (p.subject || "").toUpperCase() && ex.className.toUpperCase() === (p.className || "").toUpperCase()
-                );
-                items.push({
-                    selected: true,
-                    actionType: isAlreadyThere ? 'keep' : 'add',
+                return {
+                    selected: !isExactSame,
+                    action: isExactSame ? 'skip' : (existingAtSlot ? 'replace' : 'add'),
+                    existingSlot: existingAtSlot || null,
                     day: Number(p.day) || 0,
                     start: p.start || "08:20",
                     end: p.end || "09:05",
                     subject: p.subject || "D",
                     className: p.className || "S2Aa",
-                    track: "",
+                    track: p.track || "",
                     room: p.room || "C63"
-                });
+                };
             });
+        }
 
-            if (mode === 'diff_replace') {
-                weeklyTemplate.forEach(ex => {
-                    const stillInNew = parsedNewSlots.some(p =>
-                        Number(p.day) === ex.day && p.start === ex.start && (p.subject || "").toUpperCase() === ex.subject.toUpperCase() && (p.className || "").toUpperCase() === ex.className.toUpperCase()
-                    );
-                    if (!stillInNew) {
-                        items.push({
-                            selected: true,
-                            actionType: 'remove',
-                            existingId: ex.id,
-                            day: ex.day,
-                            start: ex.start,
-                            end: ex.end,
-                            subject: ex.subject,
-                            className: ex.className,
-                            track: ex.track || "",
-                            room: ex.room || "C63"
-                        });
-                    }
-                });
-            }
-            universalPreviewItems = items;
+        function setAllScheduleActions(actionVal) {
+            universalPreviewItems.forEach(it => {
+                it.action = actionVal;
+                it.selected = actionVal !== 'skip';
+            });
+            renderSchedulePreviewTable();
         }
 
         function buildHolidayConflictItems(parsedEvents) {
@@ -2924,7 +2979,6 @@ Text:\n${raw.slice(0, 12000)}`;
                 const targetClass = p.targetClass || 'ALL';
                 const evType = p.type === 'holiday' ? 'holiday' : 'special';
 
-                // Prüfen auf bestehende Termine oder geplante Lektionen im Zeitraum
                 const overlappingEvents = calendarEvents.filter(ev => !(end < ev.start || start > ev.end));
                 const affectedLessonKeys = [];
                 if (evType === 'holiday') {
@@ -3028,6 +3082,15 @@ Text:\n${raw.slice(0, 12000)}`;
                 renderSequencePreviewTable();
 
             } else if (currentImportCategory === 'schedule') {
+                // 1. Zuerst prüfen, ob es eine strukturierte Excel-/Tabellenliste mit Wochentagen & Zeiten ist
+                const structured = parseStructuredScheduleRows(rawText);
+                if (structured.length > 0) {
+                    buildScheduleActionItems(structured);
+                    renderSchedulePreviewTable();
+                    return;
+                }
+
+                // 2. Fallback für einfachen Rohtext ohne Spalten
                 const timeSlots = [
                     { start: "07:30", end: "08:15" }, { start: "08:20", end: "09:05" }, { start: "09:10", end: "09:55" },
                     { start: "10:15", end: "11:00" }, { start: "11:05", end: "11:50" }, { start: "11:55", end: "12:40" },
@@ -3043,8 +3106,13 @@ Text:\n${raw.slice(0, 12000)}`;
                     rawParsed.push({ day: autoIdx % 5, start: ts.start, end: ts.end, subject: match[1], className: match[2], room: "C63" });
                     autoIdx++;
                 }
-                buildScheduleDiffItems(rawParsed);
-                renderSchedulePreviewTable();
+                if (rawParsed.length > 0) {
+                    buildScheduleActionItems(rawParsed);
+                    renderSchedulePreviewTable();
+                } else {
+                    thead.innerHTML = '';
+                    tbody.innerHTML = `<tr><td class="py-6 text-center text-slate-600 font-semibold">PDF-Rohtext erkannt – bitte oben rechts auf <strong>«Escola-Tabelle mit KI exakt zuordnen»</strong> klicken.</td></tr>`;
+                }
 
             } else {
                 const parsed = parseSwissDatesFromText(rawText);
@@ -3232,7 +3300,6 @@ Text:\n${raw.slice(0, 12000)}`;
             const rowsHtml = [];
 
             universalPreviewItems.forEach((it, i) => {
-                // Wochen-Trennerzeile für bessere Orientierung einblenden
                 const slotObj1 = universalAllSlots1.find(s => !s.isHolidayMarker && s.key === it.c1?.targetKey);
                 if (slotObj1 && slotObj1.weekISO !== lastRenderedWeekISO) {
                     lastRenderedWeekISO = slotObj1.weekISO;
@@ -3286,26 +3353,62 @@ Text:\n${raw.slice(0, 12000)}`;
             it.parsed.schluss = reparsed.schluss;
         }
 
+        // Stundenplan-Tabelle mit editierbaren Feldern und Einzel-Auswahl: Hinzufügen / Ersetzen / Nicht übernehmen
         function renderSchedulePreviewTable() {
             const thead = document.getElementById('universalPreviewThead');
             const tbody = document.getElementById('universalPreviewTbody');
             const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
-            thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Status</th><th class="py-2 px-3">Tag</th><th class="py-2 px-3">Zeit</th><th class="py-2 px-3">Fach</th><th class="py-2 px-3">Klasse</th><th class="py-2 px-3">Gefäss</th></tr>`;
+            thead.innerHTML = `<tr>
+                <th class="py-2 px-2.5 w-10">Wahl</th>
+                <th class="py-2 px-2.5 w-44">Aktion</th>
+                <th class="py-2 px-2.5">Wochentag</th>
+                <th class="py-2 px-2.5">Von – Bis</th>
+                <th class="py-2 px-2.5">Fach</th>
+                <th class="py-2 px-2.5">Klasse</th>
+                <th class="py-2 px-2.5">Zimmer</th>
+                <th class="py-2 px-2.5">Gefäss</th>
+            </tr>`;
+
             tbody.innerHTML = universalPreviewItems.map((it, i) => {
-                const badgeMap = {
-                    add: `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">+ Neu</span>`,
-                    keep: `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">Unverändert</span>`,
-                    remove: `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-extrabold text-[10px]">✕ Wegfallend (löschen)</span>`
-                };
+                const rowBg = it.action === 'skip' ? 'bg-slate-50 opacity-60' : (it.action === 'replace' ? 'bg-amber-50/50' : 'bg-emerald-50/35');
+                const existingNote = it.existingSlot
+                    ? `<div class="text-[10px] text-amber-800 font-semibold mt-0.5">Aktuell: ${escapeHtml(it.existingSlot.subject)} ${escapeHtml(it.existingSlot.className)}</div>`
+                    : '';
+
                 return `
-                    <tr class="${it.actionType === 'remove' ? 'bg-rose-50/50' : (it.actionType === 'add' ? 'bg-emerald-50/40' : 'bg-white')}">
-                        <td class="py-2 px-3"><input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
-                        <td class="py-2 px-3">${badgeMap[it.actionType] || ''}</td>
-                        <td class="py-2 px-3"><select onchange="universalPreviewItems[${i}].day = parseInt(this.value,10)" class="bg-white border border-slate-200 rounded px-2 py-1 font-bold">${dayNames.map((dn, dIdx) => `<option value="${dIdx}" ${it.day === dIdx ? 'selected' : ''}>${dn}</option>`).join('')}</select></td>
-                        <td class="py-2 px-3 font-semibold">${escapeHtml(it.start)} – ${escapeHtml(it.end)}</td>
-                        <td class="py-2 px-3 font-extrabold text-indigo-900">${escapeHtml(it.subject)}</td>
-                        <td class="py-2 px-3 font-bold">${escapeHtml(it.className)}</td>
-                        <td class="py-2 px-3"><input type="text" value="${escapeHtml(it.track || '')}" oninput="universalPreviewItems[${i}].track = this.value" placeholder="optional" class="w-28 bg-white border border-slate-200 rounded px-2 py-1"></td>
+                    <tr class="${rowBg}">
+                        <td class="py-2 px-2.5">
+                            <input type="checkbox" ${it.action !== 'skip' ? 'checked' : ''} onchange="universalPreviewItems[${i}].action = this.checked ? 'add' : 'skip'; renderSchedulePreviewTable();" class="rounded text-indigo-600">
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <select onchange="universalPreviewItems[${i}].action = this.value; renderSchedulePreviewTable();" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-bold text-[11px]">
+                                <option value="add" ${it.action === 'add' ? 'selected' : ''}>➕ Hinzufügen</option>
+                                <option value="replace" ${it.action === 'replace' ? 'selected' : ''}>🔄 Ersetzen (Slot überschreiben)</option>
+                                <option value="skip" ${it.action === 'skip' ? 'selected' : ''}>⏭️ Nicht übernehmen</option>
+                            </select>
+                            ${existingNote}
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <select onchange="universalPreviewItems[${i}].day = parseInt(this.value,10)" class="bg-white border border-slate-200 rounded px-2 py-1 font-bold">
+                                ${dayNames.map((dn, dIdx) => `<option value="${dIdx}" ${it.day === dIdx ? 'selected' : ''}>${dn}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="py-2 px-2.5 whitespace-nowrap">
+                            <input type="text" value="${escapeHtml(it.start)}" oninput="universalPreviewItems[${i}].start = this.value" class="w-14 bg-white border border-slate-200 rounded px-1.5 py-1 font-semibold text-center"> –
+                            <input type="text" value="${escapeHtml(it.end)}" oninput="universalPreviewItems[${i}].end = this.value" class="w-14 bg-white border border-slate-200 rounded px-1.5 py-1 font-semibold text-center">
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <input type="text" value="${escapeHtml(it.subject)}" oninput="universalPreviewItems[${i}].subject = this.value" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 font-extrabold text-indigo-900">
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <input type="text" value="${escapeHtml(it.className)}" oninput="universalPreviewItems[${i}].className = this.value" class="w-24 bg-white border border-slate-200 rounded px-2 py-1 font-bold">
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <input type="text" value="${escapeHtml(it.room || '')}" oninput="universalPreviewItems[${i}].room = this.value" class="w-16 bg-white border border-slate-200 rounded px-2 py-1">
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <input type="text" value="${escapeHtml(it.track || '')}" oninput="universalPreviewItems[${i}].track = this.value" placeholder="optional" class="w-28 bg-white border border-slate-200 rounded px-2 py-1">
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -3347,6 +3450,10 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function toggleAllUniversalItems(state) {
+            if (currentImportCategory === 'schedule') {
+                setAllScheduleActions(state ? 'add' : 'skip');
+                return;
+            }
             universalPreviewItems.forEach(it => it.selected = state);
             document.querySelectorAll('#universalPreviewTbody input[type="checkbox"]').forEach(cb => cb.checked = state);
         }
@@ -3402,6 +3509,34 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function applyUniversalImportSelection() {
+            if (currentImportCategory === 'schedule') {
+                const activeRows = universalPreviewItems.filter(it => it.action === 'add' || it.action === 'replace');
+                if (activeRows.length === 0) {
+                    showToast("Keine Stundenplan-Zeilen zum Übernehmen ausgewählt.");
+                    return;
+                }
+                activeRows.forEach((it, idx) => {
+                    if (it.action === 'replace') {
+                        weeklyTemplate = weeklyTemplate.filter(s => !(Number(s.day) === Number(it.day) && s.start === it.start));
+                    }
+                    weeklyTemplate.push({
+                        id: `imp-${Date.now()}-${idx}`,
+                        day: Number(it.day),
+                        start: it.start,
+                        end: it.end,
+                        subject: it.subject,
+                        className: it.className,
+                        track: it.track || "",
+                        room: it.room || "C63"
+                    });
+                });
+                closeUniversalImportModal();
+                renderCalendar();
+                saveAllState();
+                showToast(`${activeRows.length} Stundenplan-Lektionen übernommen!`);
+                return;
+            }
+
             const chosen = universalPreviewItems.filter(it => it.selected);
             if (chosen.length === 0) return;
 
@@ -3419,15 +3554,6 @@ Text:\n${raw.slice(0, 12000)}`;
                     if (row.c2 && writeParsedLessonToTarget(row.c2, row.parsed, unitTitle, trackLabel, nextKey2)) countWritten++;
                 });
                 showToast(`${countWritten} Lektions-Einträge (inkl. HA-Verknüpfung) gespeichert!`);
-            } else if (currentImportCategory === 'schedule') {
-                chosen.forEach((it, idx) => {
-                    if (it.actionType === 'remove' && it.existingId) {
-                        weeklyTemplate = weeklyTemplate.filter(s => s.id !== it.existingId);
-                    } else if (it.actionType === 'add') {
-                        weeklyTemplate.push({ id: `imp-${Date.now()}-${idx}`, day: it.day, start: it.start, end: it.end, subject: it.subject, className: it.className, track: it.track || "", room: it.room });
-                    }
-                });
-                showToast("Stundenplan-Abgleich erfolgreich übernommen!");
             } else {
                 chosen.forEach(it => {
                     calendarEvents.push({ id: it.id, type: it.type, targetClass: it.targetClass || 'ALL', name: it.name, start: it.start, end: it.end });
@@ -3509,7 +3635,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         // =========================================================================
-        // 10. NOTIZEN, SPRACHMEMOS (MIT VERBESSERTER TRANSKRIPTION), FERIEN & SETTINGS
+        // 10. NOTIZEN, SPRACHMEMOS, FERIEN & SETTINGS
         // =========================================================================
         function addLessonTodo() {
             const input = document.getElementById('newLessonTodoInput');
@@ -3699,7 +3825,6 @@ Text:\n${raw.slice(0, 12000)}`;
             }
         }
 
-        // Verbesserte Spracherkennung (startet bei kurzen Sprechpausen automatisch neu & lässt Text direkt editieren)
         let mediaRecorder = null;
         let audioChunks = [];
         let speechRecognizer = null;
