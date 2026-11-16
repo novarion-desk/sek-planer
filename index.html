@@ -557,10 +557,10 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT (1 ODER 2 KLASSEN)      -->
+    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT                         -->
     <!-- ===================================================================== -->
     <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-[1400px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
+        <div class="bg-white rounded-2xl max-w-[1440px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-600"></i>
@@ -576,7 +576,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <button type="button" id="impTypeBtn_sequence" onclick="setImportCategory('sequence')" class="p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-indigo-950 text-xs">1. Lektionenablauf / Sequenz</span>
-                        <span class="text-[10.5px] text-indigo-800">Word / Text / NotebookLM-Output auf 1 oder 2 Klassen (45-Min-Slots) verteilen</span>
+                        <span class="text-[10.5px] text-indigo-800">Word / Text / NotebookLM-Output mit Wochenrhythmus &amp; Standard-Slot auf 1 oder 2 Klassen verteilen</span>
                     </button>
                     <button type="button" id="impTypeBtn_schedule" onclick="setImportCategory('schedule')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">2. Stundenplan</span>
@@ -595,29 +595,57 @@
                         <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
 
-                    <!-- STEUERUNG FÜR LEKTIONENABLAUF (INKL. 2. KLASSE & START-BLOCK) -->
-                    <div id="importOptionsSequence" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-2.5 border-t border-slate-200/80">
-                        <div class="sm:col-span-3">
-                            <label class="block font-bold text-indigo-950 mb-1">Klasse 1 (Fach &amp; Gefäss)</label>
-                            <select id="seqTargetCourse1" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-900"></select>
+                    <!-- STEUERUNG FÜR LEKTIONENABLAUF -->
+                    <div id="importOptionsSequence" class="flex flex-col gap-3 pt-2.5 border-t border-slate-200/80">
+                        <!-- Zeile 1: Startdatum, Start-Block, Unit-Titel, Gefäss-Tag -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                            <div class="sm:col-span-3">
+                                <label class="block font-bold text-slate-700 mb-1">Start im Kalender ab <span id="autoDateDetectedHint" class="hidden text-[10px] text-emerald-700 font-extrabold">(aus Datei erkannt)</span></label>
+                                <input type="date" id="seqStartDate" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="block font-bold text-indigo-900 mb-1">Start ab Datei-Block</label>
+                                <select id="seqFileStartOffset" onchange="rebuildUniversalPreview()" class="w-full bg-indigo-50/70 border border-indigo-200 rounded-lg px-2 py-1.5 font-extrabold text-indigo-950">
+                                    <option value="0">1. Block (Anfang)</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="block font-bold text-slate-700 mb-1">Unit / Sequenz-Titel</label>
+                                <input type="text" id="seqUnitTitle" oninput="rebuildUniversalPreview()" placeholder="z. B. Die Welle" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="block font-bold text-slate-700 mb-1">Gefäss-Markierung setzen</label>
+                                <input type="text" id="seqTrackLabel" placeholder="z. B. Literatur (optional)" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold text-indigo-950">
+                            </div>
                         </div>
-                        <div class="sm:col-span-3">
-                            <label class="block font-bold text-purple-950 mb-1">Klasse 2 (optional parallel)</label>
-                            <select id="seqTargetCourse2" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-purple-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-900"></select>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block font-bold text-slate-700 mb-1">Start im Kalender ab</label>
-                            <input type="date" id="seqStartDate" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 font-bold">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block font-bold text-indigo-900 mb-1">Start ab Datei-Block</label>
-                            <select id="seqFileStartOffset" onchange="rebuildUniversalPreview()" class="w-full bg-indigo-50/70 border border-indigo-200 rounded-lg px-2 py-1.5 font-extrabold text-indigo-950">
-                                <option value="0">1. Block (Anfang)</option>
-                            </select>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block font-bold text-slate-700 mb-1">Unit / Sequenz-Titel</label>
-                            <input type="text" id="seqUnitTitle" oninput="rebuildUniversalPreview()" placeholder="z. B. Die Welle" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
+
+                        <!-- Zeile 2: Klasse 1 & Klasse 2 jeweils mit eigenem Rhythmus & bevorzugtem Wochen-Slot -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+                            <!-- Box Klasse 1 -->
+                            <div class="bg-indigo-50/60 border border-indigo-200 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                <div class="sm:col-span-5">
+                                    <label class="block font-extrabold text-indigo-950 mb-1">Klasse 1 (Fach &amp; Klasse)</label>
+                                    <select id="seqTargetCourse1" onchange="onCourseSelectionChanged(1)" class="w-full bg-white border border-indigo-200 rounded-lg px-2 py-1.5 font-bold text-slate-900"></select>
+                                </div>
+                                <div class="sm:col-span-7">
+                                    <label class="block font-bold text-indigo-900 mb-1">Rhythmus / Standard-Lektion pro Woche</label>
+                                    <select id="seqPreferredSlot1" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-indigo-200 rounded-lg px-2 py-1.5 font-bold text-indigo-950"></select>
+                                </div>
+                            </div>
+
+                            <!-- Box Klasse 2 -->
+                            <div class="bg-purple-50/60 border border-purple-200 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                <div class="sm:col-span-5">
+                                    <label class="block font-extrabold text-purple-950 mb-1">Klasse 2 (optional parallel)</label>
+                                    <select id="seqTargetCourse2" onchange="onCourseSelectionChanged(2)" class="w-full bg-white border border-purple-200 rounded-lg px-2 py-1.5 font-bold text-slate-900"></select>
+                                </div>
+                                <div class="sm:col-span-7">
+                                    <label class="block font-bold text-purple-900 mb-1">Rhythmus / Standard-Lektion pro Woche</label>
+                                    <select id="seqPreferredSlot2" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-purple-200 rounded-lg px-2 py-1.5 font-bold text-purple-950" disabled>
+                                        <option value="ALL">— Zuerst Klasse 2 wählen —</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -653,14 +681,14 @@
                                 <span>Unformatierten Rohtext mit KI in Lektionen &amp; E/H/S gliedern</span>
                             </button>
                         </div>
-                        <textarea id="universalRawTextarea" oninput="rebuildUniversalPreview()" rows="3" placeholder="Hier deinen Lektionenablauf aus NotebookLM / Gemini hineinkopieren oder oben eine Datei hochladen..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        <textarea id="universalRawTextarea" oninput="handleRawTextareaManualInput()" rows="3" placeholder="Hier deinen Lektionenablauf aus NotebookLM / Gemini hineinkopieren oder oben eine Datei hochladen..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                     </div>
                 </div>
 
                 <!-- LIVE-KONTROLLTABELLE -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (pro Lektion &amp; Klasse einzeln steuerbar • «Überspringen» schiebt automatisch weiter):</span>
+                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (änderst du in einer Zeile das Datum, rücken alle nachfolgenden Lektionen automatisch im gewählten Rhythmus nach):</span>
                         <div class="flex items-center gap-2 text-[11px]">
                             <button type="button" onclick="toggleAllUniversalItems(true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Alle anwählen</button>
                             <button type="button" onclick="toggleAllUniversalItems(false)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Keine</button>
@@ -1122,8 +1150,8 @@
         let selectedAiPhase = 'einstieg';
         let currentImportCategory = 'sequence';
         let universalPreviewItems = [];
-        let universalAvailableSlots1 = [];
-        let universalAvailableSlots2 = [];
+        let universalAllSlots1 = [];
+        let universalAllSlots2 = [];
         let generalChatHistory = [];
         let pendingAiHolidays = [];
 
@@ -1419,7 +1447,7 @@
             if (data && typeof data.trackOverride === 'string' && data.trackOverride.trim() !== '') {
                 return data.trackOverride.trim();
             }
-            return (slot.track || "").trim();
+            return (slot && slot.track ? slot.track : "").trim();
         }
 
         function renderCalendar() {
@@ -2105,7 +2133,7 @@ Text: "${text}"`;
         }
 
         // =========================================================================
-        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT (1 ODER 2 KLASSEN + PRO-ZEILE-MODUS)
+        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT MIT RHYTHMUS, KASKADE & AUTO-DATUM
         // =========================================================================
         function openUniversalImportModal() {
             const select1 = document.getElementById('seqTargetCourse1');
@@ -2134,6 +2162,10 @@ Text: "${text}"`;
             select2.innerHTML = `<option value="">— Keine 2. Klasse —</option>` + optionsHtml.join('');
 
             document.getElementById('seqStartDate').value = formatDateISO(currentMonday);
+            document.getElementById('autoDateDetectedHint').classList.add('hidden');
+            populatePreferredSlotsDropdown(1);
+            populatePreferredSlotsDropdown(2);
+
             setImportCategory('sequence');
             document.getElementById('universalImportModal').classList.remove('hidden');
             refreshIcons();
@@ -2141,6 +2173,35 @@ Text: "${text}"`;
 
         function closeUniversalImportModal() {
             document.getElementById('universalImportModal').classList.add('hidden');
+        }
+
+        function populatePreferredSlotsDropdown(classNum) {
+            const courseVal = document.getElementById(`seqTargetCourse${classNum}`).value;
+            const slotSelect = document.getElementById(`seqPreferredSlot${classNum}`);
+            if (!courseVal) {
+                slotSelect.innerHTML = `<option value="ALL">— Zuerst Klasse 2 wählen —</option>`;
+                slotSelect.disabled = true;
+                return;
+            }
+            slotSelect.disabled = false;
+            const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
+            const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+
+            const matchingWeeklySlots = weeklyTemplate
+                .filter(s => s.subject === targetSubject && s.className === targetClass && (!targetTrack || (s.track || "").trim() === targetTrack))
+                .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+
+            let html = `<option value="ALL">Alle ${matchingWeeklySlots.length} Lektionen/Woche (der Reihe nach)</option>`;
+            html += `<option value="1_PER_WEEK_FIRST">1 Lektion/Woche (jeweils 1. verfügbare Lektion der Woche)</option>`;
+            matchingWeeklySlots.forEach(s => {
+                html += `<option value="SLOT_${s.id}">1 Lektion/Woche: Immer ${dayNames[s.day]} (${s.start}–${s.end})${s.track ? ' • ' + s.track : ''}</option>`;
+            });
+            slotSelect.innerHTML = html;
+        }
+
+        function onCourseSelectionChanged(classNum) {
+            populatePreferredSlotsDropdown(classNum);
+            rebuildUniversalPreview();
         }
 
         function setImportCategory(cat) {
@@ -2155,6 +2216,53 @@ Text: "${text}"`;
             document.getElementById('importOptionsSchedule').classList.toggle('hidden', cat !== 'schedule');
             document.getElementById('importOptionsHolidays').classList.toggle('hidden', cat !== 'holidays');
             document.getElementById('formatSeqAiBtn').classList.toggle('hidden', cat !== 'sequence');
+            rebuildUniversalPreview();
+        }
+
+        function detectStartDateFromText(text) {
+            const monthsMap = {
+                "januar": "01", "februar": "02", "märz": "03", "april": "04", "mai": "05", "juni": "06",
+                "juli": "07", "august": "08", "september": "09", "oktober": "10", "november": "11", "dezember": "12"
+            };
+            // 1. Numerisches Datum TT.MM.JJJJ oder TT.MM.JJ (z.B. 4.1.2027 oder 04.01.27)
+            const numMatch = text.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+            if (numMatch) {
+                const day = numMatch[1].padStart(2, '0');
+                const month = numMatch[2].padStart(2, '0');
+                let year = numMatch[3];
+                if (year.length === 2) year = "20" + year;
+                const yrInt = parseInt(year, 10);
+                if (yrInt >= 2025 && yrInt <= 2032 && parseInt(month, 10) <= 12 && parseInt(day, 10) <= 31) {
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            // 2. Ausgeschriebenes Datum wie "4. Januar 2027"
+            const wordMatch = text.match(/\b(\d{1,2})\.\s*(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s*(20\d{2})\b/i);
+            if (wordMatch) {
+                const day = wordMatch[1].padStart(2, '0');
+                const month = monthsMap[wordMatch[2].toLowerCase()];
+                const year = wordMatch[3];
+                if (month) return `${year}-${month}-${day}`;
+            }
+            return null;
+        }
+
+        function applyDetectedStartDateIfAvailable(text) {
+            const detected = detectStartDateFromText(text);
+            const hintEl = document.getElementById('autoDateDetectedHint');
+            if (detected) {
+                document.getElementById('seqStartDate').value = detected;
+                hintEl.classList.remove('hidden');
+            } else {
+                hintEl.classList.add('hidden');
+            }
+        }
+
+        function handleRawTextareaManualInput() {
+            const val = document.getElementById('universalRawTextarea').value;
+            if (currentImportCategory === 'sequence') {
+                applyDetectedStartDateIfAvailable(val);
+            }
             rebuildUniversalPreview();
         }
 
@@ -2186,6 +2294,9 @@ Text: "${text}"`;
                     textarea.value = await file.text();
                 }
                 document.getElementById('seqFileStartOffset').value = "0";
+                if (currentImportCategory === 'sequence') {
+                    applyDetectedStartDateIfAvailable(textarea.value);
+                }
                 rebuildUniversalPreview();
                 showToast("Datei eingelesen! Kontrolltabelle unten aktualisiert.");
             } catch (e) {
@@ -2346,8 +2457,9 @@ Text:\n${raw.slice(0, 12000)}`;
             if (!existing) return "";
             const parts = [];
             if (existing.isExam) parts.push("📝 PRÜFUNG / LERNKONTROLLE");
-            if (existing.title) parts.push(`Titel: ${existing.title}`);
+            if (existing.trackOverride) parts.push(`Gefäss: ${existing.trackOverride}`);
             if (existing.unit) parts.push(`Unit: ${existing.unit}`);
+            if (existing.title) parts.push(`Titel: ${existing.title}`);
             if (existing.einstieg) parts.push(`E: ${existing.einstieg}`);
             if (existing.hauptteil) parts.push(`H: ${existing.hauptteil}`);
             if (existing.schluss) parts.push(`S: ${existing.schluss}`);
@@ -2368,16 +2480,19 @@ Text:\n${raw.slice(0, 12000)}`;
             );
         }
 
-        function collectFutureSlotsForCourseVal(courseVal, startDateStr, minCount) {
+        // Sammelt ALLE regulären Slots dieses Fachs & dieser Klasse über 40 Wochen (damit im Dropdown jederzeit auch auf andere Wochentage gewechselt werden kann)
+        function collectAllSlotsForCourse(courseVal, startDateStr, minCount) {
             if (!courseVal || !startDateStr) return [];
             const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
             const startMonday = getMonday(new Date(startDateStr));
             const slots = [];
             const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
 
-            for (let w = 0; w < 32 && slots.length < minCount + 25; w++) {
+            for (let w = 0; w < 42 && slots.length < minCount + 45; w++) {
                 const mon = new Date(startMonday);
                 mon.setDate(startMonday.getDate() + w * 7);
+                const weekISO = formatDateISO(mon);
+
                 weeklyTemplate
                     .filter(s => s.subject === targetSubject && s.className === targetClass && (!targetTrack || (s.track || "").trim() === targetTrack))
                     .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
@@ -2389,19 +2504,60 @@ Text:\n${raw.slice(0, 12000)}`;
                             const slotKey = `${iso}_${s.id}`;
                             const existing = lessonsStore[slotKey];
                             const occupied = hasLessonContent(existing);
-                            const shortExisting = occupied
-                                ? ` [BELEGT: ${(existing.isExam ? '📝 Prüfung ' : '') + (existing.title || existing.hauptteil || '').slice(0, 24)}]`
-                                : ' [Frei]';
+                            const effTrack = getEffectiveTrack(existing, s);
+
+                            let infoBadge = " [Frei]";
+                            if (occupied) {
+                                const infoParts = [];
+                                if (existing.isExam) infoParts.push("📝 Prüfung");
+                                if (effTrack) infoParts.push(effTrack);
+                                if (existing.unit) infoParts.push(`Unit: ${existing.unit}`);
+                                const mainTxt = existing.title || existing.hauptteil || existing.notes || "";
+                                if (mainTxt) infoParts.push(mainTxt.slice(0, 28));
+                                infoBadge = ` [BELEGT: ${infoParts.join(' | ')}]`;
+                            } else if (effTrack) {
+                                infoBadge = ` [${effTrack} • Frei]`;
+                            }
+
                             slots.push({
                                 key: slotKey,
+                                iso,
+                                weekISO,
+                                day: s.day,
+                                slotId: s.id,
                                 occupied,
                                 existing,
-                                label: `${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start}–${s.end})${s.track ? ' • ' + s.track : ''}${shortExisting}`
+                                label: `${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start}–${s.end})${infoBadge}`
                             });
                         }
                     });
             }
             return slots;
+        }
+
+        // Wählt aus allen Slots die Standard-Vorschlagsliste gemäss Rhythmus (1x/Woche bestimmter Slot vs. 1. Slot/Woche vs. Alle)
+        function buildRecommendedSlotsByRhythm(allSlots, rhythmPreference) {
+            if (!allSlots || allSlots.length === 0) return [];
+            if (!rhythmPreference || rhythmPreference === 'ALL') {
+                return [...allSlots];
+            }
+            if (rhythmPreference === '1_PER_WEEK_FIRST') {
+                const seenWeeks = new Set();
+                const filtered = [];
+                allSlots.forEach(sl => {
+                    if (!seenWeeks.has(sl.weekISO)) {
+                        seenWeeks.add(sl.weekISO);
+                        filtered.push(sl);
+                    }
+                });
+                return filtered;
+            }
+            if (rhythmPreference.startsWith('SLOT_')) {
+                const preferredSlotId = rhythmPreference.replace('SLOT_', '');
+                const exactMatches = allSlots.filter(sl => sl.slotId === preferredSlotId);
+                return exactMatches.length > 0 ? exactMatches : [...allSlots];
+            }
+            return [...allSlots];
         }
 
         function rebuildUniversalPreview() {
@@ -2431,16 +2587,21 @@ Text:\n${raw.slice(0, 12000)}`;
                 const blocksToImport = allBlocks.slice(currentOffset);
                 const courseVal1 = document.getElementById('seqTargetCourse1').value;
                 const courseVal2 = document.getElementById('seqTargetCourse2').value;
+                const rhythm1 = document.getElementById('seqPreferredSlot1').value;
+                const rhythm2 = document.getElementById('seqPreferredSlot2').value;
                 const startDateStr = document.getElementById('seqStartDate').value;
                 if (!courseVal1 || !startDateStr) return;
 
-                universalAvailableSlots1 = collectFutureSlotsForCourseVal(courseVal1, startDateStr, blocksToImport.length);
-                universalAvailableSlots2 = courseVal2 ? collectFutureSlotsForCourseVal(courseVal2, startDateStr, blocksToImport.length) : [];
+                universalAllSlots1 = collectAllSlotsForCourse(courseVal1, startDateStr, blocksToImport.length * 5);
+                universalAllSlots2 = courseVal2 ? collectAllSlotsForCourse(courseVal2, startDateStr, blocksToImport.length * 5) : [];
+
+                const recSlots1 = buildRecommendedSlotsByRhythm(universalAllSlots1, rhythm1);
+                const recSlots2 = buildRecommendedSlotsByRhythm(universalAllSlots2, rhythm2);
 
                 universalPreviewItems = blocksToImport.map((block, idx) => {
-                    const slot1 = universalAvailableSlots1[idx] || universalAvailableSlots1[universalAvailableSlots1.length - 1];
-                    const slot2 = universalAvailableSlots2.length > 0
-                        ? (universalAvailableSlots2[idx] || universalAvailableSlots2[universalAvailableSlots2.length - 1])
+                    const slot1 = recSlots1[idx] || recSlots1[recSlots1.length - 1];
+                    const slot2 = recSlots2.length > 0
+                        ? (recSlots2[idx] || recSlots2[recSlots2.length - 1])
                         : null;
 
                     const parsed = parseLessonBlockStructure(block);
@@ -2493,62 +2654,133 @@ Text:\n${raw.slice(0, 12000)}`;
             }
         }
 
+        // Berechnet ab einer geänderten Zeile (rowIndex) alle nachfolgenden Slots für diese Klasse neu – bevorzugt am selben Wochentag/Slot!
+        function cascadeFollowingSlotsForClass(startRowIndex, classNum, anchorSlotObj) {
+            const allSlotsPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
+            const rhythmPref = document.getElementById(`seqPreferredSlot${classNum}`).value;
+            const getTargetObj = (r) => classNum === 1 ? universalPreviewItems[r].c1 : universalPreviewItems[r].c2;
+
+            if (!anchorSlotObj || allSlotsPool.length === 0) return;
+
+            const anchorAllIdx = allSlotsPool.findIndex(s => s.key === anchorSlotObj.key);
+            if (anchorAllIdx === -1) return;
+
+            if (rhythmPref === 'ALL') {
+                // Bei "Alle Lektionen/Woche": ab anchorAllIdx einfach die nächsten Slots der Reihe nach zuweisen
+                let cursor = anchorAllIdx + 1;
+                for (let r = startRowIndex + 1; r < universalPreviewItems.length; r++) {
+                    const tObj = getTargetObj(r);
+                    if (!tObj) continue;
+                    if (tObj.mode === 'skip') cursor++;
+                    const nextSlot = allSlotsPool[cursor] || allSlotsPool[allSlotsPool.length - 1];
+                    if (nextSlot) {
+                        tObj.targetKey = nextSlot.key;
+                        tObj.existing = nextSlot.existing;
+                        tObj.hasExisting = nextSlot.occupied;
+                        if (tObj.mode !== 'skip') tObj.mode = nextSlot.occupied ? 'append' : 'replace';
+                    }
+                    cursor++;
+                }
+            } else {
+                // Bei 1 Lektion/Woche: nachfolgende Lektionen jeweils in die darauffolgenden Wochen schieben – bevorzugt am selben Wochentag/Slot wie der neu gewählte Slot!
+                const preferredDay = anchorSlotObj.day;
+                const preferredSlotId = anchorSlotObj.slotId;
+
+                // Alle eindeutigen Wochen ab der Woche des gewählten Slots sammeln
+                const futureWeeks = [];
+                allSlotsPool.forEach(sl => {
+                    if (sl.iso > anchorSlotObj.iso && sl.weekISO !== anchorSlotObj.weekISO) {
+                        if (!futureWeeks.includes(sl.weekISO)) futureWeeks.push(sl.weekISO);
+                    }
+                });
+
+                let weekCursor = 0;
+                for (let r = startRowIndex + 1; r < universalPreviewItems.length; r++) {
+                    const tObj = getTargetObj(r);
+                    if (!tObj) continue;
+                    if (tObj.mode === 'skip') weekCursor++;
+
+                    const targetWeekISO = futureWeeks[weekCursor] || futureWeeks[futureWeeks.length - 1];
+                    const slotsInThatWeek = allSlotsPool.filter(sl => sl.weekISO === targetWeekISO);
+
+                    // 1. Priorität: exakt derselbe Slot (Wochentag & Uhrzeit) wie der neu gewählte Anker
+                    // 2. Priorität: derselbe Wochentag
+                    // 3. Priorität: erster verfügbarer Slot in jener Woche (falls der Wochentag wegen Feiertag ausfällt)
+                    const chosenSlot =
+                        slotsInThatWeek.find(sl => sl.slotId === preferredSlotId) ||
+                        slotsInThatWeek.find(sl => sl.day === preferredDay) ||
+                        slotsInThatWeek[0];
+
+                    if (chosenSlot) {
+                        tObj.targetKey = chosenSlot.key;
+                        tObj.existing = chosenSlot.existing;
+                        tObj.hasExisting = chosenSlot.occupied;
+                        if (tObj.mode !== 'skip') tObj.mode = chosenSlot.occupied ? 'append' : 'replace';
+                    }
+                    weekCursor++;
+                }
+            }
+        }
+
         function onSequenceClassTargetChange(rowIndex, classNum, newTargetKey) {
-            const slotsPool = classNum === 1 ? universalAvailableSlots1 : universalAvailableSlots2;
-            const slotObj = slotsPool.find(s => s.key === newTargetKey);
+            const allSlotsPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
+            const slotObj = allSlotsPool.find(s => s.key === newTargetKey);
             const targetObj = classNum === 1 ? universalPreviewItems[rowIndex].c1 : universalPreviewItems[rowIndex].c2;
-            if (!targetObj) return;
+            if (!targetObj || !slotObj) return;
 
             targetObj.targetKey = newTargetKey;
-            targetObj.existing = slotObj ? slotObj.existing : null;
-            targetObj.hasExisting = slotObj ? slotObj.occupied : false;
+            targetObj.existing = slotObj.existing;
+            targetObj.hasExisting = slotObj.occupied;
             if (targetObj.mode !== 'skip') {
-                targetObj.mode = (slotObj && slotObj.occupied) ? 'append' : 'replace';
+                targetObj.mode = slotObj.occupied ? 'append' : 'replace';
             }
+
+            cascadeFollowingSlotsForClass(rowIndex, classNum, slotObj);
             renderSequencePreviewTable();
+            if (rowIndex < universalPreviewItems.length - 1) {
+                showToast("Nachfolgende Lektionen automatisch im Rhythmus angepasst!");
+            }
         }
 
         function onSequenceClassModeChange(rowIndex, classNum, newMode) {
-            const slotsPool = classNum === 1 ? universalAvailableSlots1 : universalAvailableSlots2;
+            const allSlotsPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
+            const rhythmPref = document.getElementById(`seqPreferredSlot${classNum}`).value;
             const getTargetObj = (r) => classNum === 1 ? universalPreviewItems[r].c1 : universalPreviewItems[r].c2;
             const currentTarget = getTargetObj(rowIndex);
             if (!currentTarget) return;
 
             currentTarget.mode = newMode;
 
-            // Wenn auf "Überspringen" gestellt wird: diesen Slot auslassen und alle nachfolgenden Lektionen dieser Klasse um 1 Slot weiterschieben!
             if (newMode === 'skip') {
-                const skippedKey = currentTarget.targetKey;
-                const skippedIdx = slotsPool.findIndex(s => s.key === skippedKey);
-                if (skippedIdx !== -1) {
-                    let cursor = skippedIdx + 1;
-                    for (let r = rowIndex; r < universalPreviewItems.length; r++) {
-                        const tObj = getTargetObj(r);
-                        if (!tObj) continue;
-                        if (r > rowIndex && tObj.mode === 'skip') {
-                            cursor++;
-                        }
-                        const nextSlot = slotsPool[cursor] || slotsPool[slotsPool.length - 1];
-                        if (nextSlot) {
-                            tObj.targetKey = nextSlot.key;
-                            tObj.existing = nextSlot.existing;
-                            tObj.hasExisting = nextSlot.occupied;
-                            if (r === rowIndex) {
-                                tObj.mode = nextSlot.occupied ? 'append' : 'replace';
-                            } else if (tObj.mode !== 'skip') {
-                                tObj.mode = nextSlot.occupied ? 'append' : 'replace';
-                            }
-                        }
-                        cursor++;
+                const currentSlotObj = allSlotsPool.find(s => s.key === currentTarget.targetKey);
+                if (currentSlotObj) {
+                    let nextAnchor = null;
+                    if (rhythmPref === 'ALL') {
+                        const idx = allSlotsPool.findIndex(s => s.key === currentSlotObj.key);
+                        nextAnchor = allSlotsPool[idx + 1];
+                    } else {
+                        const nextWeekSlots = allSlotsPool.filter(sl => sl.weekISO > currentSlotObj.weekISO);
+                        nextAnchor =
+                            nextWeekSlots.find(sl => sl.slotId === currentSlotObj.slotId) ||
+                            nextWeekSlots.find(sl => sl.day === currentSlotObj.day) ||
+                            nextWeekSlots[0];
                     }
-                    showToast("Belegter Slot übersprungen – Lektion & Folge-Lektionen nach hinten geschoben!");
+
+                    if (nextAnchor) {
+                        currentTarget.targetKey = nextAnchor.key;
+                        currentTarget.existing = nextAnchor.existing;
+                        currentTarget.hasExisting = nextAnchor.occupied;
+                        currentTarget.mode = nextAnchor.occupied ? 'append' : 'replace';
+                        cascadeFollowingSlotsForClass(rowIndex, classNum, nextAnchor);
+                        showToast("Belegter Slot übersprungen – alle Folge-Lektionen nach hinten geschoben!");
+                    }
                 }
             }
 
             renderSequencePreviewTable();
         }
 
-        function buildClassCellHtml(rowIndex, classNum, targetObj, slotsPool, accentColor) {
+        function buildClassCellHtml(rowIndex, classNum, targetObj, allSlotsPool, accentColor) {
             if (!targetObj) return "";
             const existingSummary = describeExistingLessonDetailed(targetObj.existing);
             const borderHighlight = targetObj.hasExisting ? 'border-amber-400 bg-amber-50/50' : 'border-slate-200 bg-slate-50/40';
@@ -2573,7 +2805,7 @@ Text:\n${raw.slice(0, 12000)}`;
                         </div>
 
                         <select onchange="onSequenceClassTargetChange(${rowIndex}, ${classNum}, this.value)" class="w-full bg-white border ${targetObj.hasExisting ? 'border-amber-400' : 'border-slate-300'} rounded-md px-2 py-1 font-bold text-[11px] text-slate-900">
-                            ${slotsPool.map(sl => `<option value="${sl.key}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${sl.label}</option>`).join('')}
+                            ${allSlotsPool.map(sl => `<option value="${sl.key}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${sl.label}</option>`).join('')}
                         </select>
 
                         ${targetObj.hasExisting
@@ -2595,8 +2827,8 @@ Text:\n${raw.slice(0, 12000)}`;
             thead.innerHTML = `<tr>
                 <th class="py-2 px-2.5 w-9">Wahl</th>
                 <th class="py-2 px-3 min-w-[260px]">Lektion &amp; Inhalt (aus Datei)</th>
-                <th class="py-2 px-2.5 ${hasC2 ? 'w-[340px]' : 'w-[420px]'} text-indigo-950 border-l border-slate-200">Klasse 1: ${escapeHtml(c1Label)}</th>
-                ${hasC2 ? `<th class="py-2 px-2.5 w-[340px] text-purple-950 border-l border-slate-200">Klasse 2: ${escapeHtml(c2Label)}</th>` : ''}
+                <th class="py-2 px-2.5 ${hasC2 ? 'w-[360px]' : 'w-[440px]'} text-indigo-950 border-l border-slate-200">Klasse 1: ${escapeHtml(c1Label)}</th>
+                ${hasC2 ? `<th class="py-2 px-2.5 w-[360px] text-purple-950 border-l border-slate-200">Klasse 2: ${escapeHtml(c2Label)}</th>` : ''}
             </tr>`;
 
             tbody.innerHTML = universalPreviewItems.map((it, i) => {
@@ -2613,8 +2845,8 @@ Text:\n${raw.slice(0, 12000)}`;
                             ${it.parsed.schluss ? `<div class="text-slate-700"><strong class="text-indigo-700">S:</strong> ${escapeHtml(it.parsed.schluss)}</div>` : ''}
                             ${it.parsed.homework ? `<div class="text-sky-800 font-semibold mt-0.5">➔ HA: ${escapeHtml(it.parsed.homework)}</div>` : ''}
                         </td>
-                        ${buildClassCellHtml(i, 1, it.c1, universalAvailableSlots1, 'text-indigo-900')}
-                        ${hasC2 ? buildClassCellHtml(i, 2, it.c2, universalAvailableSlots2, 'text-purple-900') : ''}
+                        ${buildClassCellHtml(i, 1, it.c1, universalAllSlots1, 'text-indigo-900')}
+                        ${hasC2 ? buildClassCellHtml(i, 2, it.c2, universalAllSlots2, 'text-purple-900') : ''}
                     </tr>
                 `;
             }).join('');
@@ -2668,31 +2900,50 @@ Text:\n${raw.slice(0, 12000)}`;
             document.querySelectorAll('#universalPreviewTbody input[type="checkbox"]').forEach(cb => cb.checked = state);
         }
 
-        function writeParsedLessonToTarget(targetObj, parsed, unitTitle) {
+        function writeParsedLessonToTarget(targetObj, parsed, unitTitle, trackLabel, nextTargetKey) {
             if (!targetObj || !targetObj.active || !targetObj.targetKey) return false;
-            const existing = lessonsStore[targetObj.targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+            const existing = lessonsStore[targetObj.targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
+
+            const slotId = targetObj.targetKey.split('_')[1];
+            const slotMeta = weeklyTemplate.find(s => s.id === slotId);
+            const baseTrack = (slotMeta?.track || "").trim();
+            const effectiveTrackOverride = trackLabel && trackLabel !== baseTrack ? trackLabel : existing.trackOverride;
 
             if (targetObj.mode === 'append' && hasLessonContent(existing)) {
                 lessonsStore[targetObj.targetKey] = {
                     ...existing,
+                    trackOverride: effectiveTrackOverride,
                     unit: existing.unit || unitTitle,
                     title: existing.title ? (parsed.title && !existing.title.includes(parsed.title) ? `${existing.title} / ${parsed.title}` : existing.title) : parsed.title,
                     einstieg: existing.einstieg ? (parsed.einstieg ? `${existing.einstieg}\n${parsed.einstieg}` : existing.einstieg) : parsed.einstieg,
                     hauptteil: existing.hauptteil ? (parsed.hauptteil ? `${existing.hauptteil}\n---\n${parsed.hauptteil}` : existing.hauptteil) : parsed.hauptteil,
                     schluss: existing.schluss ? (parsed.schluss ? `${existing.schluss}\n${parsed.schluss}` : existing.schluss) : parsed.schluss,
-                    homework: existing.homework || parsed.homework
+                    homework: existing.homework || parsed.homework,
+                    homeworkTargetKey: existing.homeworkTargetKey || nextTargetKey || ""
                 };
             } else {
                 lessonsStore[targetObj.targetKey] = {
                     ...existing,
+                    trackOverride: effectiveTrackOverride,
                     unit: unitTitle || existing.unit,
                     title: parsed.title,
                     einstieg: parsed.einstieg,
                     hauptteil: parsed.hauptteil,
                     schluss: parsed.schluss,
-                    homework: parsed.homework || existing.homework
+                    homework: parsed.homework || existing.homework,
+                    homeworkTargetKey: parsed.homework ? (nextTargetKey || "") : existing.homeworkTargetKey
                 };
             }
+
+            // Hausaufgaben automatisch als "📌 HA auf heute" in die nächste Lektion der Sequenz schreiben
+            if (parsed.homework && nextTargetKey) {
+                const sourceDateCH = formatDateCH(targetObj.targetKey.split('_')[0]);
+                const nextLesson = lessonsStore[nextTargetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: unitTitle || "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
+                nextLesson.homeworkDueToday = `${parsed.homework} (aufgegeben am ${sourceDateCH})`;
+                if (!nextLesson.unit && unitTitle) nextLesson.unit = unitTitle;
+                lessonsStore[nextTargetKey] = nextLesson;
+            }
+
             return true;
         }
 
@@ -2702,12 +2953,18 @@ Text:\n${raw.slice(0, 12000)}`;
 
             if (currentImportCategory === 'sequence') {
                 const unitTitle = document.getElementById('seqUnitTitle').value.trim();
+                const trackLabel = document.getElementById('seqTrackLabel').value.trim();
                 let countWritten = 0;
-                chosen.forEach(row => {
-                    if (writeParsedLessonToTarget(row.c1, row.parsed, unitTitle)) countWritten++;
-                    if (row.c2 && writeParsedLessonToTarget(row.c2, row.parsed, unitTitle)) countWritten++;
+
+                chosen.forEach((row, idx) => {
+                    const nextRow = chosen[idx + 1];
+                    const nextKey1 = nextRow?.c1?.active ? nextRow.c1.targetKey : "";
+                    const nextKey2 = nextRow?.c2?.active ? nextRow.c2.targetKey : "";
+
+                    if (writeParsedLessonToTarget(row.c1, row.parsed, unitTitle, trackLabel, nextKey1)) countWritten++;
+                    if (row.c2 && writeParsedLessonToTarget(row.c2, row.parsed, unitTitle, trackLabel, nextKey2)) countWritten++;
                 });
-                showToast(`${countWritten} Lektions-Einträge im Wochenplan gespeichert!`);
+                showToast(`${countWritten} Lektions-Einträge (inkl. HA-Verknüpfung) gespeichert!`);
             } else if (currentImportCategory === 'schedule') {
                 const mode = document.getElementById('scheduleImportMode').value;
                 if (mode === 'replace') weeklyTemplate = [];
