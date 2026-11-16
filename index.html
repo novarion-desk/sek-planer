@@ -557,10 +557,10 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 2: OPTIMIERTER UNIVERSELLER DATEI- & SEQUENZ-IMPORT             -->
+    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT (1 ODER 2 KLASSEN)      -->
     <!-- ===================================================================== -->
-    <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
-        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[93vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
+    <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-[1400px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-600"></i>
@@ -571,12 +571,12 @@
                 </button>
             </div>
 
-            <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4">
+            <div class="p-4 md:p-5 overflow-y-auto custom-scroll flex flex-col gap-4">
                 <!-- 3 KLARE IMPORT-KATEGORIEN -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <button type="button" id="impTypeBtn_sequence" onclick="setImportCategory('sequence')" class="p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-indigo-950 text-xs">1. Lektionenablauf / Sequenz</span>
-                        <span class="text-[10.5px] text-indigo-800">Word / Text / NotebookLM-Output auf Einzellektionen (45 Min) verteilen</span>
+                        <span class="text-[10.5px] text-indigo-800">Word / Text / NotebookLM-Output auf 1 oder 2 Klassen (45-Min-Slots) verteilen</span>
                     </button>
                     <button type="button" id="impTypeBtn_schedule" onclick="setImportCategory('schedule')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">2. Stundenplan</span>
@@ -595,11 +595,15 @@
                         <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
 
-                    <!-- STEUERUNG FÜR LEKTIONENABLAUF -->
+                    <!-- STEUERUNG FÜR LEKTIONENABLAUF (INKL. 2. KLASSE & START-BLOCK) -->
                     <div id="importOptionsSequence" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-2.5 border-t border-slate-200/80">
                         <div class="sm:col-span-3">
-                            <label class="block font-bold text-slate-700 mb-1">Ziel-Fach, Klasse &amp; Gefäss</label>
-                            <select id="seqTargetCourse" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold"></select>
+                            <label class="block font-bold text-indigo-950 mb-1">Klasse 1 (Fach &amp; Gefäss)</label>
+                            <select id="seqTargetCourse1" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-900"></select>
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block font-bold text-purple-950 mb-1">Klasse 2 (optional parallel)</label>
+                            <select id="seqTargetCourse2" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-purple-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-900"></select>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block font-bold text-slate-700 mb-1">Start im Kalender ab</label>
@@ -614,14 +618,6 @@
                         <div class="sm:col-span-2">
                             <label class="block font-bold text-slate-700 mb-1">Unit / Sequenz-Titel</label>
                             <input type="text" id="seqUnitTitle" oninput="rebuildUniversalPreview()" placeholder="z. B. Die Welle" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
-                        </div>
-                        <div class="sm:col-span-3">
-                            <label class="block font-bold text-amber-900 mb-1">Bei bereits belegten Slots:</label>
-                            <select id="seqConflictPolicy" onchange="rebuildUniversalPreview()" class="w-full bg-amber-50 border border-amber-300 rounded-lg px-2 py-1.5 font-extrabold text-amber-950">
-                                <option value="skip">Belegte überspringen (weiterschieben)</option>
-                                <option value="append">Dazufügen (bestehendes behalten)</option>
-                                <option value="replace">Ersetzen (überschreiben)</option>
-                            </select>
                         </div>
                     </div>
 
@@ -657,21 +653,21 @@
                                 <span>Unformatierten Rohtext mit KI in Lektionen &amp; E/H/S gliedern</span>
                             </button>
                         </div>
-                        <textarea id="universalRawTextarea" oninput="rebuildUniversalPreview()" rows="4" placeholder="Hier deinen Lektionenablauf aus NotebookLM / Gemini hineinkopieren oder oben eine Datei hochladen..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        <textarea id="universalRawTextarea" oninput="rebuildUniversalPreview()" rows="3" placeholder="Hier deinen Lektionenablauf aus NotebookLM / Gemini hineinkopieren oder oben eine Datei hochladen..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                     </div>
                 </div>
 
                 <!-- LIVE-KONTROLLTABELLE -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (zeigt rechts neben dem Datum direkt an, was schon in der Lektion steht):</span>
+                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (pro Lektion &amp; Klasse einzeln steuerbar • «Überspringen» schiebt automatisch weiter):</span>
                         <div class="flex items-center gap-2 text-[11px]">
                             <button type="button" onclick="toggleAllUniversalItems(true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Alle anwählen</button>
                             <button type="button" onclick="toggleAllUniversalItems(false)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Keine</button>
                         </div>
                     </div>
 
-                    <div class="border border-slate-200 rounded-xl overflow-hidden max-h-72 overflow-y-auto custom-scroll">
+                    <div class="border border-slate-200 rounded-xl overflow-x-auto overflow-y-auto max-h-[380px] custom-scroll">
                         <table class="w-full text-left border-collapse">
                             <thead id="universalPreviewThead" class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200 sticky top-0 z-10"></thead>
                             <tbody id="universalPreviewTbody" class="divide-y divide-slate-200 text-[11.5px]">
@@ -1126,7 +1122,8 @@
         let selectedAiPhase = 'einstieg';
         let currentImportCategory = 'sequence';
         let universalPreviewItems = [];
-        let universalAvailableSlots = [];
+        let universalAvailableSlots1 = [];
+        let universalAvailableSlots2 = [];
         let generalChatHistory = [];
         let pendingAiHolidays = [];
 
@@ -2108,10 +2105,11 @@ Text: "${text}"`;
         }
 
         // =========================================================================
-        // 8. OPTIMIERTER UNIVERSELLER DATEI- & SEQUENZ-IMPORT
+        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT (1 ODER 2 KLASSEN + PRO-ZEILE-MODUS)
         // =========================================================================
         function openUniversalImportModal() {
-            const select = document.getElementById('seqTargetCourse');
+            const select1 = document.getElementById('seqTargetCourse1');
+            const select2 = document.getElementById('seqTargetCourse2');
             const uniqueTargets = new Set();
             const optionsHtml = [];
 
@@ -2132,7 +2130,9 @@ Text: "${text}"`;
                 }
             });
 
-            select.innerHTML = optionsHtml.join('');
+            select1.innerHTML = optionsHtml.join('');
+            select2.innerHTML = `<option value="">— Keine 2. Klasse —</option>` + optionsHtml.join('');
+
             document.getElementById('seqStartDate').value = formatDateISO(currentMonday);
             setImportCategory('sequence');
             document.getElementById('universalImportModal').classList.remove('hidden');
@@ -2368,6 +2368,42 @@ Text:\n${raw.slice(0, 12000)}`;
             );
         }
 
+        function collectFutureSlotsForCourseVal(courseVal, startDateStr, minCount) {
+            if (!courseVal || !startDateStr) return [];
+            const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
+            const startMonday = getMonday(new Date(startDateStr));
+            const slots = [];
+            const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
+
+            for (let w = 0; w < 32 && slots.length < minCount + 25; w++) {
+                const mon = new Date(startMonday);
+                mon.setDate(startMonday.getDate() + w * 7);
+                weeklyTemplate
+                    .filter(s => s.subject === targetSubject && s.className === targetClass && (!targetTrack || (s.track || "").trim() === targetTrack))
+                    .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
+                    .forEach(s => {
+                        const d = new Date(mon);
+                        d.setDate(mon.getDate() + s.day);
+                        const iso = formatDateISO(d);
+                        if (iso >= startDateStr && !isHolidayDate(iso, targetClass)) {
+                            const slotKey = `${iso}_${s.id}`;
+                            const existing = lessonsStore[slotKey];
+                            const occupied = hasLessonContent(existing);
+                            const shortExisting = occupied
+                                ? ` [BELEGT: ${(existing.isExam ? '📝 Prüfung ' : '') + (existing.title || existing.hauptteil || '').slice(0, 24)}]`
+                                : ' [Frei]';
+                            slots.push({
+                                key: slotKey,
+                                occupied,
+                                existing,
+                                label: `${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start}–${s.end})${s.track ? ' • ' + s.track : ''}${shortExisting}`
+                            });
+                        }
+                    });
+            }
+            return slots;
+        }
+
         function rebuildUniversalPreview() {
             const rawText = document.getElementById('universalRawTextarea').value.trim();
             const thead = document.getElementById('universalPreviewThead');
@@ -2393,76 +2429,47 @@ Text:\n${raw.slice(0, 12000)}`;
                 }).join('');
 
                 const blocksToImport = allBlocks.slice(currentOffset);
-                const courseVal = document.getElementById('seqTargetCourse').value;
+                const courseVal1 = document.getElementById('seqTargetCourse1').value;
+                const courseVal2 = document.getElementById('seqTargetCourse2').value;
                 const startDateStr = document.getElementById('seqStartDate').value;
-                const conflictPolicy = document.getElementById('seqConflictPolicy').value;
-                if (!courseVal || !startDateStr) return;
+                if (!courseVal1 || !startDateStr) return;
 
-                const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
-                const startMonday = getMonday(new Date(startDateStr));
-                universalAvailableSlots = [];
-                const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
+                universalAvailableSlots1 = collectFutureSlotsForCourseVal(courseVal1, startDateStr, blocksToImport.length);
+                universalAvailableSlots2 = courseVal2 ? collectFutureSlotsForCourseVal(courseVal2, startDateStr, blocksToImport.length) : [];
 
-                for (let w = 0; w < 30 && universalAvailableSlots.length < blocksToImport.length + 25; w++) {
-                    const mon = new Date(startMonday);
-                    mon.setDate(startMonday.getDate() + w * 7);
-                    weeklyTemplate
-                        .filter(s => s.subject === targetSubject && s.className === targetClass && (!targetTrack || (s.track || "").trim() === targetTrack))
-                        .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
-                        .forEach(s => {
-                            const d = new Date(mon);
-                            d.setDate(mon.getDate() + s.day);
-                            const iso = formatDateISO(d);
-                            if (iso >= startDateStr && !isHolidayDate(iso, targetClass)) {
-                                const slotKey = `${iso}_${s.id}`;
-                                const existing = lessonsStore[slotKey];
-                                const occupied = hasLessonContent(existing);
-                                const shortExisting = occupied
-                                    ? ` [BELEGT: ${(existing.isExam ? '📝 Prüfung ' : '') + (existing.title || existing.hauptteil || '').slice(0, 26)}]`
-                                    : ' [Frei]';
-                                universalAvailableSlots.push({
-                                    key: slotKey,
-                                    occupied,
-                                    existing,
-                                    label: `${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start}–${s.end})${s.track ? ' • ' + s.track : ''}${shortExisting}`
-                                });
-                            }
-                        });
-                }
-
-                let slotCursor = 0;
                 universalPreviewItems = blocksToImport.map((block, idx) => {
-                    if (conflictPolicy === 'skip') {
-                        while (slotCursor < universalAvailableSlots.length && universalAvailableSlots[slotCursor].occupied) {
-                            slotCursor++;
-                        }
-                    }
-                    const assignedSlot = universalAvailableSlots[slotCursor] || universalAvailableSlots[universalAvailableSlots.length - 1];
-                    slotCursor++;
+                    const slot1 = universalAvailableSlots1[idx] || universalAvailableSlots1[universalAvailableSlots1.length - 1];
+                    const slot2 = universalAvailableSlots2.length > 0
+                        ? (universalAvailableSlots2[idx] || universalAvailableSlots2[universalAvailableSlots2.length - 1])
+                        : null;
 
-                    const existing = assignedSlot ? assignedSlot.existing : null;
-                    const occupied = assignedSlot ? assignedSlot.occupied : false;
                     const parsed = parseLessonBlockStructure(block);
-                    const rowMode = occupied
-                        ? (conflictPolicy === 'replace' ? 'replace' : 'append')
-                        : 'replace';
 
                     return {
                         selected: true,
                         fileIndex: currentOffset + idx + 1,
                         block,
                         parsed,
-                        targetKey: assignedSlot ? assignedSlot.key : "",
-                        existing,
-                        hasExisting: occupied,
-                        mode: rowMode
+                        c1: {
+                            active: true,
+                            targetKey: slot1 ? slot1.key : "",
+                            existing: slot1 ? slot1.existing : null,
+                            hasExisting: slot1 ? slot1.occupied : false,
+                            mode: (slot1 && slot1.occupied) ? 'append' : 'replace'
+                        },
+                        c2: slot2 ? {
+                            active: true,
+                            targetKey: slot2.key,
+                            existing: slot2.existing,
+                            hasExisting: slot2.occupied,
+                            mode: slot2.occupied ? 'append' : 'replace'
+                        } : null
                     };
                 });
 
                 renderSequencePreviewTable();
 
             } else if (currentImportCategory === 'schedule') {
-                const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
                 const timeSlots = [
                     { start: "07:30", end: "08:15" }, { start: "08:20", end: "09:05" }, { start: "09:10", end: "09:55" },
                     { start: "10:15", end: "11:00" }, { start: "11:05", end: "11:50" }, { start: "11:55", end: "12:40" },
@@ -2486,61 +2493,128 @@ Text:\n${raw.slice(0, 12000)}`;
             }
         }
 
-        function onSequenceRowTargetChange(rowIndex, newTargetKey) {
-            const slotObj = universalAvailableSlots.find(s => s.key === newTargetKey);
-            universalPreviewItems[rowIndex].targetKey = newTargetKey;
-            universalPreviewItems[rowIndex].existing = slotObj ? slotObj.existing : null;
-            universalPreviewItems[rowIndex].hasExisting = slotObj ? slotObj.occupied : false;
-            if (slotObj && slotObj.occupied && universalPreviewItems[rowIndex].mode === 'replace') {
-                const policy = document.getElementById('seqConflictPolicy').value;
-                universalPreviewItems[rowIndex].mode = policy === 'replace' ? 'replace' : 'append';
+        function onSequenceClassTargetChange(rowIndex, classNum, newTargetKey) {
+            const slotsPool = classNum === 1 ? universalAvailableSlots1 : universalAvailableSlots2;
+            const slotObj = slotsPool.find(s => s.key === newTargetKey);
+            const targetObj = classNum === 1 ? universalPreviewItems[rowIndex].c1 : universalPreviewItems[rowIndex].c2;
+            if (!targetObj) return;
+
+            targetObj.targetKey = newTargetKey;
+            targetObj.existing = slotObj ? slotObj.existing : null;
+            targetObj.hasExisting = slotObj ? slotObj.occupied : false;
+            if (targetObj.mode !== 'skip') {
+                targetObj.mode = (slotObj && slotObj.occupied) ? 'append' : 'replace';
             }
             renderSequencePreviewTable();
+        }
+
+        function onSequenceClassModeChange(rowIndex, classNum, newMode) {
+            const slotsPool = classNum === 1 ? universalAvailableSlots1 : universalAvailableSlots2;
+            const getTargetObj = (r) => classNum === 1 ? universalPreviewItems[r].c1 : universalPreviewItems[r].c2;
+            const currentTarget = getTargetObj(rowIndex);
+            if (!currentTarget) return;
+
+            currentTarget.mode = newMode;
+
+            // Wenn auf "Überspringen" gestellt wird: diesen Slot auslassen und alle nachfolgenden Lektionen dieser Klasse um 1 Slot weiterschieben!
+            if (newMode === 'skip') {
+                const skippedKey = currentTarget.targetKey;
+                const skippedIdx = slotsPool.findIndex(s => s.key === skippedKey);
+                if (skippedIdx !== -1) {
+                    let cursor = skippedIdx + 1;
+                    for (let r = rowIndex; r < universalPreviewItems.length; r++) {
+                        const tObj = getTargetObj(r);
+                        if (!tObj) continue;
+                        if (r > rowIndex && tObj.mode === 'skip') {
+                            cursor++;
+                        }
+                        const nextSlot = slotsPool[cursor] || slotsPool[slotsPool.length - 1];
+                        if (nextSlot) {
+                            tObj.targetKey = nextSlot.key;
+                            tObj.existing = nextSlot.existing;
+                            tObj.hasExisting = nextSlot.occupied;
+                            if (r === rowIndex) {
+                                tObj.mode = nextSlot.occupied ? 'append' : 'replace';
+                            } else if (tObj.mode !== 'skip') {
+                                tObj.mode = nextSlot.occupied ? 'append' : 'replace';
+                            }
+                        }
+                        cursor++;
+                    }
+                    showToast("Belegter Slot übersprungen – Lektion & Folge-Lektionen nach hinten geschoben!");
+                }
+            }
+
+            renderSequencePreviewTable();
+        }
+
+        function buildClassCellHtml(rowIndex, classNum, targetObj, slotsPool, accentColor) {
+            if (!targetObj) return "";
+            const existingSummary = describeExistingLessonDetailed(targetObj.existing);
+            const borderHighlight = targetObj.hasExisting ? 'border-amber-400 bg-amber-50/50' : 'border-slate-200 bg-slate-50/40';
+
+            return `
+                <td class="py-2.5 px-2.5 align-top border-l border-slate-200">
+                    <div class="rounded-lg border ${borderHighlight} p-2 flex flex-col gap-1.5 ${!targetObj.active ? 'opacity-45' : ''}">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <label class="flex items-center gap-1.5 cursor-pointer font-extrabold text-[11px] ${accentColor}">
+                                <input type="checkbox" ${targetObj.active ? 'checked' : ''} onchange="universalPreviewItems[${rowIndex}].c${classNum}.active = this.checked; renderSequencePreviewTable();" class="rounded text-indigo-600">
+                                <span>Zuweisen</span>
+                            </label>
+                            <select onchange="onSequenceClassModeChange(${rowIndex}, ${classNum}, this.value)" class="bg-white border border-slate-300 rounded px-1.5 py-0.5 font-bold text-[10.5px] text-slate-800">
+                                ${targetObj.hasExisting
+                                    ? `<option value="skip">⏭️ Überspringen (weiterschieben)</option>
+                                       <option value="append" ${targetObj.mode === 'append' ? 'selected' : ''}>➕ Dazufügen</option>
+                                       <option value="replace" ${targetObj.mode === 'replace' ? 'selected' : ''}>🔄 Ersetzen</option>`
+                                    : `<option value="replace" ${targetObj.mode === 'replace' ? 'selected' : ''}>✓ Einsetzen</option>
+                                       <option value="skip">⏭️ Slot auslassen (schieben)</option>`
+                                }
+                            </select>
+                        </div>
+
+                        <select onchange="onSequenceClassTargetChange(${rowIndex}, ${classNum}, this.value)" class="w-full bg-white border ${targetObj.hasExisting ? 'border-amber-400' : 'border-slate-300'} rounded-md px-2 py-1 font-bold text-[11px] text-slate-900">
+                            ${slotsPool.map(sl => `<option value="${sl.key}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${sl.label}</option>`).join('')}
+                        </select>
+
+                        ${targetObj.hasExisting
+                            ? `<div class="bg-amber-100/95 border border-amber-300 rounded p-1.5 text-[10.5px] text-amber-950 whitespace-pre-line leading-snug"><span class="font-extrabold uppercase text-[9.5px] text-amber-800 block mb-0.5">⚠️ Bereits in dieser Lektion:</span>${escapeHtml(existingSummary)}</div>`
+                            : `<div class="text-[10px] text-emerald-700 font-semibold px-1">✓ Slot ist noch frei</div>`
+                        }
+                    </div>
+                </td>
+            `;
         }
 
         function renderSequencePreviewTable() {
             const thead = document.getElementById('universalPreviewThead');
             const tbody = document.getElementById('universalPreviewTbody');
+            const c1Label = document.getElementById('seqTargetCourse1').selectedOptions[0]?.text || "Klasse 1";
+            const hasC2 = Boolean(document.getElementById('seqTargetCourse2').value);
+            const c2Label = hasC2 ? (document.getElementById('seqTargetCourse2').selectedOptions[0]?.text || "Klasse 2") : "";
+
             thead.innerHTML = `<tr>
-                <th class="py-2 px-3 w-10">Wahl</th>
-                <th class="py-2 px-3 w-64">Ziel-Lektion im Stundenplan</th>
-                <th class="py-2 px-3 w-56">Was bereits drin steht</th>
-                <th class="py-2 px-3">Neuer Inhalt (aus Datei)</th>
-                <th class="py-2 px-3 w-32">Aktion</th>
+                <th class="py-2 px-2.5 w-9">Wahl</th>
+                <th class="py-2 px-3 min-w-[260px]">Lektion &amp; Inhalt (aus Datei)</th>
+                <th class="py-2 px-2.5 ${hasC2 ? 'w-[340px]' : 'w-[420px]'} text-indigo-950 border-l border-slate-200">Klasse 1: ${escapeHtml(c1Label)}</th>
+                ${hasC2 ? `<th class="py-2 px-2.5 w-[340px] text-purple-950 border-l border-slate-200">Klasse 2: ${escapeHtml(c2Label)}</th>` : ''}
             </tr>`;
 
             tbody.innerHTML = universalPreviewItems.map((it, i) => {
-                const existingSummary = describeExistingLessonDetailed(it.existing);
                 return `
-                    <tr class="${it.hasExisting ? 'bg-amber-50/70' : 'bg-white'} align-top">
-                        <td class="py-2.5 px-3">
+                    <tr class="bg-white hover:bg-slate-50/40 align-top">
+                        <td class="py-2.5 px-2.5">
                             <input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600 mt-1">
                         </td>
-                        <td class="py-2.5 px-3">
-                            <div class="text-[10px] font-extrabold text-indigo-700 mb-1">Datei-Block #${it.fileIndex}</div>
-                            <select onchange="onSequenceRowTargetChange(${i}, this.value)" class="w-full bg-white border ${it.hasExisting ? 'border-amber-400' : 'border-slate-300'} rounded-lg px-2 py-1.5 font-bold text-[11px] text-slate-900">
-                                ${universalAvailableSlots.map(sl => `<option value="${sl.key}" ${sl.key === it.targetKey ? 'selected' : ''}>${sl.label}</option>`).join('')}
-                            </select>
-                        </td>
                         <td class="py-2.5 px-3 text-[11px]">
-                            ${it.hasExisting
-                                ? `<div class="bg-amber-100/90 border border-amber-300 rounded-lg p-2 text-amber-950 whitespace-pre-line leading-snug"><span class="font-extrabold uppercase text-[9.5px] text-amber-800 block mb-0.5">⚠️ Bereits belegt:</span>${escapeHtml(existingSummary)}</div>`
-                                : `<span class="inline-block px-2 py-1 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10.5px]">✓ Slot ist frei</span>`
-                            }
-                        </td>
-                        <td class="py-2.5 px-3 text-[11px]">
+                            <div class="inline-block px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-extrabold text-[10px] mb-1">Datei-Block #${it.fileIndex}</div>
                             <div class="font-extrabold text-slate-900 mb-0.5">${escapeHtml(it.parsed.title)}</div>
                             ${it.parsed.einstieg ? `<div class="text-slate-700"><strong class="text-indigo-700">E:</strong> ${escapeHtml(it.parsed.einstieg)}</div>` : ''}
                             ${it.parsed.hauptteil ? `<div class="text-slate-700 whitespace-pre-line"><strong class="text-indigo-700">H:</strong> ${escapeHtml(it.parsed.hauptteil)}</div>` : ''}
                             ${it.parsed.schluss ? `<div class="text-slate-700"><strong class="text-indigo-700">S:</strong> ${escapeHtml(it.parsed.schluss)}</div>` : ''}
                             ${it.parsed.homework ? `<div class="text-sky-800 font-semibold mt-0.5">➔ HA: ${escapeHtml(it.parsed.homework)}</div>` : ''}
                         </td>
-                        <td class="py-2.5 px-3">
-                            <select onchange="universalPreviewItems[${i}].mode = this.value" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-bold text-[11px]">
-                                <option value="append" ${it.mode === 'append' ? 'selected' : ''}>Hinzufügen</option>
-                                <option value="replace" ${it.mode === 'replace' ? 'selected' : ''}>Ersetzen</option>
-                            </select>
-                        </td>
+                        ${buildClassCellHtml(i, 1, it.c1, universalAvailableSlots1, 'text-indigo-900')}
+                        ${hasC2 ? buildClassCellHtml(i, 2, it.c2, universalAvailableSlots2, 'text-purple-900') : ''}
                     </tr>
                 `;
             }).join('');
@@ -2594,40 +2668,46 @@ Text:\n${raw.slice(0, 12000)}`;
             document.querySelectorAll('#universalPreviewTbody input[type="checkbox"]').forEach(cb => cb.checked = state);
         }
 
+        function writeParsedLessonToTarget(targetObj, parsed, unitTitle) {
+            if (!targetObj || !targetObj.active || !targetObj.targetKey) return false;
+            const existing = lessonsStore[targetObj.targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+
+            if (targetObj.mode === 'append' && hasLessonContent(existing)) {
+                lessonsStore[targetObj.targetKey] = {
+                    ...existing,
+                    unit: existing.unit || unitTitle,
+                    title: existing.title ? (parsed.title && !existing.title.includes(parsed.title) ? `${existing.title} / ${parsed.title}` : existing.title) : parsed.title,
+                    einstieg: existing.einstieg ? (parsed.einstieg ? `${existing.einstieg}\n${parsed.einstieg}` : existing.einstieg) : parsed.einstieg,
+                    hauptteil: existing.hauptteil ? (parsed.hauptteil ? `${existing.hauptteil}\n---\n${parsed.hauptteil}` : existing.hauptteil) : parsed.hauptteil,
+                    schluss: existing.schluss ? (parsed.schluss ? `${existing.schluss}\n${parsed.schluss}` : existing.schluss) : parsed.schluss,
+                    homework: existing.homework || parsed.homework
+                };
+            } else {
+                lessonsStore[targetObj.targetKey] = {
+                    ...existing,
+                    unit: unitTitle || existing.unit,
+                    title: parsed.title,
+                    einstieg: parsed.einstieg,
+                    hauptteil: parsed.hauptteil,
+                    schluss: parsed.schluss,
+                    homework: parsed.homework || existing.homework
+                };
+            }
+            return true;
+        }
+
         function applyUniversalImportSelection() {
             const chosen = universalPreviewItems.filter(it => it.selected);
             if (chosen.length === 0) return;
 
             if (currentImportCategory === 'sequence') {
                 const unitTitle = document.getElementById('seqUnitTitle').value.trim();
+                let countWritten = 0;
                 chosen.forEach(row => {
-                    if (!row.targetKey) return;
-                    const p = row.parsed;
-                    const existing = lessonsStore[row.targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
-
-                    if (row.mode === 'append' && hasLessonContent(existing)) {
-                        lessonsStore[row.targetKey] = {
-                            ...existing,
-                            unit: existing.unit || unitTitle,
-                            title: existing.title ? (p.title && !existing.title.includes(p.title) ? `${existing.title} / ${p.title}` : existing.title) : p.title,
-                            einstieg: existing.einstieg ? (p.einstieg ? `${existing.einstieg}\n${p.einstieg}` : existing.einstieg) : p.einstieg,
-                            hauptteil: existing.hauptteil ? (p.hauptteil ? `${existing.hauptteil}\n---\n${p.hauptteil}` : existing.hauptteil) : p.hauptteil,
-                            schluss: existing.schluss ? (p.schluss ? `${existing.schluss}\n${p.schluss}` : existing.schluss) : p.schluss,
-                            homework: existing.homework || p.homework
-                        };
-                    } else {
-                        lessonsStore[row.targetKey] = {
-                            ...existing,
-                            unit: unitTitle || existing.unit,
-                            title: p.title,
-                            einstieg: p.einstieg,
-                            hauptteil: p.hauptteil,
-                            schluss: p.schluss,
-                            homework: p.homework || existing.homework
-                        };
-                    }
+                    if (writeParsedLessonToTarget(row.c1, row.parsed, unitTitle)) countWritten++;
+                    if (row.c2 && writeParsedLessonToTarget(row.c2, row.parsed, unitTitle)) countWritten++;
                 });
-                showToast(`${chosen.length} Lektionen im Wochenplan gespeichert!`);
+                showToast(`${countWritten} Lektions-Einträge im Wochenplan gespeichert!`);
             } else if (currentImportCategory === 'schedule') {
                 const mode = document.getElementById('scheduleImportMode').value;
                 if (mode === 'replace') weeklyTemplate = [];
