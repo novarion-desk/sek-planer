@@ -23,7 +23,13 @@
         @keyframes pulseRec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.15); } }
         .recording-dot { animation: pulseRec 1.1s infinite; }
 
-        /* Druckansicht für Stellvertretungen (ohne private Schüler-Pendenzen & Modals) */
+        /* Rich-Text-Editor Styling (Chalk-Look) */
+        .rich-editor-zone { min-height: 82px; outline: none; }
+        .rich-editor-zone:empty::before { content: attr(data-placeholder); color: #94a3b8; font-style: italic; pointer-events: none; }
+        .rich-editor-zone ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
+        .rich-editor-zone ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
+
+        /* Druckansicht für Stellvertretungen */
         @media print {
             body { background: #ffffff !important; }
             header, #aiRightSidebar, #toast, .no-print { display: none !important; }
@@ -38,7 +44,7 @@
 <body class="bg-[#F4F6FA] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
     <!-- ===================================================================== -->
-    <!-- FIREBASE LOGIN-BILDSCHIRM                                             -->
+    <!-- FIREBASE LOGIN & REGISTRIERUNG (MIT ZUGANGSCODE-SCHUTZ)               -->
     <!-- ===================================================================== -->
     <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4">
@@ -52,7 +58,14 @@
                 </div>
             </div>
 
-            <form onsubmit="handleFirebaseLogin(event)" class="flex flex-col gap-3 text-xs">
+            <!-- Umschalter Login / Registrieren -->
+            <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                <button type="button" id="authTabLoginBtn" onclick="switchAuthMode('login')" class="py-1.5 rounded-lg bg-white text-slate-900 shadow-2xs">Anmelden</button>
+                <button type="button" id="authTabRegisterBtn" onclick="switchAuthMode('register')" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900">Konto erstellen</button>
+            </div>
+
+            <!-- Formular 1: Anmelden -->
+            <form id="loginForm" onsubmit="handleFirebaseLogin(event)" class="flex flex-col gap-3 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
                     <input type="email" id="loginEmailInput" required autocomplete="email" placeholder="deine@email.ch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -66,12 +79,32 @@
                     </div>
                     <input type="password" id="loginPasswordInput" required autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5 text-[11px] font-semibold"></div>
-                <div id="loginInfoBox" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2.5 text-[11px] font-semibold"></div>
                 <button type="submit" id="loginSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition-colors mt-1">
                     Anmelden
                 </button>
             </form>
+
+            <!-- Formular 2: Registrieren / Test-Account -->
+            <form id="registerForm" onsubmit="handleFirebaseRegister(event)" class="hidden flex flex-col gap-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">E-Mail-Adresse (für Test- oder Zweitkonto)</label>
+                    <input type="email" id="regEmailInput" required autocomplete="email" placeholder="test@schule-zh.ch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Passwort (mind. 6 Zeichen)</label>
+                    <input type="password" id="regPasswordInput" required minlength="6" autocomplete="new-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-indigo-900 mb-1">Schul- / Zugangscode</label>
+                    <input type="text" id="regInviteCodeInput" required placeholder="SEK-ZH-2027" class="w-full bg-indigo-50/60 border border-indigo-200 rounded-xl px-3 py-2 font-mono font-bold text-indigo-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit" id="registerSubmitBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs transition-colors mt-1">
+                    Konto registrieren &amp; starten
+                </button>
+            </form>
+
+            <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5 text-[11px] font-semibold"></div>
+            <div id="loginInfoBox" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2.5 text-[11px] font-semibold"></div>
         </div>
     </div>
 
@@ -222,20 +255,32 @@
             </aside>
         </div>
 
-        <!-- ANSICHT 2: NOTIZEN & MEMOS -->
+        <!-- ANSICHT 2: NOTIZEN & MEMOS (MIT KLASSENFILTER, FREIER NOTIZ & TRANSKRIPT→PENDENZ) -->
         <section id="notesViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                 <div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-4">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                         <div>
                             <h2 class="text-base font-extrabold text-slate-900">Pendenzen &amp; Vergessene Abgaben</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Chronologisch nach Datum und Lektion gesammelt.</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Aus allen Lektionen + freie Pendenzen gesammelt.</p>
                         </div>
-                        <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-                            <input type="checkbox" id="showDoneNotesCheck" onchange="renderNotesOverview()" class="rounded text-indigo-600">
-                            <span>Erledigte zeigen</span>
-                        </label>
+                        <div class="flex items-center gap-2">
+                            <select id="notesClassFilter" onchange="renderNotesOverview()" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800">
+                                <option value="ALL">Alle Klassen</option>
+                            </select>
+                            <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                                <input type="checkbox" id="showDoneNotesCheck" onchange="renderNotesOverview()" class="rounded text-indigo-600">
+                                <span>Erledigte</span>
+                            </label>
+                        </div>
                     </div>
+
+                    <!-- Freie Notiz hinzufügen -->
+                    <form onsubmit="addStandaloneNote(event)" class="flex gap-2 bg-amber-50/60 border border-amber-200 rounded-xl p-2.5">
+                        <input type="text" id="standaloneNoteInput" required placeholder="+ Allgemeine Pendenz (z. B. Kopierpapier bestellen, Elternbrief)..." class="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <button type="submit" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0">Hinzufügen</button>
+                    </form>
+
                     <div id="aggregatedNotesList" class="flex flex-col gap-2.5"></div>
                 </div>
 
@@ -245,7 +290,7 @@
                             <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
                             <h2 class="text-base font-extrabold text-slate-900">Sprachmemo-Transkriptionen</h2>
                         </div>
-                        <p class="text-xs text-slate-500 mt-0.5">Alle eingesprochenen Memos mit Text und Audio-Player.</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Alle eingesprochenen Memos mit Text, Audio &amp; Pendenzen-Übernahme.</p>
                     </div>
                     <div id="aggregatedTranscriptsList" class="flex flex-col gap-2.5"></div>
                 </div>
@@ -333,10 +378,10 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 1: LEKTIONS-EDITOR                                              -->
+    <!-- MODAL 1: LEKTIONS-EDITOR (GROSSES CHALK-BLATT + RICH-TEXT + UNDO)     -->
     <!-- ===================================================================== -->
-    <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
-        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+    <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
             <div id="modalHeaderBar" class="px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
                 <div class="flex items-center gap-2">
                     <span id="modalSubjectClass" class="text-sm font-extrabold uppercase tracking-wide">DEUTSCH • S2Aa</span>
@@ -347,9 +392,10 @@
                 </button>
             </div>
 
-            <div class="p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
+            <div class="p-4 md:p-5 overflow-y-auto custom-scroll flex flex-col gap-4 text-xs">
+                <!-- Oberste Zeile: HA auf heute + Prüfungs-Umschalter -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
-                    <div class="sm:col-span-8 bg-sky-100/80 border border-sky-300 rounded-xl p-3 flex flex-col gap-1">
+                    <div class="sm:col-span-8 bg-sky-100/80 border border-sky-300 rounded-xl p-2.5 flex flex-col gap-1">
                         <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
                             <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
                             <span>Hausaufgabe auf heute (automatisch aus vorheriger Lektion übertragen)</span>
@@ -357,15 +403,16 @@
                         <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
 
-                    <div class="sm:col-span-4 bg-rose-50/90 border border-rose-200 rounded-xl p-3 flex flex-col justify-between">
+                    <div class="sm:col-span-4 bg-rose-50/90 border border-rose-200 rounded-xl p-2.5 flex flex-col justify-between">
                         <label class="flex items-center gap-2 cursor-pointer font-extrabold text-rose-950 text-[11.5px]">
                             <input type="checkbox" id="editLessonIsExam" class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
                             <span>📝 Prüfung / Lernkontrolle</span>
                         </label>
-                        <span class="text-[10.5px] text-rose-800/80 leading-snug mt-1">Hebt die Karte im Wochenplan rot hervor.</span>
+                        <span class="text-[10.5px] text-rose-800/80 leading-snug mt-0.5">Hebt die Karte im Wochenplan rot hervor.</span>
                     </div>
                 </div>
 
+                <!-- Metadaten: Gefäss, Unit, Stundenthema -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div class="sm:col-span-3">
                         <label class="block font-bold text-slate-600 mb-1">Gefäss / Schwerpunkt</label>
@@ -373,7 +420,7 @@
                     </div>
                     <div class="sm:col-span-3">
                         <label class="block font-bold text-slate-600 mb-1">Sequenz / Einheit (Unit)</label>
-                        <input type="text" id="editLessonUnit" placeholder="z. B. Jugendbuch Tschick" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="editLessonUnit" placeholder="z. B. Die Welle" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div class="sm:col-span-6">
                         <label class="block font-bold text-slate-600 mb-1">Stundenthema / Fokus</label>
@@ -381,16 +428,17 @@
                     </div>
                 </div>
 
-                <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2.5">
+                <!-- SCHNELLER DIREKTER KI-TUTOR -->
+                <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3 flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
                             <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-                            <span>Direkter KI-Tutor (Sek A ZH • Fach &amp; Gefäss automatisch erkannt)</span>
+                            <span>Direkter KI-Tutor (Sek A ZH • fügt direkt in den gewählten Abschnitt ein)</span>
                         </div>
                         <div class="flex bg-white p-0.5 rounded-lg border border-indigo-200 text-[11px] font-bold">
-                            <button type="button" id="aiPhaseEinstieg" onclick="selectAiPhase('einstieg')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white">Einstieg</button>
-                            <button type="button" id="aiPhaseHauptteil" onclick="selectAiPhase('hauptteil')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Hauptteil</button>
-                            <button type="button" id="aiPhaseSchluss" onclick="selectAiPhase('schluss')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Schluss</button>
+                            <button type="button" id="aiPhaseEinstieg" onclick="selectAiPhase('einstieg')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white">1. Einstieg</button>
+                            <button type="button" id="aiPhaseHauptteil" onclick="selectAiPhase('hauptteil')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">2. Hauptteil</button>
+                            <button type="button" id="aiPhaseSchluss" onclick="selectAiPhase('schluss')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">3. Schluss</button>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -402,49 +450,67 @@
 
                     <div id="lessonAiResultBox" class="hidden bg-white border-2 border-indigo-300 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
                         <div class="flex items-center justify-between text-[11px] font-bold text-indigo-900">
-                            <span>Kontrollfenster (du kannst den Vorschlag hier direkt anpassen):</span>
+                            <span>Vorschlag (du kannst ihn hier direkt formatieren oder anpassen):</span>
                             <button type="button" onclick="document.getElementById('lessonAiResultBox').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">Schliessen</button>
                         </div>
-                        <textarea id="lessonAiResultEditor" rows="4" class="w-full bg-indigo-50/40 border border-indigo-200 rounded-lg p-2.5 text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none"></textarea>
+                        <div id="lessonAiResultEditor" contenteditable="true" class="w-full min-h-[80px] bg-indigo-50/40 border border-indigo-200 rounded-lg p-2.5 text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none"></div>
                         <div class="flex flex-wrap items-center justify-end gap-2">
                             <button type="button" onclick="insertAiIntoPhase('replace')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertReplaceBtn">
-                                In «Einstieg» einsetzen (ersetzen)
+                                In «1. Einstieg» einsetzen (ersetzen)
                             </button>
                             <button type="button" onclick="insertAiIntoPhase('append')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertAppendBtn">
-                                + An «Einstieg» anhängen
+                                + An «1. Einstieg» anhängen
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
-                        <label class="font-extrabold text-indigo-900 flex items-center justify-between">
-                            <span>1. Einstieg (E)</span>
-                            <span class="text-[10px] font-semibold text-slate-400">ca. 5–10 Min</span>
-                        </label>
-                        <textarea id="editPhaseEinstieg" oninput="updateParallelPreview()" rows="4" placeholder="Ankommen, Vorwissen aktivieren..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                <!-- GROSSES ZUSAMMENHÄNGENDES CHALK-BLATT MIT 3 RICH-TEXT-ABSCHNITTEN -->
+                <div class="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-xs flex flex-col">
+                    <!-- Rich-Text Formatierungsleiste -->
+                    <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1">
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('bold');" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 rounded font-extrabold text-slate-900 text-xs" title="Fett (Ctrl+B)">B</button>
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('italic');" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 rounded italic font-serif text-slate-900 text-xs" title="Kursiv (Ctrl+I)">I</button>
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('underline');" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 rounded underline text-slate-900 text-xs" title="Unterstrichen">U</button>
+                            <button type="button" onmousedown="event.preventDefault(); execRichCmd('insertUnorderedList');" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 rounded font-bold text-slate-900 text-xs" title="Aufzählungsliste">• Liste</button>
+                        </div>
+                        <span class="text-[10.5px] font-semibold text-slate-500">Unterrichtsverlauf (Chalk-Blatt • Fett &amp; Kursiv aktiv)</span>
                     </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
-                        <label class="font-extrabold text-indigo-900 flex items-center justify-between">
-                            <span>2. Hauptteil (H)</span>
-                            <span class="text-[10px] font-semibold text-slate-400">ca. 25 Min</span>
-                        </label>
-                        <textarea id="editPhaseHauptteil" oninput="updateParallelPreview()" rows="4" placeholder="Erarbeitung, Üben, Sozialform..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                    </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
-                        <label class="font-extrabold text-indigo-900 flex items-center justify-between">
-                            <span>3. Schluss (S)</span>
+
+                    <!-- Abschnitt 1: Einstieg -->
+                    <div class="p-3.5 border-b border-slate-200/80 focus-within:bg-indigo-50/15 transition-colors">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">1. Einstieg (E)</span>
                             <span class="text-[10px] font-semibold text-slate-400">ca. 5–10 Min</span>
-                        </label>
-                        <textarea id="editPhaseSchluss" oninput="updateParallelPreview()" rows="4" placeholder="Sicherung, Kontrolle, Ausblick..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        </div>
+                        <div id="editPhaseEinstieg" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Ankommen, Vorwissen aktivieren, Problemstellung..." class="rich-editor-zone text-[13px] text-slate-800 leading-relaxed"></div>
+                    </div>
+
+                    <!-- Abschnitt 2: Hauptteil (extra gross) -->
+                    <div class="p-3.5 border-b border-slate-200/80 focus-within:bg-indigo-50/15 transition-colors">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">2. Hauptteil / Erarbeitung (H)</span>
+                            <span class="text-[10px] font-semibold text-slate-400">ca. 25–30 Min</span>
+                        </div>
+                        <div id="editPhaseHauptteil" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Erarbeitung, Üben, Sozialform, Differenzierung..." class="rich-editor-zone min-h-[150px] text-[13px] text-slate-800 leading-relaxed"></div>
+                    </div>
+
+                    <!-- Abschnitt 3: Schluss -->
+                    <div class="p-3.5 focus-within:bg-indigo-50/15 transition-colors">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">3. Schluss / Sicherung (S)</span>
+                            <span class="text-[10px] font-semibold text-slate-400">ca. 5–10 Min</span>
+                        </div>
+                        <div id="editPhaseSchluss" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Ergebnissicherung, Exit-Ticket, Ausblick..." class="rich-editor-zone text-[13px] text-slate-800 leading-relaxed"></div>
                     </div>
                 </div>
 
-                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 flex flex-col gap-2">
+                <!-- HAUSAUFGABEN -->
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 flex flex-col gap-2">
                     <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
                         <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
-                        <span>Hausaufgaben fürs nächste Mal (alle Lektionen desselben Fachs der nächsten Wochen)</span>
+                        <span>Hausaufgaben fürs nächste Mal (überträgt automatisch auf «📌 HA auf heute» der Ziel-Lektion)</span>
                     </label>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <input type="text" id="editLessonHomework" oninput="updateParallelPreview()" placeholder="z. B. S. 24 Nr. 1–3 fertig lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
@@ -452,34 +518,51 @@
                     </div>
                 </div>
 
-                <div class="bg-purple-50/80 border border-purple-200 rounded-xl p-3.5 flex flex-col gap-2.5">
-                    <span class="font-extrabold text-purple-950 flex items-center gap-1.5">
-                        <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
-                        <span>Auf parallele Klasse übertragen (nur dasselbe Fach • nächste 2 Wochen)</span>
-                    </span>
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        <select id="parallelTargetLessonSelect" onchange="updateParallelPreview()" class="sm:col-span-6 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-purple-950"></select>
-                        <select id="parallelSyncModeSelect" onchange="updateParallelPreview()" class="sm:col-span-4 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
-                            <option value="append">Ergänzen (bestehendes behalten)</option>
-                            <option value="overwrite">Überschreiben (identisch setzen)</option>
-                        </select>
-                        <button type="button" onclick="applyParallelTransferNow()" class="sm:col-span-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg font-bold py-2 px-2.5 transition-colors shadow-2xs">
-                            Jetzt übertragen
-                        </button>
-                    </div>
+                <!-- EINGEKLAPPTES PANEL: AUF PARALLELE KLASSE ÜBERTRAGEN (MIT INHALTS-AUSWAHL) -->
+                <details class="bg-purple-50/70 border border-purple-200 rounded-xl overflow-hidden group">
+                    <summary class="px-3.5 py-2.5 cursor-pointer font-extrabold text-purple-950 flex items-center justify-between select-none hover:bg-purple-100/60 transition-colors">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
+                            <span>Auf parallele Klasse übertragen (hier klicken zum Auswählen &amp; Übertragen)</span>
+                        </span>
+                        <span class="text-[11px] font-bold text-purple-700 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
 
-                    <div id="parallelPreviewBox" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white border border-purple-200/80 rounded-lg p-2.5 text-[11px]">
-                        <div>
-                            <div class="font-extrabold text-slate-500 uppercase text-[10px] mb-1">Aktuell in Ziel-Lektion vorhanden:</div>
-                            <div id="parallelCurrentContent" class="text-slate-600 whitespace-pre-line bg-slate-50 p-2 rounded border border-slate-100 min-h-[54px]">Leer</div>
+                    <div class="p-3.5 border-t border-purple-200/80 flex flex-col gap-3 bg-white/70">
+                        <!-- Auswahl, WAS übertragen werden soll -->
+                        <div class="flex flex-wrap items-center gap-3 bg-purple-50 border border-purple-200/80 rounded-lg p-2.5 text-[11px] font-bold text-purple-950">
+                            <span class="text-purple-800">Was übertragen?</span>
+                            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncMeta" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Titel &amp; Unit</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncContent" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Einstieg / Hauptteil / Schluss</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncHw" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Hausaufgaben (inkl. Verknüpfung)</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncExam" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Prüfungs-Markierung</label>
                         </div>
-                        <div>
-                            <div class="font-extrabold text-purple-700 uppercase text-[10px] mb-1">Vorschau nach Übertragung:</div>
-                            <div id="parallelResultPreview" class="text-slate-800 whitespace-pre-line bg-purple-50/40 p-2 rounded border border-purple-100 min-h-[54px]">—</div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                            <select id="parallelTargetLessonSelect" onchange="updateParallelPreview()" class="sm:col-span-6 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-purple-950"></select>
+                            <select id="parallelSyncModeSelect" onchange="updateParallelPreview()" class="sm:col-span-4 bg-white border border-purple-200 rounded-lg px-2.5 py-2 font-bold text-slate-800">
+                                <option value="append">Ergänzen (bestehendes behalten)</option>
+                                <option value="overwrite">Überschreiben (identisch setzen)</option>
+                            </select>
+                            <button type="button" onclick="applyParallelTransferNow()" class="sm:col-span-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg font-bold py-2 px-2.5 transition-colors shadow-2xs">
+                                Übertragen
+                            </button>
+                        </div>
+
+                        <div id="parallelPreviewBox" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white border border-purple-200/80 rounded-lg p-2.5 text-[11px]">
+                            <div>
+                                <div class="font-extrabold text-slate-500 uppercase text-[10px] mb-1">Aktuell in Ziel-Lektion vorhanden:</div>
+                                <div id="parallelCurrentContent" class="text-slate-600 whitespace-pre-line bg-slate-50 p-2 rounded border border-slate-100 min-h-[48px]">Leer</div>
+                            </div>
+                            <div>
+                                <div class="font-extrabold text-purple-700 uppercase text-[10px] mb-1">Vorschau nach Übertragung:</div>
+                                <div id="parallelResultPreview" class="text-slate-800 whitespace-pre-line bg-purple-50/40 p-2 rounded border border-purple-100 min-h-[48px]">—</div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </details>
 
+                <!-- NOTIZEN & SPRACHMEMO MIT EDITIERBARER TRANSKRIPTION -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
                         <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
@@ -497,32 +580,31 @@
                         <div class="flex items-center justify-between gap-2">
                             <span class="font-bold text-slate-800 flex items-center gap-1.5">
                                 <i data-lucide="mic" class="w-4 h-4 text-rose-600"></i>
-                                <span>Sprachmemo + Transkription</span>
+                                <span>Sprachmemo + Live-Transkription</span>
                             </span>
                             <div>
-                                <button type="button" id="startVoiceBtn" onclick="startVoiceMemo()" class="px-2.5 py-1 bg-rose-600 text-white rounded-lg font-bold text-[11px]">Aufnahme</button>
-                                <button type="button" id="stopVoiceBtn" onclick="stopVoiceMemo()" class="hidden px-2.5 py-1 bg-slate-900 text-white rounded-lg font-bold text-[11px]">Stopp</button>
+                                <button type="button" id="startVoiceBtn" onclick="startVoiceMemo()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold text-[11px]">● Aufnahme</button>
+                                <button type="button" id="stopVoiceBtn" onclick="stopVoiceMemo()" class="hidden px-2.5 py-1 bg-slate-900 text-white rounded-lg font-bold text-[11px] recording-dot">■ Stopp</button>
                             </div>
                         </div>
-                        <p id="voiceLivePreview" class="hidden text-[11px] text-indigo-700 italic bg-white p-1.5 rounded border border-indigo-100">Höre zu...</p>
+                        <p id="voiceLivePreview" class="hidden text-[11px] text-indigo-800 font-medium bg-white p-2 rounded-lg border border-indigo-200">Höre zu...</p>
                         <div id="audioClipsList" class="flex flex-col gap-1.5"></div>
                     </div>
                 </div>
-
-                <div>
-                    <label class="block font-bold text-slate-600 mb-1">Google Drive / Lehrmittel-Link</label>
-                    <input type="url" id="editLessonLink" placeholder="https://drive.google.com/..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
             </div>
 
+            <!-- FOOTER MIT +1 SCHIEBEN, LEEREN & WIEDERHERSTELLEN (UNDO) -->
             <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
                         <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
                         <span id="bumpBtnLabel">+1 Lektion schieben</span>
                     </button>
-                    <button type="button" onclick="clearCurrentLesson()" class="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg">
+                    <button type="button" onclick="clearCurrentLesson()" class="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg">
                         Leeren
+                    </button>
+                    <button type="button" id="restoreLessonBtn" onclick="restoreClearedLesson()" class="hidden px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-colors">
+                        <span>↩️ Wiederherstellen</span>
                     </button>
                 </div>
 
@@ -557,14 +639,14 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT                         -->
+    <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT (DRAG & DROP, EDITIERBAR)-->
     <!-- ===================================================================== -->
     <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-[1440px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
+        <div class="bg-white rounded-2xl max-w-[1460px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-600"></i>
-                    <h3 class="text-sm font-extrabold text-slate-900">Datei hochladen oder Ablauf aus NotebookLM / Gemini einfügen</h3>
+                    <h3 class="text-sm font-extrabold text-slate-900">Datei hochladen (Drag &amp; Drop) oder Ablauf aus NotebookLM / Gemini einfügen</h3>
                 </div>
                 <button type="button" onclick="closeUniversalImportModal()" class="text-slate-400 hover:text-slate-700 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -580,33 +662,67 @@
                     </button>
                     <button type="button" id="impTypeBtn_schedule" onclick="setImportCategory('schedule')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">2. Stundenplan</span>
-                        <span class="text-[10.5px] text-slate-600">Escola PDF/Excel auslesen &amp; Wochentag/Zeit/Gefäss festlegen</span>
+                        <span class="text-[10.5px] text-slate-600">Escola PDF/Excel abgleichen (zeigt neue &amp; wegfallende Lektionen vor dem Übernehmen)</span>
                     </button>
                     <button type="button" id="impTypeBtn_holidays" onclick="setImportCategory('holidays')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">3. Ferien &amp; Spezialtage</span>
-                        <span class="text-[10.5px] text-slate-600">Jahresprogramm / Exkursionen (für alle oder einzelne Klassen) einlesen</span>
+                        <span class="text-[10.5px] text-slate-600">Jahresprogramm / Exkursionen inkl. Konflikt-Prüfung mit bestehenden Lektionen</span>
                     </button>
                 </div>
 
-                <!-- DATEI-UPLOAD & EINSTELLUNGEN -->
+                <!-- DRAG & DROP ZONE + FORMAT-ANLEITUNG -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-bold text-slate-800">Datei hochladen (.docx, .txt, .pdf, .xls, .xlsx) oder unten direkt einfügen:</span>
-                        <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+                        <!-- Drag & Drop Feld -->
+                        <div id="dropZoneBox"
+                             ondragover="event.preventDefault(); this.classList.add('border-indigo-600', 'bg-indigo-50');"
+                             ondragleave="this.classList.remove('border-indigo-600', 'bg-indigo-50');"
+                             ondrop="handleFileDrop(event)"
+                             class="lg:col-span-7 border-2 border-dashed border-slate-300 bg-white rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 transition-colors">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                    <i data-lucide="file-up" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <div class="font-extrabold text-slate-900">Datei hierher ziehen (Drag &amp; Drop)</div>
+                                    <div class="text-[10.5px] text-slate-500">Unterstützt: .docx, .txt, .pdf, .xls, .xlsx</div>
+                                </div>
+                            </div>
+                            <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                        </div>
+
+                        <!-- Aufklappbare Format-Anleitung & Prompt-Kopierhilfe -->
+                        <details class="lg:col-span-5 bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-[11px]">
+                            <summary class="cursor-pointer font-extrabold text-indigo-950 flex items-center justify-between select-none">
+                                <span>ℹ️ Format-Anleitung für optimalen Import (klicken)</span>
+                                <span class="text-indigo-600">▼</span>
+                            </summary>
+                            <div class="mt-2 pt-2 border-t border-indigo-200/80 text-indigo-950 flex flex-col gap-1.5 leading-snug">
+                                <div>• <strong>Word (.docx) ohne Tabellen</strong> verwenden (Einleitungstext vor «Lektion 1:» wird automatisch ignoriert).</div>
+                                <div>• Jede 45-Min-Stunde so aufbauen:</div>
+                                <pre class="bg-white border border-indigo-200 rounded p-1.5 text-[10px] font-mono text-slate-800 overflow-x-auto">Lektion 1: Stundentitel
+Einstieg: ...
+Hauptteil: ...
+Schluss: ...
+HA: ...</pre>
+                                <button type="button" onclick="copyNotebookPrompt()" class="self-start px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10.5px]">
+                                    📋 Prompt für NotebookLM / Gemini kopieren
+                                </button>
+                            </div>
+                        </details>
                     </div>
 
                     <!-- STEUERUNG FÜR LEKTIONENABLAUF -->
                     <div id="importOptionsSequence" class="flex flex-col gap-3 pt-2.5 border-t border-slate-200/80">
-                        <!-- Zeile 1: Startdatum, Start-Block, Unit-Titel, Gefäss-Tag -->
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                             <div class="sm:col-span-3">
                                 <label class="block font-bold text-slate-700 mb-1">Start im Kalender ab <span id="autoDateDetectedHint" class="hidden text-[10px] text-emerald-700 font-extrabold">(aus Datei erkannt)</span></label>
                                 <input type="date" id="seqStartDate" onchange="rebuildUniversalPreview()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
                             </div>
                             <div class="sm:col-span-3">
-                                <label class="block font-bold text-indigo-900 mb-1">Start ab Datei-Block</label>
+                                <label class="block font-bold text-indigo-900 mb-1">Start ab Datei-Lektion</label>
                                 <select id="seqFileStartOffset" onchange="rebuildUniversalPreview()" class="w-full bg-indigo-50/70 border border-indigo-200 rounded-lg px-2 py-1.5 font-extrabold text-indigo-950">
-                                    <option value="0">1. Block (Anfang)</option>
+                                    <option value="0">1. Lektion (Anfang)</option>
                                 </select>
                             </div>
                             <div class="sm:col-span-3">
@@ -619,9 +735,7 @@
                             </div>
                         </div>
 
-                        <!-- Zeile 2: Klasse 1 & Klasse 2 jeweils mit eigenem Rhythmus & bevorzugtem Wochen-Slot -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-                            <!-- Box Klasse 1 -->
                             <div class="bg-indigo-50/60 border border-indigo-200 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                                 <div class="sm:col-span-5">
                                     <label class="block font-extrabold text-indigo-950 mb-1">Klasse 1 (Fach &amp; Klasse)</label>
@@ -633,7 +747,6 @@
                                 </div>
                             </div>
 
-                            <!-- Box Klasse 2 -->
                             <div class="bg-purple-50/60 border border-purple-200 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                                 <div class="sm:col-span-5">
                                     <label class="block font-extrabold text-purple-950 mb-1">Klasse 2 (optional parallel)</label>
@@ -649,13 +762,13 @@
                         </div>
                     </div>
 
-                    <!-- STEUERUNG FÜR STUNDENPLAN -->
+                    <!-- STEUERUNG FÜR STUNDENPLAN (MIT ABGLEICH-HINWEIS) -->
                     <div id="importOptionsSchedule" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-indigo-50/60 p-2.5 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-indigo-950">Übernahme-Art:</span>
-                            <select id="scheduleImportMode" class="bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-800">
-                                <option value="append">Zu bestehendem Stundenplan hinzufügen</option>
-                                <option value="replace">Bestehenden Stundenplan komplett ersetzen</option>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="font-bold text-indigo-950">Was soll mit dem alten Stundenplan geschehen?</span>
+                            <select id="scheduleImportMode" onchange="rebuildUniversalPreview()" class="bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 font-bold text-slate-800">
+                                <option value="diff_replace">Abgleich: Neue übernehmen &amp; alte entfernen (nach Auswahl unten)</option>
+                                <option value="append">Nur neue Lektionen zum bestehenden Stundenplan hinzufügen</option>
                             </select>
                         </div>
                         <button type="button" id="aiParseScheduleBtn" onclick="analyzeScheduleWithAi()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold flex items-center gap-1.5">
@@ -666,7 +779,7 @@
 
                     <!-- STEUERUNG FÜR FERIEN & SPEZIALTAGE -->
                     <div id="importOptionsHolidays" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-amber-50/60 p-2.5 rounded-lg">
-                        <span class="text-[11px] font-semibold text-amber-950">Tipp: Du kannst unten pro Termin einstellen, ob er <strong>alle Klassen</strong> oder nur eine <strong>einzelne Klasse</strong> betrifft (blockiert beim Sequenz-Import nur diese Klasse).</span>
+                        <span class="text-[11px] font-semibold text-amber-950">Konflikte mit bereits geplanten Lektionen oder bestehenden Terminen werden unten automatisch markiert und können einzeln entschieden werden.</span>
                         <button type="button" id="aiParseHolidaysBtn" onclick="analyzeHolidayFileWithAi()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shrink-0 flex items-center gap-1.5">
                             <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                             <span>Termine mit KI erkennen</span>
@@ -675,27 +788,27 @@
 
                     <div>
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-                            <label class="font-bold text-slate-600">Inhalt (Format-Tipp: «Lektion 1: Titel», darunter «Einstieg:», «Hauptteil:», «Schluss:», «HA:»):</label>
+                            <label class="font-bold text-slate-600">Ausgelesener Rohtext (falls ohne «Lektion 1:» formatiert, bitte rechts mit KI gliedern):</label>
                             <button type="button" id="formatSeqAiBtn" onclick="analyzeRawTextWithAi()" class="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
                                 <i data-lucide="sparkles" class="w-3 h-3"></i>
-                                <span>Unformatierten Rohtext mit KI in Lektionen &amp; E/H/S gliedern</span>
+                                <span>Rohtext mit KI sauber in Lektionen &amp; E/H/S gliedern</span>
                             </button>
                         </div>
-                        <textarea id="universalRawTextarea" oninput="handleRawTextareaManualInput()" rows="3" placeholder="Hier deinen Lektionenablauf aus NotebookLM / Gemini hineinkopieren oder oben eine Datei hochladen..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        <textarea id="universalRawTextarea" oninput="handleRawTextareaManualInput()" rows="2" placeholder="Hier deinen Lektionenablauf aus NotebookLM / Gemini hineinkopieren oder oben eine Datei hochladen..." class="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                     </div>
                 </div>
 
-                <!-- LIVE-KONTROLLTABELLE -->
+                <!-- LIVE-KONTROLLTABELLE (DIREKT EDITIERBAR + WOCHEN- & FERIENTRENNER) -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (änderst du in einer Zeile das Datum, rücken alle nachfolgenden Lektionen automatisch im gewählten Rhythmus nach):</span>
+                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (Titel, Inhalt &amp; Hausaufgaben sind hier direkt editierbar):</span>
                         <div class="flex items-center gap-2 text-[11px]">
                             <button type="button" onclick="toggleAllUniversalItems(true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Alle anwählen</button>
                             <button type="button" onclick="toggleAllUniversalItems(false)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Keine</button>
                         </div>
                     </div>
 
-                    <div class="border border-slate-200 rounded-xl overflow-x-auto overflow-y-auto max-h-[380px] custom-scroll">
+                    <div class="border border-slate-200 rounded-xl overflow-x-auto overflow-y-auto max-h-[400px] custom-scroll">
                         <table class="w-full text-left border-collapse">
                             <thead id="universalPreviewThead" class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200 sticky top-0 z-10"></thead>
                             <tbody id="universalPreviewTbody" class="divide-y divide-slate-200 text-[11.5px]">
@@ -839,9 +952,30 @@
         }
 
         // =========================================================================
-        // 1. ZENTRALE KI-FUNKTION
+        // 1. SCHNELLE KI-FUNKTION (DIREKT GEMINI 2.5 FLASH + RICH-TEXT-FORMAT)
         // =========================================================================
         const TEACHER_SYSTEM_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch. Du kennst den Lehrplan 21 des Kantons Zürich und antwortest praxisnah, direkt umsetzbar und ohne unnötige Floskeln.";
+
+        function markdownBoldToHtml(text) {
+            if (!text) return "";
+            let html = escapeHtml(text);
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            return html.replace(/\n/g, '<br>');
+        }
+
+        function htmlToPlainText(htmlStr) {
+            if (!htmlStr) return "";
+            const tmp = document.createElement('div');
+            tmp.innerHTML = htmlStr.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>|<\/p>|<\/li>/gi, '\n');
+            return (tmp.textContent || tmp.innerText || "").replace(/\n{3,}/g, '\n\n').trim();
+        }
+
+        function plainOrHtmlToEditorHtml(val) {
+            if (!val) return "";
+            if (/<[a-z][\s\S]*>/i.test(val)) return val;
+            return markdownBoldToHtml(val);
+        }
 
         async function callGeminiUnified(userPrompt, conversationHistory = null) {
             const rawGemini = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
@@ -870,34 +1004,20 @@
 
                 const payload = { contents };
                 const savedWorkingModel = localStorage.getItem('sekPlaner_workingModel');
-                let modelsToTry = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash-lite", "gemini-3.0-flash", "gemini-2.0-flash"];
-
-                try {
-                    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
-                    const listRes = await fetch(listUrl, { headers: { 'x-goog-api-key': key } });
-                    const listData = await listRes.json();
-                    if (listRes.ok && Array.isArray(listData.models)) {
-                        const available = listData.models
-                            .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
-                            .map(m => m.name.replace(/^models\//, ""))
-                            .filter(n => !n.includes("1.5") && !n.includes("2.5") && !n.includes("latest") && !n.includes("preview") && !n.includes("image") && !n.includes("embedding") && !n.includes("veo") && !n.includes("tts") && !n.includes("robotics"));
-                        if (available.length > 0) {
-                            const v38 = available.filter(n => n.includes("3.8"));
-                            const v35 = available.filter(n => n.includes("3.5"));
-                            const other3 = available.filter(n => n.includes("3."));
-                            modelsToTry = [...new Set([...(savedWorkingModel ? [savedWorkingModel] : []), ...v38, ...v35, ...other3, ...available, ...modelsToTry])];
-                        }
-                    } else if (listData?.error?.message) {
-                        errorDetails.push(`Gemini Key-Check: ${listData.error.message}`);
-                    }
-                } catch (e) {}
+                // Direkt die echten, schnellsten Gemini-Modelle ansprechen (vermeidet Wartezeit durch ungültige Modellnamen)
+                const modelsToTry = [...new Set([
+                    ...(savedWorkingModel ? [savedWorkingModel] : []),
+                    "gemini-2.5-flash",
+                    "gemini-2.0-flash",
+                    "gemini-2.5-flash-lite"
+                ])];
 
                 for (const modelName of modelsToTry) {
                     try {
                         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
                         const res = await fetch(url, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                         const data = await res.json();
@@ -986,8 +1106,9 @@
         }
 
         // =========================================================================
-        // 2. FIREBASE AUTHENTICATION & FIRESTORE (ZÜRICH)
+        // 2. FIREBASE AUTHENTICATION & REGISTRIERUNG
         // =========================================================================
+        const SCHOOL_INVITE_CODE = "SEK-ZH-2027";
         const firebaseConfig = {
             apiKey: "AIzaSyBHHhgjAvY0D0trm2IMxauhFp-ssw9ooz4",
             authDomain: "zufallsgenerator-209f3.firebaseapp.com",
@@ -1008,6 +1129,27 @@
             auth = firebase.auth();
             db = firebase.firestore();
         } catch (e) {}
+
+        function switchAuthMode(mode) {
+            const loginForm = document.getElementById('loginForm');
+            const regForm = document.getElementById('registerForm');
+            const btnLogin = document.getElementById('authTabLoginBtn');
+            const btnReg = document.getElementById('authTabRegisterBtn');
+            document.getElementById('loginErrorBox').classList.add('hidden');
+            document.getElementById('loginInfoBox').classList.add('hidden');
+
+            if (mode === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                btnLogin.className = "py-1.5 rounded-lg bg-white text-slate-900 shadow-2xs";
+                btnReg.className = "py-1.5 rounded-lg text-slate-600 hover:text-slate-900";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                btnReg.className = "py-1.5 rounded-lg bg-white text-slate-900 shadow-2xs";
+                btnLogin.className = "py-1.5 rounded-lg text-slate-600 hover:text-slate-900";
+            }
+        }
 
         async function handleFirebaseLogin(event) {
             event.preventDefault();
@@ -1031,6 +1173,40 @@
                 errBox.classList.remove('hidden');
             } finally {
                 btn.innerText = "Anmelden";
+                btn.disabled = false;
+            }
+        }
+
+        async function handleFirebaseRegister(event) {
+            event.preventDefault();
+            if (!auth) return;
+            const email = document.getElementById('regEmailInput').value.trim();
+            const password = document.getElementById('regPasswordInput').value;
+            const inviteCode = document.getElementById('regInviteCodeInput').value.trim().toUpperCase();
+            const errBox = document.getElementById('loginErrorBox');
+            const infoBox = document.getElementById('loginInfoBox');
+            const btn = document.getElementById('registerSubmitBtn');
+
+            errBox.classList.add('hidden');
+            infoBox.classList.add('hidden');
+
+            if (inviteCode !== SCHOOL_INVITE_CODE) {
+                errBox.innerText = "Ungültiger Schul-/Zugangscode. (Standard-Code: SEK-ZH-2027)";
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            btn.innerText = "Konto wird erstellt...";
+            btn.disabled = true;
+
+            try {
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                await auth.createUserWithEmailAndPassword(email, password);
+            } catch (err) {
+                errBox.innerText = "Registrierung fehlgeschlagen: " + (err.message || "E-Mail bereits vergeben oder Passwort zu kurz.");
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.innerText = "Konto registrieren & starten";
                 btn.disabled = false;
             }
         }
@@ -1139,12 +1315,14 @@
         let calendarEvents = [...(DEFAULT_EVENTS_BY_YEAR[currentSchoolYear] || [])];
         let dayNotesStore = {};
         let lessonsStore = {};
+        let standaloneNotesStore = [];
 
         let currentMonday = getMonday(new Date());
         let viewMode = 'week';
         let activeLessonKey = null;
         let activeSlotMeta = null;
         let activeQuickNoteKey = null;
+        let lastClearedLessonBackup = null;
         let tempAudioClips = [];
         let tempLessonTodos = [];
         let selectedAiPhase = 'einstieg';
@@ -1212,16 +1390,19 @@
                 const t = localStorage.getItem(`${p}_template`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_template') : null);
                 const e = localStorage.getItem(`${p}_events`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_events') : null);
                 const d = localStorage.getItem(`${p}_dayNotes`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_dayNotes') : null);
+                const sn = localStorage.getItem(`${p}_standaloneNotes`);
 
                 lessonsStore = l ? JSON.parse(l) : {};
                 weeklyTemplate = t ? JSON.parse(t) : JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
                 calendarEvents = e ? JSON.parse(e) : JSON.parse(JSON.stringify(DEFAULT_EVENTS_BY_YEAR[year] || []));
                 dayNotesStore = d ? JSON.parse(d) : {};
+                standaloneNotesStore = sn ? JSON.parse(sn) : [];
             } catch (err) {
                 lessonsStore = {};
                 weeklyTemplate = JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
                 calendarEvents = JSON.parse(JSON.stringify(DEFAULT_EVENTS_BY_YEAR[year] || []));
                 dayNotesStore = {};
+                standaloneNotesStore = [];
             }
         }
 
@@ -1232,6 +1413,7 @@
                 localStorage.setItem(`${p}_template`, JSON.stringify(weeklyTemplate));
                 localStorage.setItem(`${p}_events`, JSON.stringify(calendarEvents));
                 localStorage.setItem(`${p}_dayNotes`, JSON.stringify(dayNotesStore));
+                localStorage.setItem(`${p}_standaloneNotes`, JSON.stringify(standaloneNotesStore));
             } catch (err) {}
 
             updateOpenNotesBadge();
@@ -1245,6 +1427,7 @@
                     weeklyTemplate,
                     calendarEvents,
                     dayNotesStore,
+                    standaloneNotesStore,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true }).then(() => {
                     document.getElementById('syncLed').className = "w-2 h-2 rounded-full bg-emerald-500";
@@ -1266,6 +1449,7 @@
                     if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
                     if (data.calendarEvents) calendarEvents = data.calendarEvents;
                     if (data.dayNotesStore) dayNotesStore = data.dayNotesStore;
+                    if (data.standaloneNotesStore) standaloneNotesStore = data.standaloneNotesStore;
                     renderCalendar();
                     updateOpenNotesBadge();
                     if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
@@ -1335,6 +1519,7 @@
                 notesSec.classList.remove('hidden');
                 wdWrap.classList.add('hidden');
                 btnNotes.className = "px-3 py-1 rounded-md bg-white text-slate-900 shadow-2xs flex items-center gap-1.5";
+                populateNotesClassFilter();
                 renderNotesOverview();
             } else {
                 holSec.classList.remove('hidden');
@@ -1377,14 +1562,18 @@
             return calendarEvents.filter(ev => isoDate >= ev.start && isoDate <= ev.end);
         }
 
-        function isHolidayDate(isoDate, className = null) {
-            return calendarEvents.some(ev => {
+        function getHolidayEventForDate(isoDate, className = null) {
+            return calendarEvents.find(ev => {
                 if (ev.type !== 'holiday') return false;
                 if (isoDate < ev.start || isoDate > ev.end) return false;
                 const target = (ev.targetClass || 'ALL').toUpperCase();
                 if (target === 'ALL' || !className) return true;
                 return target === className.toUpperCase();
-            });
+            }) || null;
+        }
+
+        function isHolidayDate(isoDate, className = null) {
+            return Boolean(getHolidayEventForDate(isoDate, className));
         }
 
         function getUniqueClasses() {
@@ -1426,21 +1615,21 @@
         function buildCompactEHSHtml(data) {
             if (!data) return "";
             const rows = [];
-            if (data.einstieg) rows.push(`<div><span class="font-extrabold text-indigo-700">E:</span> ${escapeHtml(data.einstieg)}</div>`);
-            if (data.hauptteil) rows.push(`<div><span class="font-extrabold text-indigo-700">H:</span> ${escapeHtml(data.hauptteil)}</div>`);
-            if (data.schluss) rows.push(`<div><span class="font-extrabold text-indigo-700">S:</span> ${escapeHtml(data.schluss)}</div>`);
+            if (data.einstieg) rows.push(`<div><span class="font-extrabold text-indigo-700">E:</span> ${plainOrHtmlToEditorHtml(data.einstieg)}</div>`);
+            if (data.hauptteil) rows.push(`<div><span class="font-extrabold text-indigo-700">H:</span> ${plainOrHtmlToEditorHtml(data.hauptteil)}</div>`);
+            if (data.schluss) rows.push(`<div><span class="font-extrabold text-indigo-700">S:</span> ${plainOrHtmlToEditorHtml(data.schluss)}</div>`);
             if (rows.length > 0) return rows.join('');
-            if (data.notes) return escapeHtml(data.notes).replace(/\n/g, '<br>');
+            if (data.notes) return plainOrHtmlToEditorHtml(data.notes);
             return "";
         }
 
         function buildLessonSummaryPlain(data) {
             if (!data) return "";
             const parts = [];
-            if (data.einstieg) parts.push(`E: ${data.einstieg}`);
-            if (data.hauptteil) parts.push(`H: ${data.hauptteil}`);
-            if (data.schluss) parts.push(`S: ${data.schluss}`);
-            return parts.length > 0 ? parts.join('\n') : (data.notes || "");
+            if (data.einstieg) parts.push(`E: ${htmlToPlainText(data.einstieg)}`);
+            if (data.hauptteil) parts.push(`H: ${htmlToPlainText(data.hauptteil)}`);
+            if (data.schluss) parts.push(`S: ${htmlToPlainText(data.schluss)}`);
+            return parts.length > 0 ? parts.join('\n') : htmlToPlainText(data.notes || "");
         }
 
         function getEffectiveTrack(data, slot) {
@@ -1536,7 +1725,6 @@
                             </div>
                             <div class="flex items-center gap-1 shrink-0 no-print">
                                 ${data.audioClips && data.audioClips.length > 0 ? `<span title="Sprachmemo" class="text-rose-600"><i data-lucide="mic" class="w-3 h-3"></i></span>` : ''}
-                                ${data.link ? `<span title="Drive/Link" class="text-indigo-600"><i data-lucide="link" class="w-3 h-3"></i></span>` : ''}
                             </div>
                         </div>
 
@@ -1613,8 +1801,12 @@
         }
 
         // =========================================================================
-        // 5. LEKTIONS-EDITOR
+        // 5. LEKTIONS-EDITOR (RICH-TEXT, KI-TUTOR & UNDO BEI LEEREN)
         // =========================================================================
+        function execRichCmd(command) {
+            document.execCommand(command, false, null);
+        }
+
         function findUpcomingSlotsForCourse(subject, className, preferredTrack, fromISO, fromStart, weeksAhead = 4) {
             const allSameCourse = [];
             const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
@@ -1688,6 +1880,9 @@
         function openLessonModal(key, slot, dayDate) {
             activeLessonKey = key;
             activeSlotMeta = { slot, dayDate };
+            lastClearedLessonBackup = null;
+            document.getElementById('restoreLessonBtn').classList.add('hidden');
+
             const iso = formatDateISO(dayDate);
             const data = lessonsStore[key] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
             const style = getStyleForSlot(slot.subject, slot.className);
@@ -1703,10 +1898,9 @@
             document.getElementById('editLessonTrack').value = activeTrack;
             document.getElementById('editLessonUnit').value = data.unit || "";
             document.getElementById('editLessonTitle').value = data.title || "";
-            document.getElementById('editPhaseEinstieg').value = data.einstieg || "";
-            document.getElementById('editPhaseHauptteil').value = data.hauptteil || data.notes || "";
-            document.getElementById('editPhaseSchluss').value = data.schluss || "";
-            document.getElementById('editLessonLink').value = data.link || "";
+            document.getElementById('editPhaseEinstieg').innerHTML = plainOrHtmlToEditorHtml(data.einstieg || "");
+            document.getElementById('editPhaseHauptteil').innerHTML = plainOrHtmlToEditorHtml(data.hauptteil || data.notes || "");
+            document.getElementById('editPhaseSchluss').innerHTML = plainOrHtmlToEditorHtml(data.schluss || "");
             document.getElementById('editLessonHomework').value = data.homework || "";
             document.getElementById('lessonAiResultBox').classList.add('hidden');
             document.getElementById('lessonAiPromptInput').value = "";
@@ -1745,6 +1939,13 @@
             document.getElementById('lessonModal').classList.add('hidden');
         }
 
+        function readEditorCleanHtml(elId) {
+            const el = document.getElementById(elId);
+            if (!el) return "";
+            if (htmlToPlainText(el.innerHTML) === "") return "";
+            return el.innerHTML.trim();
+        }
+
         function updateParallelPreview() {
             const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
             const parMode = document.getElementById('parallelSyncModeSelect').value;
@@ -1761,15 +1962,29 @@
             const existingText = [existing.title, buildLessonSummaryPlain(existing)].filter(Boolean).join('\n') || "(Aktuell leer)";
             currentBox.innerText = existingText;
 
-            const newTitle = document.getElementById('editLessonTitle').value.trim();
-            const newSummary = buildLessonSummaryPlain({
-                einstieg: document.getElementById('editPhaseEinstieg').value.trim(),
-                hauptteil: document.getElementById('editPhaseHauptteil').value.trim(),
-                schluss: document.getElementById('editPhaseSchluss').value.trim()
-            });
-            const hw = document.getElementById('editLessonHomework').value.trim();
-            const incomingText = [newTitle, newSummary, hw ? `HA: ${hw} (wird an nächste Lektion dieser Klasse verknüpft)` : ''].filter(Boolean).join('\n') || "(Noch kein neuer Inhalt eingegeben)";
+            const incMeta = document.getElementById('parIncMeta').checked;
+            const incContent = document.getElementById('parIncContent').checked;
+            const incHw = document.getElementById('parIncHw').checked;
 
+            const parts = [];
+            if (incMeta) {
+                const t = document.getElementById('editLessonTitle').value.trim();
+                if (t) parts.push(t);
+            }
+            if (incContent) {
+                const sum = buildLessonSummaryPlain({
+                    einstieg: readEditorCleanHtml('editPhaseEinstieg'),
+                    hauptteil: readEditorCleanHtml('editPhaseHauptteil'),
+                    schluss: readEditorCleanHtml('editPhaseSchluss')
+                });
+                if (sum) parts.push(sum);
+            }
+            if (incHw) {
+                const hw = document.getElementById('editLessonHomework').value.trim();
+                if (hw) parts.push(`HA: ${hw} (wird an nächste Lektion verknüpft)`);
+            }
+
+            const incomingText = parts.join('\n') || "(Keine Inhalte zur Übertragung angewählt)";
             if (parMode === 'overwrite' || existingText === "(Aktuell leer)") {
                 previewBox.innerText = incomingText;
             } else {
@@ -1781,21 +1996,26 @@
             const parTargetKey = document.getElementById('parallelTargetLessonSelect').value;
             if (!parTargetKey) return;
             const parMode = document.getElementById('parallelSyncModeSelect').value;
-            const isExam = document.getElementById('editLessonIsExam').checked;
-            const unit = document.getElementById('editLessonUnit').value.trim();
-            const title = document.getElementById('editLessonTitle').value.trim();
-            const einstieg = document.getElementById('editPhaseEinstieg').value.trim();
-            const hauptteil = document.getElementById('editPhaseHauptteil').value.trim();
-            const schluss = document.getElementById('editPhaseSchluss').value.trim();
-            const homework = document.getElementById('editLessonHomework').value.trim();
-            const link = document.getElementById('editLessonLink').value.trim();
+
+            const incMeta = document.getElementById('parIncMeta').checked;
+            const incContent = document.getElementById('parIncContent').checked;
+            const incHw = document.getElementById('parIncHw').checked;
+            const incExam = document.getElementById('parIncExam').checked;
+
+            const isExam = incExam ? document.getElementById('editLessonIsExam').checked : false;
+            const unit = incMeta ? document.getElementById('editLessonUnit').value.trim() : "";
+            const title = incMeta ? document.getElementById('editLessonTitle').value.trim() : "";
+            const einstieg = incContent ? readEditorCleanHtml('editPhaseEinstieg') : "";
+            const hauptteil = incContent ? readEditorCleanHtml('editPhaseHauptteil') : "";
+            const schluss = incContent ? readEditorCleanHtml('editPhaseSchluss') : "";
+            const homework = incHw ? document.getElementById('editLessonHomework').value.trim() : "";
 
             const [parIso, parSlotId] = parTargetKey.split('_');
             const parSlot = weeklyTemplate.find(s => s.id === parSlotId);
             const parTrack = parSlot ? getEffectiveTrack(lessonsStore[parTargetKey], parSlot) : "";
             let parNextHwKey = "";
 
-            if (homework && parSlot) {
+            if (incHw && homework && parSlot) {
                 const upcomingForPar = findUpcomingSlotsForCourse(parSlot.subject, parSlot.className, parTrack, parIso, parSlot.start, 4);
                 if (upcomingForPar.length > 0) {
                     parNextHwKey = upcomingForPar[0].key;
@@ -1810,15 +2030,14 @@
             if (parMode === 'overwrite') {
                 lessonsStore[parTargetKey] = {
                     ...existingPar,
-                    isExam,
-                    unit,
-                    title,
-                    einstieg,
-                    hauptteil,
-                    schluss,
-                    homework,
-                    homeworkTargetKey: parNextHwKey || existingPar.homeworkTargetKey,
-                    link
+                    isExam: incExam ? isExam : existingPar.isExam,
+                    unit: incMeta ? unit : existingPar.unit,
+                    title: incMeta ? title : existingPar.title,
+                    einstieg: incContent ? einstieg : existingPar.einstieg,
+                    hauptteil: incContent ? hauptteil : existingPar.hauptteil,
+                    schluss: incContent ? schluss : existingPar.schluss,
+                    homework: incHw ? homework : existingPar.homework,
+                    homeworkTargetKey: (incHw && parNextHwKey) ? parNextHwKey : existingPar.homeworkTargetKey
                 };
             } else {
                 lessonsStore[parTargetKey] = {
@@ -1826,19 +2045,18 @@
                     isExam: existingPar.isExam || isExam,
                     unit: existingPar.unit || unit,
                     title: existingPar.title ? (title && !existingPar.title.includes(title) ? `${existingPar.title} / ${title}` : existingPar.title) : title,
-                    einstieg: existingPar.einstieg ? (einstieg ? `${existingPar.einstieg}\n${einstieg}` : existingPar.einstieg) : einstieg,
-                    hauptteil: existingPar.hauptteil ? (hauptteil ? `${existingPar.hauptteil}\n${hauptteil}` : existingPar.hauptteil) : hauptteil,
-                    schluss: existingPar.schluss ? (schluss ? `${existingPar.schluss}\n${schluss}` : existingPar.schluss) : schluss,
+                    einstieg: existingPar.einstieg ? (einstieg ? `${existingPar.einstieg}<br>${einstieg}` : existingPar.einstieg) : einstieg,
+                    hauptteil: existingPar.hauptteil ? (hauptteil ? `${existingPar.hauptteil}<br>${hauptteil}` : existingPar.hauptteil) : hauptteil,
+                    schluss: existingPar.schluss ? (schluss ? `${existingPar.schluss}<br>${schluss}` : existingPar.schluss) : schluss,
                     homework: existingPar.homework || homework,
-                    homeworkTargetKey: existingPar.homeworkTargetKey || parNextHwKey,
-                    link: existingPar.link || link
+                    homeworkTargetKey: existingPar.homeworkTargetKey || parNextHwKey
                 };
             }
 
             updateParallelPreview();
             renderCalendar();
             saveAllState();
-            showToast("Inhalt & Hausaufgaben-Verweis auf parallele Klasse übertragen!");
+            showToast("Ausgewählte Inhalte auf parallele Klasse übertragen!");
         }
 
         function saveLessonModal() {
@@ -1851,10 +2069,9 @@
 
             const unit = document.getElementById('editLessonUnit').value.trim();
             const title = document.getElementById('editLessonTitle').value.trim();
-            const einstieg = document.getElementById('editPhaseEinstieg').value.trim();
-            const hauptteil = document.getElementById('editPhaseHauptteil').value.trim();
-            const schluss = document.getElementById('editPhaseSchluss').value.trim();
-            const link = document.getElementById('editLessonLink').value.trim();
+            const einstieg = readEditorCleanHtml('editPhaseEinstieg');
+            const hauptteil = readEditorCleanHtml('editPhaseHauptteil');
+            const schluss = readEditorCleanHtml('editPhaseSchluss');
             const homework = document.getElementById('editLessonHomework').value.trim();
             const hwTargetKey = document.getElementById('homeworkTargetLessonSelect').value;
 
@@ -1868,7 +2085,7 @@
                 hauptteil,
                 schluss,
                 notes: "",
-                link,
+                link: "",
                 homework,
                 homeworkTargetKey: hwTargetKey,
                 audioClips: tempAudioClips,
@@ -1889,13 +2106,63 @@
             showToast("Lektion gespeichert!");
         }
 
+        // Lektion leeren, Fenster OFFEN lassen und Wiederherstellen-Button einblenden
         function clearCurrentLesson() {
             if (!activeLessonKey) return;
-            delete lessonsStore[activeLessonKey];
-            closeLessonModal();
-            renderCalendar();
-            saveAllState();
-            showToast("Lektion geleert.");
+            lastClearedLessonBackup = {
+                key: activeLessonKey,
+                homeworkDueToday: document.getElementById('editLessonHomeworkToday').value,
+                isExam: document.getElementById('editLessonIsExam').checked,
+                track: document.getElementById('editLessonTrack').value,
+                unit: document.getElementById('editLessonUnit').value,
+                title: document.getElementById('editLessonTitle').value,
+                einstieg: document.getElementById('editPhaseEinstieg').innerHTML,
+                hauptteil: document.getElementById('editPhaseHauptteil').innerHTML,
+                schluss: document.getElementById('editPhaseSchluss').innerHTML,
+                homework: document.getElementById('editLessonHomework').value,
+                audioClips: JSON.parse(JSON.stringify(tempAudioClips)),
+                todos: JSON.parse(JSON.stringify(tempLessonTodos))
+            };
+
+            document.getElementById('editLessonHomeworkToday').value = "";
+            document.getElementById('editLessonIsExam').checked = false;
+            document.getElementById('editLessonUnit').value = "";
+            document.getElementById('editLessonTitle').value = "";
+            document.getElementById('editPhaseEinstieg').innerHTML = "";
+            document.getElementById('editPhaseHauptteil').innerHTML = "";
+            document.getElementById('editPhaseSchluss').innerHTML = "";
+            document.getElementById('editLessonHomework').value = "";
+            tempAudioClips = [];
+            tempLessonTodos = [];
+            renderAudioClipsList();
+            renderModalTodosList();
+            updateParallelPreview();
+
+            document.getElementById('restoreLessonBtn').classList.remove('hidden');
+            showToast("Felder geleert – mit «↩️ Wiederherstellen» rückgängig machbar.");
+        }
+
+        function restoreClearedLesson() {
+            if (!lastClearedLessonBackup) return;
+            const b = lastClearedLessonBackup;
+            document.getElementById('editLessonHomeworkToday').value = b.homeworkDueToday;
+            document.getElementById('editLessonIsExam').checked = b.isExam;
+            document.getElementById('editLessonTrack').value = b.track;
+            document.getElementById('editLessonUnit').value = b.unit;
+            document.getElementById('editLessonTitle').value = b.title;
+            document.getElementById('editPhaseEinstieg').innerHTML = b.einstieg;
+            document.getElementById('editPhaseHauptteil').innerHTML = b.hauptteil;
+            document.getElementById('editPhaseSchluss').innerHTML = b.schluss;
+            document.getElementById('editLessonHomework').value = b.homework;
+            tempAudioClips = b.audioClips;
+            tempLessonTodos = b.todos;
+            renderAudioClipsList();
+            renderModalTodosList();
+            updateParallelPreview();
+
+            document.getElementById('restoreLessonBtn').classList.add('hidden');
+            lastClearedLessonBackup = null;
+            showToast("Lektionsinhalt wiederhergestellt!");
         }
 
         function bumpLessonsForward() {
@@ -1941,9 +2208,9 @@
         function selectAiPhase(phaseKey) {
             selectedAiPhase = phaseKey;
             const map = {
-                einstieg: { btn: 'aiPhaseEinstieg', label: 'Einstieg' },
-                hauptteil: { btn: 'aiPhaseHauptteil', label: 'Hauptteil' },
-                schluss: { btn: 'aiPhaseSchluss', label: 'Schluss' }
+                einstieg: { btn: 'aiPhaseEinstieg', label: '1. Einstieg' },
+                hauptteil: { btn: 'aiPhaseHauptteil', label: '2. Hauptteil' },
+                schluss: { btn: 'aiPhaseSchluss', label: '3. Schluss' }
             };
             Object.entries(map).forEach(([k, info]) => {
                 document.getElementById(info.btn).className = k === phaseKey
@@ -1972,22 +2239,23 @@
             btn.disabled = true;
 
             const phaseDescriptions = {
-                einstieg: "Einstieg (ca. 5–10 Minuten, motivierend, Vorwissen aktivierend)",
-                hauptteil: "Hauptteil / Erarbeitung (ca. 25 Minuten, klare Aufgabenstellung, Sozialform & Differenzierung Niveau A)",
-                schluss: "Schluss / Sicherung (ca. 5–10 Minuten, Ergebnissicherung, Exit-Ticket oder Ausblick)"
+                einstieg: "1. Einstieg (ca. 5–10 Minuten, motivierend, Vorwissen aktivierend)",
+                hauptteil: "2. Hauptteil / Erarbeitung (ca. 25 Minuten, klare Aufgabenstellung, Sozialform & Differenzierung Niveau A)",
+                schluss: "3. Schluss / Sicherung (ca. 5–10 Minuten, Ergebnissicherung, Exit-Ticket oder Ausblick)"
             };
 
             const prompt = `Aktuelles Fach: ${style.label} (${slot.className})${track ? `, Gefäss/Schwerpunkt: ${track}` : ''}${unit ? `, Einheit/Unit: ${unit}` : ''}.
 Gewünschte Unterrichtsphase: ${phaseDescriptions[selectedAiPhase]}.
 Thema / Auftrag: "${topic}".
-Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Keine Einleitung, kein Schlusswort.`;
+Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Nutze **Fettschrift** für wichtige Begriffe/Sozialformen. Keine Einleitung, kein Schlusswort.`;
 
             try {
                 const reply = await callGeminiUnified(prompt);
-                resultEditor.value = reply;
+                // Wandelt **Wort** direkt in echtes HTML <strong>Wort</strong> um (keine Sternchen!)
+                resultEditor.innerHTML = markdownBoldToHtml(reply);
                 resultBox.classList.remove('hidden');
             } catch (err) {
-                resultEditor.value = "⚠️ " + err.message;
+                resultEditor.innerHTML = `<span class="text-rose-700 font-bold">⚠️ ${escapeHtml(err.message)}</span>`;
                 resultBox.classList.remove('hidden');
             } finally {
                 btn.innerText = "Generieren";
@@ -1996,13 +2264,14 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         }
 
         function insertAiIntoPhase(mode) {
-            const text = document.getElementById('lessonAiResultEditor').value.trim();
-            if (!text) return;
+            const htmlContent = document.getElementById('lessonAiResultEditor').innerHTML.trim();
+            if (!htmlToPlainText(htmlContent)) return;
             const fieldMap = { einstieg: 'editPhaseEinstieg', hauptteil: 'editPhaseHauptteil', schluss: 'editPhaseSchluss' };
             const targetEl = document.getElementById(fieldMap[selectedAiPhase]);
-            targetEl.value = (mode === 'replace' || !targetEl.value.trim()) ? text : `${targetEl.value.trim()}\n${text}`;
+            const currentPlain = htmlToPlainText(targetEl.innerHTML);
+            targetEl.innerHTML = (mode === 'replace' || !currentPlain) ? htmlContent : `${targetEl.innerHTML}<br>${htmlContent}`;
             updateParallelPreview();
-            showToast("In das gewählte Phasen-Feld übernommen!");
+            showToast("Direkt in das gewählte Chalk-Feld übernommen!");
         }
 
         // =========================================================================
@@ -2043,7 +2312,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                 aiBubble.className = "self-start max-w-[95%] bg-white border border-slate-200 rounded-2xl rounded-bl-xs p-3 text-slate-800 leading-relaxed shadow-2xs flex flex-col gap-2";
                 const safeId = "chatReply_" + Date.now();
                 aiBubble.innerHTML = `
-                    <div id="${safeId}" class="whitespace-pre-line">${escapeHtml(reply)}</div>
+                    <div id="${safeId}" class="leading-relaxed">${markdownBoldToHtml(reply)}</div>
                     <div class="flex justify-end pt-1 border-t border-slate-100">
                         <button type="button" onclick="copyChatReplyToLesson('${safeId}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-bold text-[10.5px]">
                             + In Ziel-Lektion übernehmen
@@ -2064,12 +2333,12 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         }
 
         function copyChatReplyToLesson(elId) {
-            const text = document.getElementById(elId)?.innerText.trim();
+            const html = document.getElementById(elId)?.innerHTML.trim();
             const targetKey = document.getElementById('generalChatTargetLesson').value;
-            if (!text || !targetKey) return;
+            if (!html || !targetKey) return;
 
             const existing = lessonsStore[targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
-            existing.hauptteil = existing.hauptteil ? `${existing.hauptteil}\n---\n${text}` : text;
+            existing.hauptteil = existing.hauptteil ? `${existing.hauptteil}<br><hr class="my-1">${html}` : html;
             lessonsStore[targetKey] = existing;
             renderCalendar();
             saveAllState();
@@ -2133,8 +2402,21 @@ Text: "${text}"`;
         }
 
         // =========================================================================
-        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT MIT RHYTHMUS, KASKADE & AUTO-DATUM
+        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT (DRAG&DROP, EDITIERBAR, KONFLIKTE)
         // =========================================================================
+        function copyNotebookPrompt() {
+            const promptText = `Erstelle aus diesen Unterlagen einen Lektionenablauf für die Sekundarstufe I (Kanton Zürich, Niveau A, 45 Minuten pro Lektion).
+WICHTIG: Schreibe KEINE Einleitung und KEINE Tabelle, sondern beginne direkt mit «Lektion 1:». Nutze für jede Lektion exakt dieses Format und trenne die Lektionen durch genau eine Leerzeile:
+
+Lektion 1: [Kurzer Stundentitel]
+Einstieg: [Aktivierender Einstieg, ca. 5-10 Min]
+Hauptteil: [Erarbeitung, Aufgaben, Sozialform, Material]
+Schluss: [Sicherung / Ausblick, ca. 5 Min]
+HA: [Hausaufgabe auf nächste Stunde]`;
+            navigator.clipboard?.writeText(promptText);
+            showToast("Format-Prompt für NotebookLM / Gemini kopiert!");
+        }
+
         function openUniversalImportModal() {
             const select1 = document.getElementById('seqTargetCourse1');
             const select2 = document.getElementById('seqTargetCourse2');
@@ -2224,7 +2506,6 @@ Text: "${text}"`;
                 "januar": "01", "februar": "02", "märz": "03", "april": "04", "mai": "05", "juni": "06",
                 "juli": "07", "august": "08", "september": "09", "oktober": "10", "november": "11", "dezember": "12"
             };
-            // 1. Numerisches Datum TT.MM.JJJJ oder TT.MM.JJ (z.B. 4.1.2027 oder 04.01.27)
             const numMatch = text.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
             if (numMatch) {
                 const day = numMatch[1].padStart(2, '0');
@@ -2236,7 +2517,6 @@ Text: "${text}"`;
                     return `${year}-${month}-${day}`;
                 }
             }
-            // 2. Ausgeschriebenes Datum wie "4. Januar 2027"
             const wordMatch = text.match(/\b(\d{1,2})\.\s*(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s*(20\d{2})\b/i);
             if (wordMatch) {
                 const day = wordMatch[1].padStart(2, '0');
@@ -2266,9 +2546,20 @@ Text: "${text}"`;
             rebuildUniversalPreview();
         }
 
-        async function handleUniversalFileUpload(event) {
+        function handleFileDrop(event) {
+            event.preventDefault();
+            const box = document.getElementById('dropZoneBox');
+            box.classList.remove('border-indigo-600', 'bg-indigo-50');
+            const file = event.dataTransfer?.files?.[0];
+            if (file) processUploadedFile(file);
+        }
+
+        function handleUniversalFileUpload(event) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (file) processUploadedFile(file);
+        }
+
+        async function processUploadedFile(file) {
             const textarea = document.getElementById('universalRawTextarea');
             showToast(`Lese ${file.name} ein...`);
 
@@ -2312,7 +2603,7 @@ Text: "${text}"`;
             btn.innerHTML = `<span>KI gliedert Lektionen...</span>`;
             btn.disabled = true;
 
-            const prompt = `Gliedere den folgenden Unterrichtstext (z. B. aus Word, Tabellen oder PDF) sauber in einzelne 45-Minuten-Lektionen. Entferne alte Datumsangaben oder Kopfzeilen.
+            const prompt = `Gliedere den folgenden Unterrichtstext sauber in einzelne 45-Minuten-Lektionen. Ignoriere Einleitungen oder Dokumenttitel vor der ersten Lektion.
 Nutze für JEDE Lektion exakt dieses Format und trenne die Lektionen durch genau eine Leerzeile:
 Lektion 1: [Kurzer Stundentitel]
 Einstieg: [Falls erkennbar, sonst weglassen]
@@ -2356,18 +2647,9 @@ Text:\n${raw.slice(0, 12000)}`;
                 const res = await callGeminiUnified(prompt);
                 const parsed = JSON.parse(res.replace(/```json|```/g, '').trim());
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    universalPreviewItems = parsed.map(p => ({
-                        selected: true,
-                        day: Number(p.day) || 0,
-                        start: p.start || "08:20",
-                        end: p.end || "09:05",
-                        subject: p.subject || "D",
-                        className: p.className || "S2Aa",
-                        track: "",
-                        room: p.room || "C63"
-                    }));
+                    buildScheduleDiffItems(parsed);
                     renderSchedulePreviewTable();
-                    showToast(`${universalPreviewItems.length} Stundenplan-Lektionen erkannt!`);
+                    showToast(`${universalPreviewItems.length} Stundenplan-Einträge abgeglichen!`);
                 }
             } catch (err) {
                 showToast("KI-Fehler: " + err.message);
@@ -2398,17 +2680,9 @@ Text:\n${raw.slice(0, 12000)}`;
                 const res = await callGeminiUnified(prompt);
                 const parsed = JSON.parse(res.replace(/```json|```/g, '').trim());
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    universalPreviewItems = parsed.map((p, idx) => ({
-                        id: `ev-imp-${Date.now()}-${idx}`,
-                        selected: true,
-                        name: p.name || "Termin",
-                        start: p.start,
-                        end: p.end || p.start,
-                        type: p.type === 'holiday' ? 'holiday' : 'special',
-                        targetClass: p.targetClass || 'ALL'
-                    }));
+                    buildHolidayConflictItems(parsed);
                     renderHolidayPreviewTable();
-                    showToast(`${universalPreviewItems.length} Termine erkannt!`);
+                    showToast(`${universalPreviewItems.length} Termine auf Konflikte geprüft!`);
                 }
             } catch (err) {
                 showToast("KI-Fehler: " + err.message);
@@ -2417,6 +2691,25 @@ Text:\n${raw.slice(0, 12000)}`;
                 btn.disabled = false;
                 refreshIcons();
             }
+        }
+
+        // Schneidet Dokument-Titel/Anleitung VOR dem ersten "Lektion 1:" sauber ab!
+        function extractLessonBlocksFromText(rawText) {
+            const firstLessonMatch = rawText.match(/(?:^|\n)\s*(Lektion\s+1\b)/i);
+            if (firstLessonMatch && typeof firstLessonMatch.index === 'number') {
+                const headerIntro = rawText.slice(0, firstLessonMatch.index).trim();
+                // Falls im Dokument-Kopf ein Titel wie «Die Welle» steht und das Unit-Feld noch leer ist, automatisch übernehmen
+                const unitInput = document.getElementById('seqUnitTitle');
+                if (headerIntro && unitInput && !unitInput.value.trim()) {
+                    const firstHeaderLine = headerIntro.split('\n')[0].replace(/–\s*Lektionsplanung.*$/i, '').replace(/[«»"]/g, '').trim();
+                    if (firstHeaderLine.length > 1 && firstHeaderLine.length <= 45) {
+                        unitInput.value = firstHeaderLine;
+                    }
+                }
+                const bodyFromLektion1 = rawText.slice(firstLessonMatch.index).trim();
+                return bodyFromLektion1.split(/(?=(?:^|\n)\s*Lektion\s+\d+\b)/i).map(b => b.trim()).filter(Boolean);
+            }
+            return rawText.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
         }
 
         function parseLessonBlockStructure(blockText) {
@@ -2460,10 +2753,10 @@ Text:\n${raw.slice(0, 12000)}`;
             if (existing.trackOverride) parts.push(`Gefäss: ${existing.trackOverride}`);
             if (existing.unit) parts.push(`Unit: ${existing.unit}`);
             if (existing.title) parts.push(`Titel: ${existing.title}`);
-            if (existing.einstieg) parts.push(`E: ${existing.einstieg}`);
-            if (existing.hauptteil) parts.push(`H: ${existing.hauptteil}`);
-            if (existing.schluss) parts.push(`S: ${existing.schluss}`);
-            if (existing.notes && !existing.hauptteil) parts.push(existing.notes);
+            if (existing.einstieg) parts.push(`E: ${htmlToPlainText(existing.einstieg)}`);
+            if (existing.hauptteil) parts.push(`H: ${htmlToPlainText(existing.hauptteil)}`);
+            if (existing.schluss) parts.push(`S: ${htmlToPlainText(existing.schluss)}`);
+            if (existing.notes && !existing.hauptteil) parts.push(htmlToPlainText(existing.notes));
             if (existing.homework) parts.push(`HA auf nächste: ${existing.homework}`);
             return parts.join('\n');
         }
@@ -2473,25 +2766,41 @@ Text:\n${raw.slice(0, 12000)}`;
             return Boolean(
                 lessonObj.isExam ||
                 (lessonObj.title && lessonObj.title.trim()) ||
-                (lessonObj.einstieg && lessonObj.einstieg.trim()) ||
-                (lessonObj.hauptteil && lessonObj.hauptteil.trim()) ||
-                (lessonObj.schluss && lessonObj.schluss.trim()) ||
-                (lessonObj.notes && lessonObj.notes.trim())
+                htmlToPlainText(lessonObj.einstieg) ||
+                htmlToPlainText(lessonObj.hauptteil) ||
+                htmlToPlainText(lessonObj.schluss) ||
+                htmlToPlainText(lessonObj.notes)
             );
         }
 
-        // Sammelt ALLE regulären Slots dieses Fachs & dieser Klasse über 40 Wochen (damit im Dropdown jederzeit auch auf andere Wochentage gewechselt werden kann)
-        function collectAllSlotsForCourse(courseVal, startDateStr, minCount) {
+        // Sammelt reguläre Unterrichtsslots UND Ferienwochen als sichtbare Orientierungs-Trenner für das Dropdown
+        function collectAllSlotsWithHolidayMarkers(courseVal, startDateStr, minCount) {
             if (!courseVal || !startDateStr) return [];
             const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
             const startMonday = getMonday(new Date(startDateStr));
-            const slots = [];
+            const items = [];
             const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
+            let lessonSlotCount = 0;
 
-            for (let w = 0; w < 42 && slots.length < minCount + 45; w++) {
+            for (let w = 0; w < 44 && lessonSlotCount < minCount + 45; w++) {
                 const mon = new Date(startMonday);
                 mon.setDate(startMonday.getDate() + w * 7);
                 const weekISO = formatDateISO(mon);
+                const kw = getWeekNumber(mon);
+
+                // Prüfen, ob in dieser Woche Ferien liegen
+                const midWeek = new Date(mon);
+                midWeek.setDate(mon.getDate() + 2);
+                const holidayInWeek = getHolidayEventForDate(formatDateISO(midWeek), targetClass);
+                if (holidayInWeek && formatDateISO(midWeek) >= startDateStr) {
+                    items.push({
+                        isHolidayMarker: true,
+                        key: `HOL_${weekISO}`,
+                        iso: formatDateISO(mon),
+                        weekISO,
+                        label: `🏖️ KW ${kw}: ${holidayInWeek.name} (${formatDateCH(holidayInWeek.start)} – ${formatDateCH(holidayInWeek.end)})`
+                    });
+                }
 
                 weeklyTemplate
                     .filter(s => s.subject === targetSubject && s.className === targetClass && (!targetTrack || (s.track || "").trim() === targetTrack))
@@ -2512,39 +2821,42 @@ Text:\n${raw.slice(0, 12000)}`;
                                 if (existing.isExam) infoParts.push("📝 Prüfung");
                                 if (effTrack) infoParts.push(effTrack);
                                 if (existing.unit) infoParts.push(`Unit: ${existing.unit}`);
-                                const mainTxt = existing.title || existing.hauptteil || existing.notes || "";
+                                const mainTxt = existing.title || htmlToPlainText(existing.hauptteil) || htmlToPlainText(existing.notes) || "";
                                 if (mainTxt) infoParts.push(mainTxt.slice(0, 28));
                                 infoBadge = ` [BELEGT: ${infoParts.join(' | ')}]`;
                             } else if (effTrack) {
                                 infoBadge = ` [${effTrack} • Frei]`;
                             }
 
-                            slots.push({
+                            items.push({
+                                isHolidayMarker: false,
                                 key: slotKey,
                                 iso,
                                 weekISO,
+                                kw,
                                 day: s.day,
                                 slotId: s.id,
                                 occupied,
                                 existing,
                                 label: `${dayShort[s.day]}, ${formatDateCH(iso)} (${s.start}–${s.end})${infoBadge}`
                             });
+                            lessonSlotCount++;
                         }
                     });
             }
-            return slots;
+            return items;
         }
 
-        // Wählt aus allen Slots die Standard-Vorschlagsliste gemäss Rhythmus (1x/Woche bestimmter Slot vs. 1. Slot/Woche vs. Alle)
-        function buildRecommendedSlotsByRhythm(allSlots, rhythmPreference) {
-            if (!allSlots || allSlots.length === 0) return [];
+        function buildRecommendedSlotsByRhythm(allItems, rhythmPreference) {
+            const pureSlots = (allItems || []).filter(it => !it.isHolidayMarker);
+            if (pureSlots.length === 0) return [];
             if (!rhythmPreference || rhythmPreference === 'ALL') {
-                return [...allSlots];
+                return [...pureSlots];
             }
             if (rhythmPreference === '1_PER_WEEK_FIRST') {
                 const seenWeeks = new Set();
                 const filtered = [];
-                allSlots.forEach(sl => {
+                pureSlots.forEach(sl => {
                     if (!seenWeeks.has(sl.weekISO)) {
                         seenWeeks.add(sl.weekISO);
                         filtered.push(sl);
@@ -2554,10 +2866,97 @@ Text:\n${raw.slice(0, 12000)}`;
             }
             if (rhythmPreference.startsWith('SLOT_')) {
                 const preferredSlotId = rhythmPreference.replace('SLOT_', '');
-                const exactMatches = allSlots.filter(sl => sl.slotId === preferredSlotId);
-                return exactMatches.length > 0 ? exactMatches : [...allSlots];
+                const exactMatches = pureSlots.filter(sl => sl.slotId === preferredSlotId);
+                return exactMatches.length > 0 ? exactMatches : [...pureSlots];
             }
-            return [...allSlots];
+            return [...pureSlots];
+        }
+
+        function buildScheduleDiffItems(parsedNewSlots) {
+            const mode = document.getElementById('scheduleImportMode').value;
+            const items = [];
+
+            parsedNewSlots.forEach(p => {
+                const isAlreadyThere = weeklyTemplate.some(ex =>
+                    ex.day === Number(p.day) && ex.start === p.start && ex.subject.toUpperCase() === (p.subject || "").toUpperCase() && ex.className.toUpperCase() === (p.className || "").toUpperCase()
+                );
+                items.push({
+                    selected: true,
+                    actionType: isAlreadyThere ? 'keep' : 'add',
+                    day: Number(p.day) || 0,
+                    start: p.start || "08:20",
+                    end: p.end || "09:05",
+                    subject: p.subject || "D",
+                    className: p.className || "S2Aa",
+                    track: "",
+                    room: p.room || "C63"
+                });
+            });
+
+            if (mode === 'diff_replace') {
+                weeklyTemplate.forEach(ex => {
+                    const stillInNew = parsedNewSlots.some(p =>
+                        Number(p.day) === ex.day && p.start === ex.start && (p.subject || "").toUpperCase() === ex.subject.toUpperCase() && (p.className || "").toUpperCase() === ex.className.toUpperCase()
+                    );
+                    if (!stillInNew) {
+                        items.push({
+                            selected: true,
+                            actionType: 'remove',
+                            existingId: ex.id,
+                            day: ex.day,
+                            start: ex.start,
+                            end: ex.end,
+                            subject: ex.subject,
+                            className: ex.className,
+                            track: ex.track || "",
+                            room: ex.room || "C63"
+                        });
+                    }
+                });
+            }
+            universalPreviewItems = items;
+        }
+
+        function buildHolidayConflictItems(parsedEvents) {
+            universalPreviewItems = parsedEvents.map((p, idx) => {
+                const start = p.start;
+                const end = p.end || p.start;
+                const targetClass = p.targetClass || 'ALL';
+                const evType = p.type === 'holiday' ? 'holiday' : 'special';
+
+                // Prüfen auf bestehende Termine oder geplante Lektionen im Zeitraum
+                const overlappingEvents = calendarEvents.filter(ev => !(end < ev.start || start > ev.end));
+                const affectedLessonKeys = [];
+                if (evType === 'holiday') {
+                    Object.entries(lessonsStore).forEach(([k, val]) => {
+                        const [iso, sId] = k.split('_');
+                        if (iso >= start && iso <= end && hasLessonContent(val)) {
+                            const sl = weeklyTemplate.find(s => s.id === sId);
+                            if (sl && (targetClass === 'ALL' || sl.className.toUpperCase() === targetClass.toUpperCase())) {
+                                affectedLessonKeys.push(k);
+                            }
+                        }
+                    });
+                }
+
+                const hasConflict = overlappingEvents.length > 0 || affectedLessonKeys.length > 0;
+                const conflictInfo = [];
+                if (overlappingEvents.length > 0) conflictInfo.push(`Überschneidet Termin: ${overlappingEvents.map(o => o.name).join(', ')}`);
+                if (affectedLessonKeys.length > 0) conflictInfo.push(`${affectedLessonKeys.length} geplante Lektion(en) betroffen`);
+
+                return {
+                    id: `ev-imp-${Date.now()}-${idx}`,
+                    selected: true,
+                    name: p.name || "Termin",
+                    start,
+                    end,
+                    type: evType,
+                    targetClass,
+                    hasConflict,
+                    conflictText: conflictInfo.join(' • '),
+                    conflictAction: affectedLessonKeys.length > 0 ? 'apply_and_bump' : 'apply'
+                };
+            });
         }
 
         function rebuildUniversalPreview() {
@@ -2573,15 +2972,13 @@ Text:\n${raw.slice(0, 12000)}`;
             }
 
             if (currentImportCategory === 'sequence') {
-                const allBlocks = (/^Lektion\s+\d+/im.test(rawText)
-                    ? rawText.split(/(?=^Lektion\s+\d+)/im)
-                    : rawText.split(/\n\s*\n/)).map(b => b.trim()).filter(Boolean);
+                const allBlocks = extractLessonBlocksFromText(rawText);
 
                 const offsetSelect = document.getElementById('seqFileStartOffset');
                 const currentOffset = Math.min(parseInt(offsetSelect.value, 10) || 0, Math.max(0, allBlocks.length - 1));
                 offsetSelect.innerHTML = allBlocks.map((b, idx) => {
-                    const firstLine = b.split('\n')[0].trim().slice(0, 38);
-                    return `<option value="${idx}" ${idx === currentOffset ? 'selected' : ''}>Block ${idx + 1}: ${escapeHtml(firstLine)}</option>`;
+                    const firstLine = b.split('\n')[0].trim().slice(0, 42);
+                    return `<option value="${idx}" ${idx === currentOffset ? 'selected' : ''}>${escapeHtml(firstLine)}</option>`;
                 }).join('');
 
                 const blocksToImport = allBlocks.slice(currentOffset);
@@ -2592,8 +2989,8 @@ Text:\n${raw.slice(0, 12000)}`;
                 const startDateStr = document.getElementById('seqStartDate').value;
                 if (!courseVal1 || !startDateStr) return;
 
-                universalAllSlots1 = collectAllSlotsForCourse(courseVal1, startDateStr, blocksToImport.length * 5);
-                universalAllSlots2 = courseVal2 ? collectAllSlotsForCourse(courseVal2, startDateStr, blocksToImport.length * 5) : [];
+                universalAllSlots1 = collectAllSlotsWithHolidayMarkers(courseVal1, startDateStr, blocksToImport.length * 5);
+                universalAllSlots2 = courseVal2 ? collectAllSlotsWithHolidayMarkers(courseVal2, startDateStr, blocksToImport.length * 5) : [];
 
                 const recSlots1 = buildRecommendedSlotsByRhythm(universalAllSlots1, rhythm1);
                 const recSlots2 = buildRecommendedSlotsByRhythm(universalAllSlots2, rhythm2);
@@ -2638,41 +3035,41 @@ Text:\n${raw.slice(0, 12000)}`;
                     { start: "15:35", end: "16:20" }, { start: "16:25", end: "17:10" }
                 ];
                 const regex = /\b(RZG|Econ|RKE|BO|MI|Mu|D|E)\s+(S[123][A-Za-z]+|Wahlfach\s*E)\b/g;
+                const rawParsed = [];
                 let match;
                 let autoIdx = 0;
                 while ((match = regex.exec(rawText)) !== null) {
                     const ts = timeSlots[autoIdx % timeSlots.length];
-                    universalPreviewItems.push({ selected: true, day: autoIdx % 5, start: ts.start, end: ts.end, subject: match[1], className: match[2], track: "", room: "C63" });
+                    rawParsed.push({ day: autoIdx % 5, start: ts.start, end: ts.end, subject: match[1], className: match[2], room: "C63" });
                     autoIdx++;
                 }
+                buildScheduleDiffItems(rawParsed);
                 renderSchedulePreviewTable();
 
             } else {
                 const parsed = parseSwissDatesFromText(rawText);
-                universalPreviewItems = parsed.map(p => ({ ...p, selected: true }));
+                buildHolidayConflictItems(parsed);
                 renderHolidayPreviewTable();
             }
         }
 
-        // Berechnet ab einer geänderten Zeile (rowIndex) alle nachfolgenden Slots für diese Klasse neu – bevorzugt am selben Wochentag/Slot!
         function cascadeFollowingSlotsForClass(startRowIndex, classNum, anchorSlotObj) {
-            const allSlotsPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
+            const pureSlotsPool = (classNum === 1 ? universalAllSlots1 : universalAllSlots2).filter(s => !s.isHolidayMarker);
             const rhythmPref = document.getElementById(`seqPreferredSlot${classNum}`).value;
             const getTargetObj = (r) => classNum === 1 ? universalPreviewItems[r].c1 : universalPreviewItems[r].c2;
 
-            if (!anchorSlotObj || allSlotsPool.length === 0) return;
+            if (!anchorSlotObj || pureSlotsPool.length === 0) return;
 
-            const anchorAllIdx = allSlotsPool.findIndex(s => s.key === anchorSlotObj.key);
+            const anchorAllIdx = pureSlotsPool.findIndex(s => s.key === anchorSlotObj.key);
             if (anchorAllIdx === -1) return;
 
             if (rhythmPref === 'ALL') {
-                // Bei "Alle Lektionen/Woche": ab anchorAllIdx einfach die nächsten Slots der Reihe nach zuweisen
                 let cursor = anchorAllIdx + 1;
                 for (let r = startRowIndex + 1; r < universalPreviewItems.length; r++) {
                     const tObj = getTargetObj(r);
                     if (!tObj) continue;
                     if (tObj.mode === 'skip') cursor++;
-                    const nextSlot = allSlotsPool[cursor] || allSlotsPool[allSlotsPool.length - 1];
+                    const nextSlot = pureSlotsPool[cursor] || pureSlotsPool[pureSlotsPool.length - 1];
                     if (nextSlot) {
                         tObj.targetKey = nextSlot.key;
                         tObj.existing = nextSlot.existing;
@@ -2682,13 +3079,11 @@ Text:\n${raw.slice(0, 12000)}`;
                     cursor++;
                 }
             } else {
-                // Bei 1 Lektion/Woche: nachfolgende Lektionen jeweils in die darauffolgenden Wochen schieben – bevorzugt am selben Wochentag/Slot wie der neu gewählte Slot!
                 const preferredDay = anchorSlotObj.day;
                 const preferredSlotId = anchorSlotObj.slotId;
 
-                // Alle eindeutigen Wochen ab der Woche des gewählten Slots sammeln
                 const futureWeeks = [];
-                allSlotsPool.forEach(sl => {
+                pureSlotsPool.forEach(sl => {
                     if (sl.iso > anchorSlotObj.iso && sl.weekISO !== anchorSlotObj.weekISO) {
                         if (!futureWeeks.includes(sl.weekISO)) futureWeeks.push(sl.weekISO);
                     }
@@ -2701,11 +3096,8 @@ Text:\n${raw.slice(0, 12000)}`;
                     if (tObj.mode === 'skip') weekCursor++;
 
                     const targetWeekISO = futureWeeks[weekCursor] || futureWeeks[futureWeeks.length - 1];
-                    const slotsInThatWeek = allSlotsPool.filter(sl => sl.weekISO === targetWeekISO);
+                    const slotsInThatWeek = pureSlotsPool.filter(sl => sl.weekISO === targetWeekISO);
 
-                    // 1. Priorität: exakt derselbe Slot (Wochentag & Uhrzeit) wie der neu gewählte Anker
-                    // 2. Priorität: derselbe Wochentag
-                    // 3. Priorität: erster verfügbarer Slot in jener Woche (falls der Wochentag wegen Feiertag ausfällt)
                     const chosenSlot =
                         slotsInThatWeek.find(sl => sl.slotId === preferredSlotId) ||
                         slotsInThatWeek.find(sl => sl.day === preferredDay) ||
@@ -2723,8 +3115,8 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function onSequenceClassTargetChange(rowIndex, classNum, newTargetKey) {
-            const allSlotsPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
-            const slotObj = allSlotsPool.find(s => s.key === newTargetKey);
+            const allPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
+            const slotObj = allPool.find(s => !s.isHolidayMarker && s.key === newTargetKey);
             const targetObj = classNum === 1 ? universalPreviewItems[rowIndex].c1 : universalPreviewItems[rowIndex].c2;
             if (!targetObj || !slotObj) return;
 
@@ -2743,7 +3135,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function onSequenceClassModeChange(rowIndex, classNum, newMode) {
-            const allSlotsPool = classNum === 1 ? universalAllSlots1 : universalAllSlots2;
+            const pureSlotsPool = (classNum === 1 ? universalAllSlots1 : universalAllSlots2).filter(s => !s.isHolidayMarker);
             const rhythmPref = document.getElementById(`seqPreferredSlot${classNum}`).value;
             const getTargetObj = (r) => classNum === 1 ? universalPreviewItems[r].c1 : universalPreviewItems[r].c2;
             const currentTarget = getTargetObj(rowIndex);
@@ -2752,14 +3144,14 @@ Text:\n${raw.slice(0, 12000)}`;
             currentTarget.mode = newMode;
 
             if (newMode === 'skip') {
-                const currentSlotObj = allSlotsPool.find(s => s.key === currentTarget.targetKey);
+                const currentSlotObj = pureSlotsPool.find(s => s.key === currentTarget.targetKey);
                 if (currentSlotObj) {
                     let nextAnchor = null;
                     if (rhythmPref === 'ALL') {
-                        const idx = allSlotsPool.findIndex(s => s.key === currentSlotObj.key);
-                        nextAnchor = allSlotsPool[idx + 1];
+                        const idx = pureSlotsPool.findIndex(s => s.key === currentSlotObj.key);
+                        nextAnchor = pureSlotsPool[idx + 1];
                     } else {
-                        const nextWeekSlots = allSlotsPool.filter(sl => sl.weekISO > currentSlotObj.weekISO);
+                        const nextWeekSlots = pureSlotsPool.filter(sl => sl.weekISO > currentSlotObj.weekISO);
                         nextAnchor =
                             nextWeekSlots.find(sl => sl.slotId === currentSlotObj.slotId) ||
                             nextWeekSlots.find(sl => sl.day === currentSlotObj.day) ||
@@ -2780,7 +3172,7 @@ Text:\n${raw.slice(0, 12000)}`;
             renderSequencePreviewTable();
         }
 
-        function buildClassCellHtml(rowIndex, classNum, targetObj, allSlotsPool, accentColor) {
+        function buildClassCellHtml(rowIndex, classNum, targetObj, allPool, accentColor) {
             if (!targetObj) return "";
             const existingSummary = describeExistingLessonDetailed(targetObj.existing);
             const borderHighlight = targetObj.hasExisting ? 'border-amber-400 bg-amber-50/50' : 'border-slate-200 bg-slate-50/40';
@@ -2805,7 +3197,12 @@ Text:\n${raw.slice(0, 12000)}`;
                         </div>
 
                         <select onchange="onSequenceClassTargetChange(${rowIndex}, ${classNum}, this.value)" class="w-full bg-white border ${targetObj.hasExisting ? 'border-amber-400' : 'border-slate-300'} rounded-md px-2 py-1 font-bold text-[11px] text-slate-900">
-                            ${allSlotsPool.map(sl => `<option value="${sl.key}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${sl.label}</option>`).join('')}
+                            ${allPool.map(sl => {
+                                if (sl.isHolidayMarker) {
+                                    return `<option disabled class="bg-rose-50 text-rose-800 font-bold">${sl.label}</option>`;
+                                }
+                                return `<option value="${sl.key}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${sl.label}</option>`;
+                            }).join('')}
                         </select>
 
                         ${targetObj.hasExisting
@@ -2826,70 +3223,124 @@ Text:\n${raw.slice(0, 12000)}`;
 
             thead.innerHTML = `<tr>
                 <th class="py-2 px-2.5 w-9">Wahl</th>
-                <th class="py-2 px-3 min-w-[260px]">Lektion &amp; Inhalt (aus Datei)</th>
-                <th class="py-2 px-2.5 ${hasC2 ? 'w-[360px]' : 'w-[440px]'} text-indigo-950 border-l border-slate-200">Klasse 1: ${escapeHtml(c1Label)}</th>
-                ${hasC2 ? `<th class="py-2 px-2.5 w-[360px] text-purple-950 border-l border-slate-200">Klasse 2: ${escapeHtml(c2Label)}</th>` : ''}
+                <th class="py-2 px-3 min-w-[300px]">Lektion, Inhalt &amp; HA (direkt editierbar)</th>
+                <th class="py-2 px-2.5 ${hasC2 ? 'w-[350px]' : 'w-[430px]'} text-indigo-950 border-l border-slate-200">Klasse 1: ${escapeHtml(c1Label)}</th>
+                ${hasC2 ? `<th class="py-2 px-2.5 w-[350px] text-purple-950 border-l border-slate-200">Klasse 2: ${escapeHtml(c2Label)}</th>` : ''}
             </tr>`;
 
-            tbody.innerHTML = universalPreviewItems.map((it, i) => {
-                return `
+            let lastRenderedWeekISO = null;
+            const rowsHtml = [];
+
+            universalPreviewItems.forEach((it, i) => {
+                // Wochen-Trennerzeile für bessere Orientierung einblenden
+                const slotObj1 = universalAllSlots1.find(s => !s.isHolidayMarker && s.key === it.c1?.targetKey);
+                if (slotObj1 && slotObj1.weekISO !== lastRenderedWeekISO) {
+                    lastRenderedWeekISO = slotObj1.weekISO;
+                    rowsHtml.push(`
+                        <tr class="bg-slate-100/90 border-y border-slate-200">
+                            <td colspan="${hasC2 ? 4 : 3}" class="py-1 px-3 text-[10.5px] font-extrabold text-slate-600 uppercase tracking-wide">
+                                📅 Kalenderwoche ${slotObj1.kw} (Woche ab ${formatDateCH(slotObj1.weekISO)})
+                            </td>
+                        </tr>
+                    `);
+                }
+
+                const combinedBodyText = [
+                    it.parsed.einstieg ? `Einstieg: ${it.parsed.einstieg}` : '',
+                    it.parsed.hauptteil ? `Hauptteil: ${it.parsed.hauptteil}` : '',
+                    it.parsed.schluss ? `Schluss: ${it.parsed.schluss}` : ''
+                ].filter(Boolean).join('\n');
+
+                rowsHtml.push(`
                     <tr class="bg-white hover:bg-slate-50/40 align-top">
                         <td class="py-2.5 px-2.5">
                             <input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600 mt-1">
                         </td>
-                        <td class="py-2.5 px-3 text-[11px]">
-                            <div class="inline-block px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-extrabold text-[10px] mb-1">Datei-Block #${it.fileIndex}</div>
-                            <div class="font-extrabold text-slate-900 mb-0.5">${escapeHtml(it.parsed.title)}</div>
-                            ${it.parsed.einstieg ? `<div class="text-slate-700"><strong class="text-indigo-700">E:</strong> ${escapeHtml(it.parsed.einstieg)}</div>` : ''}
-                            ${it.parsed.hauptteil ? `<div class="text-slate-700 whitespace-pre-line"><strong class="text-indigo-700">H:</strong> ${escapeHtml(it.parsed.hauptteil)}</div>` : ''}
-                            ${it.parsed.schluss ? `<div class="text-slate-700"><strong class="text-indigo-700">S:</strong> ${escapeHtml(it.parsed.schluss)}</div>` : ''}
-                            ${it.parsed.homework ? `<div class="text-sky-800 font-semibold mt-0.5">➔ HA: ${escapeHtml(it.parsed.homework)}</div>` : ''}
+                        <td class="py-2.5 px-3 text-[11px] flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-extrabold text-[10px]">Lektion #${it.fileIndex}</span>
+                                <span class="text-[10px] text-slate-400">Direkt anpassbar</span>
+                            </div>
+                            <input type="text" value="${escapeHtml(it.parsed.title)}" oninput="universalPreviewItems[${i}].parsed.title = this.value" placeholder="Stundentitel..." class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 font-extrabold text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <textarea rows="3" oninput="updateParsedBodyFromPreview(${i}, this.value)" class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-[11px] text-slate-700 leading-snug focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">${escapeHtml(combinedBodyText)}</textarea>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-extrabold text-sky-800 shrink-0">HA:</span>
+                                <input type="text" value="${escapeHtml(it.parsed.homework || '')}" oninput="universalPreviewItems[${i}].parsed.homework = this.value" placeholder="Keine HA (hier eintragbar)..." class="w-full bg-sky-50/60 border border-sky-200 rounded px-2 py-1 text-[10.5px] font-semibold text-sky-950 focus:bg-white focus:outline-none">
+                            </div>
                         </td>
                         ${buildClassCellHtml(i, 1, it.c1, universalAllSlots1, 'text-indigo-900')}
                         ${hasC2 ? buildClassCellHtml(i, 2, it.c2, universalAllSlots2, 'text-purple-900') : ''}
                     </tr>
-                `;
-            }).join('');
+                `);
+            });
+
+            tbody.innerHTML = rowsHtml.join('');
+        }
+
+        function updateParsedBodyFromPreview(rowIdx, rawEditedBody) {
+            const it = universalPreviewItems[rowIdx];
+            if (!it) return;
+            const reparsed = parseLessonBlockStructure(`Lektion ${it.fileIndex}: ${it.parsed.title}\n${rawEditedBody}`);
+            it.parsed.einstieg = reparsed.einstieg;
+            it.parsed.hauptteil = reparsed.hauptteil;
+            it.parsed.schluss = reparsed.schluss;
         }
 
         function renderSchedulePreviewTable() {
             const thead = document.getElementById('universalPreviewThead');
             const tbody = document.getElementById('universalPreviewTbody');
             const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
-            thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Tag</th><th class="py-2 px-3">Zeit</th><th class="py-2 px-3">Fach</th><th class="py-2 px-3">Klasse</th><th class="py-2 px-3">Gefäss</th></tr>`;
-            tbody.innerHTML = universalPreviewItems.map((it, i) => `
-                <tr class="bg-white">
-                    <td class="py-2 px-3"><input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
-                    <td class="py-2 px-3"><select onchange="universalPreviewItems[${i}].day = parseInt(this.value,10)" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 font-bold">${dayNames.map((dn, dIdx) => `<option value="${dIdx}" ${it.day === dIdx ? 'selected' : ''}>${dn}</option>`).join('')}</select></td>
-                    <td class="py-2 px-3 font-semibold">${escapeHtml(it.start)} – ${escapeHtml(it.end)}</td>
-                    <td class="py-2 px-3 font-extrabold text-indigo-900">${escapeHtml(it.subject)}</td>
-                    <td class="py-2 px-3 font-bold">${escapeHtml(it.className)}</td>
-                    <td class="py-2 px-3"><input type="text" value="${escapeHtml(it.track || '')}" oninput="universalPreviewItems[${i}].track = this.value" placeholder="optional" class="w-28 bg-slate-50 border border-slate-200 rounded px-2 py-1"></td>
-                </tr>
-            `).join('');
+            thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Status</th><th class="py-2 px-3">Tag</th><th class="py-2 px-3">Zeit</th><th class="py-2 px-3">Fach</th><th class="py-2 px-3">Klasse</th><th class="py-2 px-3">Gefäss</th></tr>`;
+            tbody.innerHTML = universalPreviewItems.map((it, i) => {
+                const badgeMap = {
+                    add: `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">+ Neu</span>`,
+                    keep: `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">Unverändert</span>`,
+                    remove: `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-extrabold text-[10px]">✕ Wegfallend (löschen)</span>`
+                };
+                return `
+                    <tr class="${it.actionType === 'remove' ? 'bg-rose-50/50' : (it.actionType === 'add' ? 'bg-emerald-50/40' : 'bg-white')}">
+                        <td class="py-2 px-3"><input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
+                        <td class="py-2 px-3">${badgeMap[it.actionType] || ''}</td>
+                        <td class="py-2 px-3"><select onchange="universalPreviewItems[${i}].day = parseInt(this.value,10)" class="bg-white border border-slate-200 rounded px-2 py-1 font-bold">${dayNames.map((dn, dIdx) => `<option value="${dIdx}" ${it.day === dIdx ? 'selected' : ''}>${dn}</option>`).join('')}</select></td>
+                        <td class="py-2 px-3 font-semibold">${escapeHtml(it.start)} – ${escapeHtml(it.end)}</td>
+                        <td class="py-2 px-3 font-extrabold text-indigo-900">${escapeHtml(it.subject)}</td>
+                        <td class="py-2 px-3 font-bold">${escapeHtml(it.className)}</td>
+                        <td class="py-2 px-3"><input type="text" value="${escapeHtml(it.track || '')}" oninput="universalPreviewItems[${i}].track = this.value" placeholder="optional" class="w-28 bg-white border border-slate-200 rounded px-2 py-1"></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderHolidayPreviewTable() {
             const thead = document.getElementById('universalPreviewThead');
             const tbody = document.getElementById('universalPreviewTbody');
             const classes = getUniqueClasses();
-            thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Datum</th><th class="py-2 px-3">Bezeichnung</th><th class="py-2 px-3">Betrifft Klasse</th><th class="py-2 px-3">Typ</th></tr>`;
+            thead.innerHTML = `<tr><th class="py-2 px-3 w-10">Wahl</th><th class="py-2 px-3">Datum</th><th class="py-2 px-3">Bezeichnung</th><th class="py-2 px-3">Betrifft Klasse</th><th class="py-2 px-3">Typ &amp; Konflikt-Lösung</th></tr>`;
             tbody.innerHTML = universalPreviewItems.map((it, i) => `
-                <tr class="bg-white">
+                <tr class="${it.hasConflict ? 'bg-amber-50/70' : 'bg-white'}">
                     <td class="py-2 px-3"><input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
                     <td class="py-2 px-3 font-bold whitespace-nowrap">${formatDateCH(it.start)}${it.end !== it.start ? ` – ${formatDateCH(it.end)}` : ''}</td>
-                    <td class="py-2 px-3 font-semibold">${escapeHtml(it.name)}</td>
                     <td class="py-2 px-3">
-                        <select onchange="universalPreviewItems[${i}].targetClass = this.value" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 font-bold">
+                        <div class="font-semibold text-slate-900">${escapeHtml(it.name)}</div>
+                        ${it.hasConflict ? `<div class="text-[10.5px] font-bold text-amber-800 mt-0.5">⚠️ Konflikt: ${escapeHtml(it.conflictText)}</div>` : ''}
+                    </td>
+                    <td class="py-2 px-3">
+                        <select onchange="universalPreviewItems[${i}].targetClass = this.value" class="bg-white border border-slate-200 rounded px-2 py-1 font-bold">
                             <option value="ALL" ${(it.targetClass || 'ALL') === 'ALL' ? 'selected' : ''}>Alle Klassen</option>
                             ${classes.map(c => `<option value="${escapeHtml(c)}" ${it.targetClass === c ? 'selected' : ''}>Nur ${escapeHtml(c)}</option>`).join('')}
                         </select>
                     </td>
-                    <td class="py-2 px-3">
-                        <select onchange="universalPreviewItems[${i}].type = this.value" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 font-bold">
+                    <td class="py-2 px-3 flex flex-col gap-1">
+                        <select onchange="universalPreviewItems[${i}].type = this.value" class="bg-white border border-slate-200 rounded px-2 py-1 font-bold">
                             <option value="holiday" ${it.type === 'holiday' ? 'selected' : ''}>Schulfrei / Blockiert Slots</option>
                             <option value="special" ${it.type === 'special' ? 'selected' : ''}>Spezialtag (mit Unterricht)</option>
                         </select>
+                        ${it.hasConflict ? `
+                            <select onchange="universalPreviewItems[${i}].conflictAction = this.value" class="bg-amber-100 border border-amber-300 rounded px-2 py-1 font-bold text-amber-950 text-[10.5px]">
+                                <option value="apply_and_bump" ${it.conflictAction === 'apply_and_bump' ? 'selected' : ''}>Termin gilt &amp; betroffene Lektionen nach hinten schieben</option>
+                                <option value="apply" ${it.conflictAction === 'apply' ? 'selected' : ''}>Termin gilt (Lektionen stehen lassen)</option>
+                            </select>
+                        ` : ''}
                     </td>
                 </tr>
             `).join('');
@@ -2909,15 +3360,19 @@ Text:\n${raw.slice(0, 12000)}`;
             const baseTrack = (slotMeta?.track || "").trim();
             const effectiveTrackOverride = trackLabel && trackLabel !== baseTrack ? trackLabel : existing.trackOverride;
 
+            const einstiegHtml = plainOrHtmlToEditorHtml(parsed.einstieg);
+            const hauptteilHtml = plainOrHtmlToEditorHtml(parsed.hauptteil);
+            const schlussHtml = plainOrHtmlToEditorHtml(parsed.schluss);
+
             if (targetObj.mode === 'append' && hasLessonContent(existing)) {
                 lessonsStore[targetObj.targetKey] = {
                     ...existing,
                     trackOverride: effectiveTrackOverride,
                     unit: existing.unit || unitTitle,
                     title: existing.title ? (parsed.title && !existing.title.includes(parsed.title) ? `${existing.title} / ${parsed.title}` : existing.title) : parsed.title,
-                    einstieg: existing.einstieg ? (parsed.einstieg ? `${existing.einstieg}\n${parsed.einstieg}` : existing.einstieg) : parsed.einstieg,
-                    hauptteil: existing.hauptteil ? (parsed.hauptteil ? `${existing.hauptteil}\n---\n${parsed.hauptteil}` : existing.hauptteil) : parsed.hauptteil,
-                    schluss: existing.schluss ? (parsed.schluss ? `${existing.schluss}\n${parsed.schluss}` : existing.schluss) : parsed.schluss,
+                    einstieg: existing.einstieg ? (einstiegHtml ? `${existing.einstieg}<br>${einstiegHtml}` : existing.einstieg) : einstiegHtml,
+                    hauptteil: existing.hauptteil ? (hauptteilHtml ? `${existing.hauptteil}<br><hr class="my-1">${hauptteilHtml}` : existing.hauptteil) : hauptteilHtml,
+                    schluss: existing.schluss ? (schlussHtml ? `${existing.schluss}<br>${schlussHtml}` : existing.schluss) : schlussHtml,
                     homework: existing.homework || parsed.homework,
                     homeworkTargetKey: existing.homeworkTargetKey || nextTargetKey || ""
                 };
@@ -2927,15 +3382,14 @@ Text:\n${raw.slice(0, 12000)}`;
                     trackOverride: effectiveTrackOverride,
                     unit: unitTitle || existing.unit,
                     title: parsed.title,
-                    einstieg: parsed.einstieg,
-                    hauptteil: parsed.hauptteil,
-                    schluss: parsed.schluss,
+                    einstieg: einstiegHtml,
+                    hauptteil: hauptteilHtml,
+                    schluss: schlussHtml,
                     homework: parsed.homework || existing.homework,
                     homeworkTargetKey: parsed.homework ? (nextTargetKey || "") : existing.homeworkTargetKey
                 };
             }
 
-            // Hausaufgaben automatisch als "📌 HA auf heute" in die nächste Lektion der Sequenz schreiben
             if (parsed.homework && nextTargetKey) {
                 const sourceDateCH = formatDateCH(targetObj.targetKey.split('_')[0]);
                 const nextLesson = lessonsStore[nextTargetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: unitTitle || "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
@@ -2966,12 +3420,18 @@ Text:\n${raw.slice(0, 12000)}`;
                 });
                 showToast(`${countWritten} Lektions-Einträge (inkl. HA-Verknüpfung) gespeichert!`);
             } else if (currentImportCategory === 'schedule') {
-                const mode = document.getElementById('scheduleImportMode').value;
-                if (mode === 'replace') weeklyTemplate = [];
-                chosen.forEach((it, idx) => weeklyTemplate.push({ id: `imp-${Date.now()}-${idx}`, day: it.day, start: it.start, end: it.end, subject: it.subject, className: it.className, track: it.track || "", room: it.room }));
-                showToast(`${chosen.length} Stundenplan-Slots übernommen!`);
+                chosen.forEach((it, idx) => {
+                    if (it.actionType === 'remove' && it.existingId) {
+                        weeklyTemplate = weeklyTemplate.filter(s => s.id !== it.existingId);
+                    } else if (it.actionType === 'add') {
+                        weeklyTemplate.push({ id: `imp-${Date.now()}-${idx}`, day: it.day, start: it.start, end: it.end, subject: it.subject, className: it.className, track: it.track || "", room: it.room });
+                    }
+                });
+                showToast("Stundenplan-Abgleich erfolgreich übernommen!");
             } else {
-                chosen.forEach(it => calendarEvents.push({ id: it.id, type: it.type, targetClass: it.targetClass || 'ALL', name: it.name, start: it.start, end: it.end }));
+                chosen.forEach(it => {
+                    calendarEvents.push({ id: it.id, type: it.type, targetClass: it.targetClass || 'ALL', name: it.name, start: it.start, end: it.end });
+                });
                 showToast(`${chosen.length} Termine übernommen!`);
             }
 
@@ -3049,7 +3509,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         // =========================================================================
-        // 10. NOTIZEN, SPRACHMEMOS, FERIEN & SETTINGS
+        // 10. NOTIZEN, SPRACHMEMOS (MIT VERBESSERTER TRANSKRIPTION), FERIEN & SETTINGS
         // =========================================================================
         function addLessonTodo() {
             const input = document.getElementById('newLessonTodoInput');
@@ -3085,6 +3545,8 @@ Text:\n${raw.slice(0, 12000)}`;
             Object.values(lessonsStore).forEach(lesson => {
                 if (Array.isArray(lesson.todos)) count += lesson.todos.filter(t => !t.done).length;
             });
+            standaloneNotesStore.forEach(sn => { if (!sn.done) count++; });
+
             const badge = document.getElementById('openNotesBadge');
             if (count > 0) {
                 badge.innerText = count;
@@ -3094,20 +3556,77 @@ Text:\n${raw.slice(0, 12000)}`;
             }
         }
 
+        function populateNotesClassFilter() {
+            const sel = document.getElementById('notesClassFilter');
+            if (!sel) return;
+            const current = sel.value;
+            const classes = getUniqueClasses();
+            sel.innerHTML = `<option value="ALL">Alle Klassen</option>` +
+                classes.map(c => `<option value="${escapeHtml(c)}" ${c === current ? 'selected' : ''}>Klasse ${escapeHtml(c)}</option>`).join('');
+        }
+
+        function addStandaloneNote(event) {
+            event.preventDefault();
+            const inp = document.getElementById('standaloneNoteInput');
+            const text = inp.value.trim();
+            if (!text) return;
+            standaloneNotesStore.unshift({ id: Date.now(), text, done: false, createdAt: formatDateCH(formatDateISO(new Date())) });
+            inp.value = "";
+            saveAllState();
+            renderNotesOverview();
+            showToast("Allgemeine Pendenz gespeichert!");
+        }
+
+        function toggleStandaloneTodo(idx) {
+            if (standaloneNotesStore[idx]) {
+                standaloneNotesStore[idx].done = !standaloneNotesStore[idx].done;
+                saveAllState();
+                renderNotesOverview();
+            }
+        }
+
+        function deleteStandaloneTodo(idx) {
+            standaloneNotesStore.splice(idx, 1);
+            saveAllState();
+            renderNotesOverview();
+        }
+
+        function convertTranscriptToTodo(lessonKey, clipIdx) {
+            const clip = lessonsStore[lessonKey]?.audioClips?.[clipIdx];
+            if (!clip || !clip.transcript) {
+                showToast("Kein Transkriptions-Text vorhanden.");
+                return;
+            }
+            if (!Array.isArray(lessonsStore[lessonKey].todos)) lessonsStore[lessonKey].todos = [];
+            lessonsStore[lessonKey].todos.push({ id: Date.now(), text: clip.transcript, done: false });
+            saveAllState();
+            renderNotesOverview();
+            showToast("Sprachmemo als Pendenz übernommen!");
+        }
+
         function renderNotesOverview() {
             const list = document.getElementById('aggregatedNotesList');
             const transcriptsList = document.getElementById('aggregatedTranscriptsList');
             const showDone = document.getElementById('showDoneNotesCheck').checked;
+            const classFilter = document.getElementById('notesClassFilter')?.value || 'ALL';
             const todoEntries = [];
             const transcriptEntries = [];
+
+            standaloneNotesStore.forEach((sn, snIdx) => {
+                if (!showDone && sn.done) return;
+                if (classFilter !== 'ALL') return;
+                todoEntries.push({ isStandalone: true, sn, snIdx, isoDate: '0000-00-00' });
+            });
 
             Object.entries(lessonsStore).forEach(([key, lesson]) => {
                 const [isoDate, slotId] = key.split('_');
                 const slot = weeklyTemplate.find(s => s.id === slotId) || { subject: "Fach", className: "", start: "" };
+                if (classFilter !== 'ALL' && slot.className !== classFilter) return;
+
                 if (Array.isArray(lesson.todos)) {
                     lesson.todos.forEach((todo, todoIdx) => {
                         if (!showDone && todo.done) return;
-                        todoEntries.push({ key, isoDate, slot, todo, todoIdx });
+                        todoEntries.push({ isStandalone: false, key, isoDate, slot, todo, todoIdx });
                     });
                 }
                 if (Array.isArray(lesson.audioClips)) {
@@ -3119,8 +3638,21 @@ Text:\n${raw.slice(0, 12000)}`;
             transcriptEntries.sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
             list.innerHTML = todoEntries.length === 0
-                ? `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Notizen.</div>`
+                ? `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Notizen für diese Auswahl.</div>`
                 : todoEntries.map(item => {
+                    if (item.isStandalone) {
+                        return `
+                            <div class="border ${item.sn.done ? 'bg-slate-50 border-slate-200 opacity-65' : 'bg-white border-amber-300 shadow-2xs'} rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                    <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodo(${item.snIdx})" class="w-4 h-4 rounded text-indigo-600">
+                                    <div class="flex flex-col">
+                                        <span class="${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'}">${escapeHtml(item.sn.text)}</span>
+                                        <span class="text-[11px] text-amber-800 font-semibold mt-0.5">Allgemeine Pendenz (${item.sn.createdAt || ''})</span>
+                                    </div>
+                                </label>
+                                <button type="button" onclick="deleteStandaloneTodo(${item.snIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
+                            </div>`;
+                    }
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
                     return `
                         <div class="border ${item.todo.done ? 'bg-slate-50 border-slate-200 opacity-65' : 'bg-white border-amber-200 shadow-2xs'} rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
@@ -3147,6 +3679,7 @@ Text:\n${raw.slice(0, 12000)}`;
                             </div>
                             <div class="bg-white border border-slate-200/80 rounded-lg p-2.5 text-slate-800 leading-relaxed">${item.clip.transcript ? escapeHtml(item.clip.transcript) : '<span class="italic text-slate-400">Ohne Text-Transkription</span>'}</div>
                             ${item.clip.audioDataUrl ? `<audio controls src="${item.clip.audioDataUrl}" class="w-full h-7"></audio>` : ''}
+                            ${item.clip.transcript ? `<button type="button" onclick="convertTranscriptToTodo('${item.key}', ${item.clipIdx})" class="self-end px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-[10.5px] font-bold">→ Als Pendenz übernehmen</button>` : ''}
                         </div>`;
                 }).join('');
         }
@@ -3166,16 +3699,19 @@ Text:\n${raw.slice(0, 12000)}`;
             }
         }
 
+        // Verbesserte Spracherkennung (startet bei kurzen Sprechpausen automatisch neu & lässt Text direkt editieren)
         let mediaRecorder = null;
         let audioChunks = [];
         let speechRecognizer = null;
         let currentTranscript = "";
+        let isRecordingActive = false;
 
         async function startVoiceMemo() {
             const startBtn = document.getElementById('startVoiceBtn');
             const stopBtn = document.getElementById('stopVoiceBtn');
             const liveBox = document.getElementById('voiceLivePreview');
             currentTranscript = "";
+            isRecordingActive = true;
             liveBox.innerText = "Mikrofon aktiv – sprich jetzt...";
             liveBox.classList.remove('hidden');
             startBtn.classList.add('hidden');
@@ -3195,7 +3731,14 @@ Text:\n${raw.slice(0, 12000)}`;
                     }
                     liveBox.innerText = (currentTranscript + interim).trim() || "Höre zu...";
                 };
+                speechRecognizer.onend = () => {
+                    if (isRecordingActive && speechRecognizer) {
+                        try { speechRecognizer.start(); } catch (e) {}
+                    }
+                };
                 try { speechRecognizer.start(); } catch (e) {}
+            } else {
+                liveBox.innerText = "Audioaufnahme läuft (Browser unterstützt keine Live-Spracherkennung – Text unten eintragbar).";
             }
 
             try {
@@ -3204,6 +3747,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 mediaRecorder = new MediaRecorder(stream);
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                 mediaRecorder.onstop = () => {
+                    const finalTranscriptText = currentTranscript.trim() || (liveBox.innerText !== "Mikrofon aktiv – sprich jetzt..." && !liveBox.innerText.startsWith("Audioaufnahme läuft") ? liveBox.innerText.trim() : "");
                     const blob = new Blob(audioChunks, { type: 'audio/webm' });
                     const reader = new FileReader();
                     reader.onloadend = () => {
@@ -3211,7 +3755,7 @@ Text:\n${raw.slice(0, 12000)}`;
                             id: Date.now(),
                             createdAt: new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }),
                             audioDataUrl: reader.result,
-                            transcript: currentTranscript.trim()
+                            transcript: finalTranscriptText
                         });
                         renderAudioClipsList();
                     };
@@ -3220,12 +3764,13 @@ Text:\n${raw.slice(0, 12000)}`;
                 };
                 mediaRecorder.start();
             } catch (err) {
-                showToast("Mikrofon-Zugriff bitte erlauben.");
+                showToast("Mikrofon-Zugriff bitte im Browser erlauben.");
                 stopVoiceMemo();
             }
         }
 
         function stopVoiceMemo() {
+            isRecordingActive = false;
             document.getElementById('startVoiceBtn')?.classList.remove('hidden');
             document.getElementById('stopVoiceBtn')?.classList.add('hidden');
             document.getElementById('voiceLivePreview')?.classList.add('hidden');
@@ -3233,16 +3778,29 @@ Text:\n${raw.slice(0, 12000)}`;
             if (mediaRecorder && mediaRecorder.state !== 'inactive') { try { mediaRecorder.stop(); } catch (e) {} }
         }
 
+        function updateAudioClipTranscript(idx, val) {
+            if (tempAudioClips[idx]) tempAudioClips[idx].transcript = val;
+        }
+
+        function copyTranscriptToHauptteil(idx) {
+            const txt = tempAudioClips[idx]?.transcript?.trim();
+            if (!txt) return;
+            const el = document.getElementById('editPhaseHauptteil');
+            el.innerHTML = htmlToPlainText(el.innerHTML) ? `${el.innerHTML}<br>${escapeHtml(txt)}` : escapeHtml(txt);
+            showToast("Transkription in den Hauptteil übernommen!");
+        }
+
         function renderAudioClipsList() {
             const list = document.getElementById('audioClipsList');
             list.innerHTML = tempAudioClips.map((clip, idx) => `
-                <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1">
+                <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10.5px] font-bold text-slate-600">Memo (${clip.createdAt})</span>
-                        <audio controls src="${clip.audioDataUrl}" class="h-6 max-w-[160px]"></audio>
+                        <audio controls src="${clip.audioDataUrl}" class="h-6 max-w-[155px]"></audio>
                         <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 text-[10.5px] font-bold">✕</button>
                     </div>
-                    <div class="text-[10.5px] text-slate-700 bg-slate-50 p-1 rounded">${clip.transcript ? escapeHtml(clip.transcript) : '<span class="italic text-slate-400">Kein Text</span>'}</div>
+                    <textarea rows="2" oninput="updateAudioClipTranscript(${idx}, this.value)" placeholder="Transkribierter Text (hier bearbeitbar)..." class="w-full text-[11px] text-slate-800 bg-slate-50 border border-slate-200 rounded p-1.5 focus:bg-white focus:outline-none">${escapeHtml(clip.transcript || '')}</textarea>
+                    <button type="button" onclick="copyTranscriptToHauptteil(${idx})" class="self-end text-[10px] font-bold text-indigo-600 hover:underline">+ Text in Hauptteil übernehmen</button>
                 </div>
             `).join('');
         }
@@ -3349,7 +3907,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function exportFullBackup() {
-            const payload = { schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(), weeklyTemplate, calendarEvents, dayNotesStore, lessonsStore };
+            const payload = { schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(), weeklyTemplate, calendarEvents, dayNotesStore, lessonsStore, standaloneNotesStore };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -3369,6 +3927,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
                 if (data.calendarEvents) calendarEvents = data.calendarEvents;
                 if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
+                if (data.standaloneNotesStore) standaloneNotesStore = data.standaloneNotesStore;
                 saveAllState();
                 renderCalendar();
                 showToast("Backup zusammengeführt & wiederhergestellt!");
