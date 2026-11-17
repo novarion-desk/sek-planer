@@ -1051,7 +1051,11 @@ HA: ...</pre>
 
         function markdownBoldToHtml(text) {
             if (!text) return "";
-            let html = escapeHtml(text);
+            // Markdown-Aufzählungen und Überschriften ohne Sternchen/Rauten darstellen
+            const cleaned = String(text)
+                .replace(/^[ \t]*[*\-+][ \t]+/gm, '• ')
+                .replace(/^[ \t]*#{1,6}[ \t]+(.+)$/gm, '**$1**');
+            let html = escapeHtml(cleaned);
             html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
             return html.replace(/\n/g, '<br>');
@@ -1084,97 +1088,164 @@ HA: ...</pre>
             }
         }
 
-        async function callGeminiUnified(userPrompt, conversationHistory = null) {
-            const rawGemini = geminiApiKey || "";
-            const key = rawGemini.trim().replace(/^["']|["']$/g, '');
-            const rawClaude = claudeApiKey || "";
-            const cKey = rawClaude.trim().replace(/^["']|["']$/g, '');
+        // ---------- Gemini-Modelle: aktuelle Liste direkt bei Google abfragen ----------
+        // Fallback, falls die Abfrage nicht klappt (Stand Nov. 2026, ai.google.dev/models)
+        const GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+        const CLAUDE_FALLBACK_MODELS = ["claude-sonnet-5-5", "claude-haiku-5-5"];
 
-            if (!key && !cKey) {
-                throw new Error("Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Gemini- oder Claude-Schlüssel eingeben.");
+        function sortGeminiModels(names) {
+            const ver = (n) => parseFloat((n.match(/^gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1]);
+            // Neueste zuerst; «Flash» vor «Flash-Lite» (bessere Qualität, mit niedriger Denkstufe trotzdem schnell)
+            return [...new Set(names)].sort((a, b) => (a.includes('-lite') - b.includes('-lite')) || (ver(b) - ver(a)));
+        }
+
+        async function getGeminiModels(key) {
+            const cacheName = accountStorageName('geminiModels');
+            try {
+                const cached = JSON.parse(localStorage.getItem(cacheName) || 'null');
+                if (cached && Array.isArray(cached.models) && cached.models.length && Date.now() - cached.at < 24 * 3600 * 1000) return cached.models;
+            } catch (e) {}
+            try {
+                const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', { headers: { 'x-goog-api-key': key } }, 8000);
+                const data = await res.json();
+                const names = (data.models || [])
+                    .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+                    .map(m => String(m.name || '').replace(/^models\//, ''))
+                    .filter(n => /^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(n));   // nur stabile Flash-Modelle (keine Preview/TTS/Live)
+                if (names.length > 0) {
+                    const models = sortGeminiModels(names);
+                    try { localStorage.setItem(cacheName, JSON.stringify({ at: Date.now(), models })); } catch (e) {}
+                    return models;
+                }
+            } catch (e) {}
+            return GEMINI_FALLBACK_MODELS;
+        }
+
+        function forgetGeminiModel(name) {
+            const cacheName = accountStorageName('geminiModels');
+            try {
+                const cached = JSON.parse(localStorage.getItem(cacheName) || 'null');
+                if (cached && Array.isArray(cached.models)) {
+                    cached.models = cached.models.filter(m => m !== name);
+                    localStorage.setItem(cacheName, JSON.stringify(cached));
+                }
+            } catch (e) {}
+            if (localStorage.getItem(accountStorageName('workingModel')) === name) localStorage.removeItem(accountStorageName('workingModel'));
+        }
+
+        function extractGeminiText(data) {
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            return parts.filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('').trim();
+        }
+
+        // options.extraParts: zusätzliche Gemini-Parts (z. B. Audio); options.geminiOnly: kein Claude-Fallback
+        async function callGeminiUnified(userPrompt, conversationHistory = null, options = {}) {
+            const key = (geminiApiKey || "").trim().replace(/^["']|["']$/g, '');
+            const cKey = (claudeApiKey || "").trim().replace(/^["']|["']$/g, '');
+            const { extraParts = null, geminiOnly = false, systemPrompt = TEACHER_SYSTEM_PROMPT } = options;
+
+            if (!key && (!cKey || geminiOnly)) {
+                throw new Error(geminiOnly
+                    ? "Für diese Funktion wird ein Gemini-Schlüssel benötigt (Einstellungen → Zahnrad)."
+                    : "Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Gemini- oder Claude-Schlüssel eingeben.");
             }
 
-            let errorDetails = [];
+            const errorDetails = [];
 
             if (key) {
-                let contents;
-                if (conversationHistory && conversationHistory.length > 0) {
-                    contents = conversationHistory.map((item, idx) => {
-                        if (idx === 0 && item.role === "user") {
-                            return { role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${item.parts[0].text}` }] };
-                        }
-                        return item;
-                    });
-                } else {
-                    contents = [{ role: "user", parts: [{ text: `${TEACHER_SYSTEM_PROMPT}\n\n${userPrompt}` }] }];
-                }
+                const contents = (conversationHistory && conversationHistory.length > 0)
+                    ? conversationHistory.map(item => ({ role: item.role === 'model' ? 'model' : 'user', parts: [{ text: item.parts[0].text }] }))
+                    : [{ role: "user", parts: [{ text: userPrompt }, ...(extraParts || [])] }];
 
-                const payload = { contents };
+                const basePayload = { systemInstruction: { parts: [{ text: systemPrompt }] }, contents };
                 const savedWorkingModel = localStorage.getItem(accountStorageName('workingModel'));
+                const available = await getGeminiModels(key);
                 const modelsToTry = [...new Set([
-                    ...(savedWorkingModel ? [savedWorkingModel] : []),
-                    "gemini-2.5-flash",
-                    "gemini-2.0-flash",
-                    "gemini-2.5-flash-lite"
-                ])];
+                    ...(savedWorkingModel && available.includes(savedWorkingModel) ? [savedWorkingModel] : []),
+                    ...available
+                ])].slice(0, 5);
 
                 for (const modelName of modelsToTry) {
-                    try {
-                        // Schlüssel im Header statt in der URL (landet so nicht in Logs/Verlauf)
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-                        const res = await fetchWithTimeout(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await res.json();
-                        if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            localStorage.setItem(accountStorageName('workingModel'), modelName);
-                            return data.candidates[0].content.parts[0].text.trim();
+                    // Schnell: niedrige Denkstufe. Kennt ein Modell das Feld nicht, ohne erneut versuchen.
+                    for (const fast of [true, false]) {
+                        const payload = fast
+                            ? { ...basePayload, generationConfig: { thinkingConfig: { thinkingLevel: "low" } } }
+                            : basePayload;
+                        try {
+                            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+                            const res = await fetchWithTimeout(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                                body: JSON.stringify(payload)
+                            }, extraParts ? 90000 : 45000);
+                            const data = await res.json().catch(() => ({}));
+                            const text = extractGeminiText(data);
+                            if (res.ok && text) {
+                                localStorage.setItem(accountStorageName('workingModel'), modelName);
+                                return text;
+                            }
+                            const msg = data?.error?.message || `HTTP ${res.status}`;
+                            if (fast && res.status === 400 && /thinking/i.test(msg)) continue;   // ohne Denkstufe nochmals
+                            if (res.status === 404 || /no longer available|not found/i.test(msg)) forgetGeminiModel(modelName);
+                            if (res.status === 401 || res.status === 403 || /API key/i.test(msg)) {
+                                errorDetails.push(`[Gemini] ${msg}`);
+                                break;
+                            }
+                            errorDetails.push(`[${modelName}] ${msg}`);
+                        } catch (e) {
+                            errorDetails.push(`[${modelName}] ${e.message}`);
                         }
-                        if (data?.error?.message) {
-                            errorDetails.push(`[${modelName}] ${data.error.message}`);
-                        }
-                    } catch (e) {
-                        errorDetails.push(`[${modelName}] ${e.message}`);
+                        break;
                     }
+                    if (errorDetails.some(e => e.startsWith('[Gemini]'))) break;   // Schlüssel ungültig → andere Modelle sinnlos
                 }
             }
 
-            if (cKey) {
-                try {
-                    const claudeMessages = conversationHistory && conversationHistory.length > 0
-                        ? conversationHistory.map(m => ({ role: m.role === "model" ? "assistant" : "user", content: m.parts[0].text }))
-                        : [{ role: "user", content: userPrompt }];
-
-                    const cRes = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "x-api-key": cKey,
-                            "anthropic-version": "2023-06-01",
-                            "anthropic-dangerous-direct-browser-access": "true"
-                        },
-                        body: JSON.stringify({
-                            model: "claude-sonnet-4-5",
-                            max_tokens: 2500,
-                            system: TEACHER_SYSTEM_PROMPT,
-                            messages: claudeMessages
-                        })
-                    });
-                    const cData = await cRes.json();
-                    if (cRes.ok && cData?.content?.[0]?.text) {
-                        return cData.content[0].text.trim();
+            if (cKey && !geminiOnly) {
+                const claudeMessages = conversationHistory && conversationHistory.length > 0
+                    ? conversationHistory.map(m => ({ role: m.role === "model" ? "assistant" : "user", content: m.parts[0].text }))
+                    : [{ role: "user", content: userPrompt }];
+                for (const claudeModel of CLAUDE_FALLBACK_MODELS) {
+                    try {
+                        const cRes = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "x-api-key": cKey,
+                                "anthropic-version": "2023-06-01",
+                                "anthropic-dangerous-direct-browser-access": "true"
+                            },
+                            body: JSON.stringify({ model: claudeModel, max_tokens: 2500, system: systemPrompt, messages: claudeMessages })
+                        });
+                        const cData = await cRes.json().catch(() => ({}));
+                        const cText = (cData?.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+                        if (cRes.ok && cText) {
+                            localStorage.setItem(accountStorageName('workingModel'), `Claude (${claudeModel})`);
+                            return cText;
+                        }
+                        errorDetails.push(`[${claudeModel}] ${cData?.error?.message || `HTTP ${cRes.status}`}`);
+                        if (cRes.status === 401 || cRes.status === 403) break;
+                    } catch (e) {
+                        errorDetails.push(`[${claudeModel}] ${e.message}`);
                     }
-                    if (cData?.error?.message) {
-                        errorDetails.push(`[Claude] ${cData.error.message}`);
-                    }
-                } catch (e) {
-                    errorDetails.push(`[Claude] ${e.message}`);
                 }
             }
 
             throw new Error(errorDetails.length > 0 ? errorDetails.join("\n") : "Keine Antwort von der KI-Schnittstelle.");
+        }
+
+        // Sprachmemo mit Gemini transkribieren (funktioniert in jedem Browser, auch Schweizerdeutsch → Hochdeutsch)
+        async function transcribeAudioWithAi(audioDataUrl) {
+            const m = String(audioDataUrl || '').match(/^data:([^;,]+)(?:;[^,]*)?;base64,(.+)$/);
+            if (!m) throw new Error("Audiodaten nicht lesbar.");
+            const mime = m[1] === 'audio/x-m4a' ? 'audio/mp4' : m[1];
+            const prompt = "Transkribiere diese Sprachaufnahme einer Lehrperson vollständig und wortgetreu. Schweizerdeutsch gibst du in korrektem Hochdeutsch wieder. Gib nur den transkribierten Text aus – ohne Einleitung, ohne Anführungszeichen, ohne Zeitstempel. Ist nichts Verständliches zu hören, antworte mit einem leeren Text.";
+            const text = await callGeminiUnified(prompt, null, {
+                extraParts: [{ inlineData: { mimeType: mime, data: m[2] } }],
+                geminiOnly: true,
+                systemPrompt: "Du bist ein präzises Transkriptionswerkzeug."
+            });
+            return text.replace(/^["„»]|["“«]$/g, '').trim();
         }
 
         async function testGeminiApiConnection() {
@@ -1187,6 +1258,7 @@ HA: ...</pre>
             geminiApiKey = gVal;
             claudeApiKey = cVal;
             saveAccountApiKeys();
+            localStorage.removeItem(accountStorageName('geminiModels'));
 
             const btn = document.getElementById('testApiBtn');
             const statusBox = document.getElementById('apiTestStatusBox');
@@ -1683,10 +1755,13 @@ HA: ...</pre>
         const SYNC_FIELDS = ['ownerUid', 'ownerEmail', 'lessonsStore', 'weeklyTemplate', 'calendarEvents', 'dayNotesStore', 'standaloneNotesStore', 'updatedAt'];
         const CLOUD_DOC_LIMIT_BYTES = 950 * 1024;   // Firestore-Limit: 1 MiB pro Dokument
 
+        // Laufzeit-Markierungen (z. B. «wird transkribiert») nie speichern
+        function dropVolatileFields(k, v) { return k === 'transcribing' ? undefined : v; }
+
         function persistLocal() {
             const p = getStoragePrefix();
             try {
-                localStorage.setItem(`${p}_lessons`, JSON.stringify(lessonsStore));
+                localStorage.setItem(`${p}_lessons`, JSON.stringify(lessonsStore, dropVolatileFields));
                 localStorage.setItem(`${p}_template`, JSON.stringify(weeklyTemplate));
                 localStorage.setItem(`${p}_events`, JSON.stringify(calendarEvents));
                 localStorage.setItem(`${p}_dayNotes`, JSON.stringify(dayNotesStore));
@@ -1727,7 +1802,7 @@ HA: ...</pre>
                 dayNotesStore,
                 standaloneNotesStore
             };
-            const json = JSON.stringify(payload);
+            const json = JSON.stringify(payload, dropVolatileFields);
             const bytes = new Blob([json]).size;
             const pushedState = JSON.parse(json);   // Stand genau so, wie er hochgeladen wird
             if (bytes > CLOUD_DOC_LIMIT_BYTES) {
@@ -1735,8 +1810,8 @@ HA: ...</pre>
                 showToast("⚠️ Cloud-Limit erreicht – Änderungen nur lokal gespeichert!");
                 return Promise.resolve();
             }
-            payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-            const p = db.collection('sekSync').doc(docId).set(payload, { mergeFields: SYNC_FIELDS })
+            const cloudPayload = { ...pushedState, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+            const p = db.collection('sekSync').doc(docId).set(cloudPayload, { mergeFields: SYNC_FIELDS })
                 .then(() => {
                     if (getActiveDocId() === docId) storeBaseline(pushedState);
                     const warn = bytes > 700 * 1024 ? ` – Achtung: ${Math.round(bytes / 1024)} KB von 1024 KB belegt` : '';
@@ -4547,9 +4622,13 @@ Text:\n${raw.slice(0, 12000)}`;
                                 <span class="text-[11px] font-bold text-slate-600">${escapeHtml(formatDateCH(item.isoDate))} • ${escapeHtml(item.clip.createdAt || '')}</span>
                                 <span class="px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span>
                             </div>
-                            <div class="bg-white border border-slate-200/80 rounded-lg p-2.5 text-slate-800 leading-relaxed">${item.clip.transcript ? escapeHtml(item.clip.transcript) : '<span class="italic text-slate-400">Ohne Text-Transkription</span>'}</div>
+                            <div class="bg-white border border-slate-200/80 rounded-lg p-2.5 text-slate-800 leading-relaxed">${item.clip.transcribing ? '<span class="italic text-slate-400">⏳ Wird mit KI transkribiert…</span>' : (item.clip.transcript ? escapeHtml(item.clip.transcript) : '<span class="italic text-slate-400">Ohne Text-Transkription</span>')}</div>
                             ${safeAudioSrc(item.clip.audioDataUrl) ? `<audio controls src="${safeAudioSrc(item.clip.audioDataUrl)}" class="w-full h-7"></audio>` : ''}
-                            ${item.clip.transcript ? `<button type="button" onclick="convertTranscriptToTodo(${jsArg(item.key)}, ${item.clipIdx})" class="self-end px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-[10.5px] font-bold">→ Als Pendenz übernehmen</button>` : ''}
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <button type="button" onclick="deleteStoredClip(${jsArg(item.key)}, ${item.clipIdx})" class="px-2.5 py-1 text-slate-400 hover:text-rose-600 text-[10.5px] font-bold">Löschen</button>
+                                ${!item.clip.transcribing ? `<button type="button" onclick="transcribeStoredClip(${jsArg(item.key)}, ${item.clipIdx})" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-[10.5px] font-bold">🎙️ ${item.clip.transcript ? 'Neu transkribieren' : 'Mit KI transkribieren'}</button>` : ''}
+                                ${item.clip.transcript ? `<button type="button" onclick="convertTranscriptToTodo(${jsArg(item.key)}, ${item.clipIdx})" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-[10.5px] font-bold">→ Als Pendenz übernehmen</button>` : ''}
+                            </div>
                         </div>`;
                 }).join('');
         }
@@ -4634,12 +4713,13 @@ Text:\n${raw.slice(0, 12000)}`;
                     const blob = new Blob(chunks, { type: mime });
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        targetClips.push({
+                        const clip = {
                             id: Date.now(),
                             createdAt: new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }),
                             audioDataUrl: reader.result,
                             transcript: finalTranscriptText
-                        });
+                        };
+                        targetClips.push(clip);
                         if (tempAudioClips === targetClips) renderAudioClipsList();
                         // Lektion wurde schon gespeichert (gleiches Array im Store) → Clip nachträglich sichern
                         if (Object.values(lessonsStore).some(l => l && l.audioClips === targetClips)) {
@@ -4647,6 +4727,8 @@ Text:\n${raw.slice(0, 12000)}`;
                             if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
                             showToast("Sprachmemo gespeichert.");
                         }
+                        // Zuverlässige Transkription per KI (ersetzt die Live-Erkennung des Browsers)
+                        if ((geminiApiKey || '').trim()) runClipTranscription(clip, targetClips);
                     };
                     reader.readAsDataURL(blob);
                     stream.getTracks().forEach(t => t.stop());
@@ -4670,6 +4752,51 @@ Text:\n${raw.slice(0, 12000)}`;
             if (mediaRecorder && mediaRecorder.state !== 'inactive') { try { mediaRecorder.stop(); } catch (e) {} }
         }
 
+        // Transkribiert einen Clip per KI und aktualisiert Modal, Übersicht und Speicher
+        async function runClipTranscription(clip, ownerArray) {
+            if (!clip || clip.transcribing) return;
+            if (!(geminiApiKey || '').trim()) {
+                showToast("Für die Transkription bitte zuerst einen Gemini-Schlüssel hinterlegen (Zahnrad).");
+                return;
+            }
+            clip.transcribing = true;
+            const refresh = () => {
+                if (tempAudioClips === ownerArray || tempAudioClips.includes(clip)) renderAudioClipsList();
+                if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
+            };
+            refresh();
+            try {
+                const text = await transcribeAudioWithAi(clip.audioDataUrl);
+                if (text) clip.transcript = text;
+                else if (!clip.transcript) showToast("Auf der Aufnahme war kein Text erkennbar.");
+            } catch (err) {
+                showToast("Transkription fehlgeschlagen: " + String(err.message).split('\n')[0]);
+            } finally {
+                delete clip.transcribing;
+                refresh();
+                if (Object.values(lessonsStore).some(l => l && Array.isArray(l.audioClips) && l.audioClips.includes(clip))) saveAllState();
+            }
+        }
+
+        function transcribeModalClip(idx) {
+            runClipTranscription(tempAudioClips[idx], tempAudioClips);
+        }
+
+        function transcribeStoredClip(lessonKey, clipIdx) {
+            const arr = lessonsStore[lessonKey]?.audioClips;
+            if (arr && arr[clipIdx]) runClipTranscription(arr[clipIdx], arr);
+        }
+
+        function deleteStoredClip(lessonKey, clipIdx) {
+            const arr = lessonsStore[lessonKey]?.audioClips;
+            if (!arr || !arr[clipIdx]) return;
+            arr.splice(clipIdx, 1);
+            saveAllState();
+            renderNotesOverview();
+            renderCalendar();
+            showToast("Sprachmemo gelöscht.");
+        }
+
         function updateAudioClipTranscript(idx, val) {
             if (tempAudioClips[idx]) tempAudioClips[idx].transcript = val;
         }
@@ -4691,8 +4818,11 @@ Text:\n${raw.slice(0, 12000)}`;
                         <audio controls src="${safeAudioSrc(clip.audioDataUrl)}" class="h-6 max-w-[155px]"></audio>
                         <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 text-[10.5px] font-bold">✕</button>
                     </div>
-                    <textarea rows="2" oninput="updateAudioClipTranscript(${idx}, this.value)" placeholder="Transkribierter Text (hier bearbeitbar)..." class="w-full text-[11px] text-slate-800 bg-slate-50 border border-slate-200 rounded p-1.5 focus:bg-white focus:outline-none">${escapeHtml(clip.transcript || '')}</textarea>
-                    <button type="button" onclick="copyTranscriptToHauptteil(${idx})" class="self-end text-[10px] font-bold text-indigo-600 hover:underline">+ Text in Hauptteil übernehmen</button>
+                    <textarea rows="2" oninput="updateAudioClipTranscript(${idx}, this.value)" ${clip.transcribing ? 'disabled' : ''} placeholder="${clip.transcribing ? '⏳ Wird mit KI transkribiert…' : 'Transkribierter Text (hier bearbeitbar)...'}" class="w-full text-[11px] text-slate-800 bg-slate-50 border border-slate-200 rounded p-1.5 focus:bg-white focus:outline-none">${clip.transcribing ? '' : escapeHtml(clip.transcript || '')}</textarea>
+                    <div class="flex items-center justify-end gap-3">
+                        <button type="button" onclick="transcribeModalClip(${idx})" ${clip.transcribing ? 'disabled' : ''} class="text-[10px] font-bold text-rose-600 hover:underline">${clip.transcribing ? '⏳ Transkribiere…' : '🎙️ Mit KI transkribieren'}</button>
+                        <button type="button" onclick="copyTranscriptToHauptteil(${idx})" class="text-[10px] font-bold text-indigo-600 hover:underline">+ Text in Hauptteil übernehmen</button>
+                    </div>
                 </div>
             `).join('');
         }
