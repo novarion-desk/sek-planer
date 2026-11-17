@@ -4,7 +4,10 @@
 - Speicher aufgeteilt: Lektionen liegen in einem Cloud-Dokument pro Monat, Stundenplan/Termine/Notizen im Hauptdokument → kein 1-MB-Limit mehr für die Planung. Bestehende Daten werden beim ersten Öffnen automatisch umgestellt (Cloud-Sicherung «vor Umstellung» vorher).
 - Synchronisation pro Lektion: Gleichzeitige Änderungen an verschiedenen Lektionen auf zwei Geräten gehen nicht mehr verloren; Änderungen erscheinen in ca. 1 Sekunde auf dem anderen Gerät.
 - Neu: «Frühere Versionen» in jeder Lektion – vor jeder Änderung wird der alte Stand in der Cloud gesichert (letzte 20 pro Lektion, auf allen Geräten verfügbar), dazu die Tagesstände aus den Cloud-Sicherungen. Vorschau und Wiederherstellen per Klick.
-- Ältere Versionen im Archiv (v6–v13) sperren sich nach der Umstellung selbst, damit sie keine Daten überschreiben.
+- Heutiger Tag farbig markiert (Wochentag blau mit «Heute», Spalte leicht hinterlegt).
+- Hausaufgabenfelder mehrzeilig, wachsen mit dem Text; im Wochenplan mit Zeilenumbrüchen.
+- Knopf «Jetzt in der Cloud sichern» unter ⚙️ → Sicherungen & Backup.
+- Ältere Versionen im Archiv (v6–v13.1) sperren sich nach der Umstellung selbst, damit sie keine Daten überschreiben.
 ## Version 13.1 – 17.11.2026
 - Handy: schmale, fixe Kopfzeile mit Datum, ‹ ›, «Heute», Suche und Menü ☰ (Woche/Tag, Datei/Sequenz, Stundenplan, Stellvertretung, KI-Chat, Schuljahr, Einstellungen, Abmelden). Reiter Wochenplan / Notizen / Jahreskalender unten als Leiste. Computer und Tablet unverändert.
 

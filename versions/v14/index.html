@@ -486,7 +486,7 @@
                             <i data-lucide="pin" class="w-3.5 h-3.5 text-sky-700"></i>
                             <span>Hausaufgabe auf heute (automatisch aus vorheriger Lektion übertragen)</span>
                         </label>
-                        <input type="text" id="editLessonHomeworkToday" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <textarea id="editLessonHomeworkToday" rows="1" data-autogrow oninput="autoGrow(this)" placeholder="Keine Hausaufgabe auf heute hinterlegt" class="w-full bg-white border border-sky-200 rounded-lg px-3 py-1.5 font-bold text-sky-950 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none overflow-hidden leading-snug"></textarea>
                     </div>
 
                     <div class="sm:col-span-4 bg-rose-50/90 border border-rose-200 rounded-xl p-2.5 flex flex-col justify-between">
@@ -594,7 +594,7 @@
                         <span>Hausaufgaben fürs nächste Mal (überträgt automatisch auf «📌 HA auf heute» der Ziel-Lektion)</span>
                     </label>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        <input type="text" id="editLessonHomework" oninput="updateParallelPreview()" placeholder="z. B. S. 24 Nr. 1–3 fertig lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <textarea id="editLessonHomework" rows="1" data-autogrow oninput="autoGrow(this);updateParallelPreview()" placeholder="z. B. S. 24 Nr. 1–3 fertig lösen / Vokabeln lernen" class="sm:col-span-7 bg-white border border-sky-200 rounded-lg px-3 py-2 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none overflow-hidden leading-snug self-start"></textarea>
                         <select id="homeworkTargetLessonSelect" class="sm:col-span-5 bg-white border border-sky-200 rounded-lg px-2.5 py-2 font-bold text-sky-950"></select>
                     </div>
                 </div>
@@ -1108,7 +1108,10 @@ HA: ...</pre>
                     </div>
                     <div id="backupStatusBox" class="bg-white border border-emerald-200 rounded-lg p-2.5 text-[11px] font-semibold leading-relaxed whitespace-pre-line">Lade Sicherungsstand…</div>
 
-                    <div class="font-bold text-[11px] pt-1">Automatische Cloud-Sicherungen (täglich, 30 Tage):</div>
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <div class="font-bold text-[11px]">Cloud-Sicherungen (automatisch täglich, 30 Tage):</div>
+                        <button type="button" id="manualCloudBackupBtn" onclick="manualCloudBackup()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shrink-0">Jetzt in der Cloud sichern</button>
+                    </div>
                     <div id="cloudBackupList" class="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scroll text-[11px]"></div>
 
                     <div class="font-bold text-[11px] pt-1">Backup-Datei (.json, alle Schuljahre):</div>
@@ -2935,6 +2938,13 @@ HA: ...</pre>
 
         let selectedDayIdx = Math.min((new Date().getDay() + 6) % 7, 4);
 
+        // Textfeld wächst mit dem Inhalt (z. B. Hausaufgaben)
+        function autoGrow(el) {
+            if (!el) return;
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight + 2) + 'px';
+        }
+
         // ---------- Handy: Kopfzeile ----------
         function updateMobileDateLabel() {
             const el = document.getElementById('mobileDateLabel');
@@ -3138,7 +3148,7 @@ HA: ...</pre>
                 const isToday = iso === todayISO;
 
                 const col = document.createElement('div');
-                col.className = "flex flex-col gap-2.5";
+                col.className = isToday ? "today-col flex flex-col gap-2.5 bg-indigo-50/70 rounded-2xl p-1.5 -m-1.5 ring-1 ring-indigo-200" : "flex flex-col gap-2.5";
 
                 const eventsHtml = eventsToday.map(ev => {
                     const clsTag = ev.targetClass && ev.targetClass !== 'ALL' ? ` [${escapeHtml(ev.targetClass)}]` : '';
@@ -3151,9 +3161,9 @@ HA: ...</pre>
                 }).join('');
 
                 col.innerHTML = `
-                    <div class="bg-white border ${isToday ? 'border-indigo-400 ring-1 ring-indigo-300' : 'border-slate-200/90'} rounded-xl px-3 py-2 flex items-center justify-between shadow-2xs">
-                        <span class="text-xs font-extrabold ${isToday ? 'text-indigo-700' : 'text-slate-800'}">${dayNames[d]}</span>
-                        <span class="text-[11px] font-semibold text-slate-500">${dayDate.getDate()}.${dayDate.getMonth() + 1}.</span>
+                    <div class="${isToday ? 'bg-indigo-600 border border-indigo-600' : 'bg-white border border-slate-200/90'} rounded-xl px-3 py-2 flex items-center justify-between shadow-2xs">
+                        <span class="text-xs font-extrabold ${isToday ? 'text-white' : 'text-slate-800'}">${dayNames[d]}${isToday ? ' <span class="ml-1 px-1.5 py-px rounded bg-white/25 text-[10px]">Heute</span>' : ''}</span>
+                        <span class="text-[11px] font-semibold ${isToday ? 'text-indigo-100' : 'text-slate-500'}">${dayDate.getDate()}.${dayDate.getMonth() + 1}.</span>
                     </div>
                     <div class="bg-[#FEF9C3] border border-amber-200/90 rounded-xl px-2.5 py-2 flex flex-col gap-1 shadow-2xs">
                         ${eventsHtml ? `<div class="flex flex-wrap">${eventsHtml}</div>` : ''}
@@ -3218,10 +3228,10 @@ HA: ...</pre>
 
                         <div class="p-3 flex-1 flex flex-col gap-1.5 text-xs text-slate-700 leading-relaxed min-h-[110px]">
                             ${data.isExam ? `<div class="bg-rose-600 text-white rounded-lg px-2 py-0.5 text-[10px] font-extrabold tracking-wide uppercase inline-block w-fit">📝 Prüfung / Lernkontrolle</div>` : ''}
-                            ${data.homeworkDueToday ? `<div class="bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-2 py-1 text-[10.5px] font-extrabold leading-snug">📌 HA auf heute: ${escapeHtml(data.homeworkDueToday)}</div>` : ''}
+                            ${data.homeworkDueToday ? `<div class="bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-2 py-1 text-[10.5px] font-extrabold leading-snug">📌 HA auf heute: <span class="whitespace-pre-line">${escapeHtml(data.homeworkDueToday)}</span></div>` : ''}
                             ${data.title ? `<div class="font-extrabold text-slate-900">${escapeHtml(data.title)}</div>` : ''}
                             <div class="lesson-card-body text-[11px] text-slate-600 flex flex-col gap-0.5">${ehsHtml || `<span class="text-slate-300 italic">Klicken zum Planen...</span>`}</div>
-                            ${data.homework ? `<div class="mt-auto pt-1.5 border-t border-slate-100 text-[10.5px] font-semibold text-slate-500 truncate">➔ HA auf nächste Lektion: ${escapeHtml(data.homework)}</div>` : ''}
+                            ${data.homework ? `<div class="mt-auto pt-1.5 border-t border-slate-100 text-[10.5px] font-semibold text-slate-500 whitespace-pre-line line-clamp-3">➔ HA auf nächste Lektion: ${escapeHtml(data.homework)}</div>` : ''}
                         </div>
                     `;
                     col.appendChild(card);
@@ -3416,6 +3426,7 @@ HA: ...</pre>
             document.getElementById('editPhaseHauptteil').innerHTML = plainOrHtmlToEditorHtml(data.hauptteil || data.notes || "");
             document.getElementById('editPhaseSchluss').innerHTML = plainOrHtmlToEditorHtml(data.schluss || "");
             document.getElementById('editLessonHomework').value = data.homework || "";
+            requestAnimationFrame(() => document.querySelectorAll('#lessonModal [data-autogrow]').forEach(autoGrow));
             document.getElementById('lessonAiResultBox').classList.add('hidden');
             document.getElementById('lessonAiPromptInput').value = "";
 
@@ -6495,7 +6506,7 @@ Text:\n${raw.slice(0, 12000)}`;
         // ---------- Frühere Versionen einer Lektion ----------
         function backupLabelText(label) {
             return ({ daily: 'Tagessicherung', 'before-import': 'vor Import', 'before-restore': 'vor Wiederherstellung',
-                      'before-migration': 'vor Umstellung auf Monats-Dokumente' })[label] || label;
+                      'before-migration': 'vor Umstellung auf Monats-Dokumente', manual: 'von Hand' })[label] || label;
         }
         let versionsCtx = null;   // { key, slot, dayDate, entries: [{ source, at, reason, device, data, backupId }] }
         async function openVersionsModal() {
@@ -7034,6 +7045,25 @@ ${listing}`;
         }
 
         // Einmal pro Tag (beim ersten Laden) – sichert den Stand VOR den heutigen Änderungen
+        async function manualCloudBackup() {
+            const btn = document.getElementById('manualCloudBackupBtn');
+            if (!db || !currentUser || !cloudReady) { showToast('Keine Cloud-Verbindung – bitte später nochmals versuchen.'); return; }
+            btn.disabled = true;
+            btn.innerText = 'Sichere…';
+            try {
+                await flushPendingSave();
+                const ok = await createCloudBackup('manual');
+                showToast(ok ? 'Cloud-Sicherung erstellt.' : 'Cloud-Sicherung fehlgeschlagen.');
+                renderCloudBackupList();
+                refreshBackupStatusUI();
+            } catch (e) {
+                showToast('Cloud-Sicherung fehlgeschlagen: ' + (e.code || e.message));
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Jetzt in der Cloud sichern';
+            }
+        }
+
         async function maybeCreateDailyCloudBackup() {
             if (!db || !currentUser) return;
             const docId = getActiveDocId();
@@ -7067,7 +7097,7 @@ ${listing}`;
                 }
                 list.innerHTML = entries.map(e => `
                     <div class="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5">
-                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : e.label === 'before-import' ? 'vor Import' : e.label === 'before-migration' ? 'vor Umstellung auf Monats-Dokumente' : escapeHtml(e.label)}</span>` : ''}</span>
+                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : e.label === 'before-import' ? 'vor Import' : e.label === 'before-migration' ? 'vor Umstellung auf Monats-Dokumente' : e.label === 'manual' ? 'von Hand' : escapeHtml(e.label)}</span>` : ''}</span>
                         <button type="button" onclick="restoreCloudBackup(${jsArg(e.id)})" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10.5px] shrink-0">Wiederherstellen</button>
                     </div>`).join('');
             } catch (err) {
