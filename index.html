@@ -29,6 +29,9 @@
         .rich-editor-zone:empty::before { content: attr(data-placeholder); color: #94a3b8; font-style: italic; pointer-events: none; }
         .rich-editor-zone ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
         .rich-editor-zone ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
+        /* Tagesansicht: horizontales Wischen gehört der App (kein «Seite zurück» des Browsers) */
+        html, body { overscroll-behavior-x: none; }
+        #planViewSection.day-swipe-mode { touch-action: pan-y; }
         @media (min-width: 640px) {
             #aiRightSidebar { top: var(--hdr, 57px); height: calc(100dvh - var(--hdr, 57px)); }
         }
@@ -2556,8 +2559,51 @@ HA: ...</pre>
             renderCalendar();
         }
 
+        // Tagesansicht: per Wischen nach links/rechts den Tag wechseln (Handy/Tablet)
+        function animateDaySwitch(direction) {
+            const grid = document.getElementById('weekGridContainer');
+            if (!grid) return;
+            grid.style.transition = 'none';
+            grid.style.transform = `translateX(${direction * 48}px)`;
+            grid.style.opacity = '0.35';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                grid.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+                grid.style.transform = '';
+                grid.style.opacity = '';
+            }));
+        }
+
+        (function setupDaySwipe() {
+            const area = document.getElementById('planViewSection');
+            if (!area) return;
+            let startX = 0, startY = 0, startT = 0, tracking = false;
+            area.addEventListener('touchstart', (e) => {
+                tracking = false;
+                if (viewMode !== 'day' || e.touches.length !== 1) return;
+                if (e.target.closest('input, textarea, select, button, [contenteditable="true"]')) return;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                startT = Date.now();
+                tracking = true;
+            }, { passive: true });
+            area.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                // Nur klare horizontale Wischbewegungen (kein Scrollen nach oben/unten)
+                if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - startT < 900) {
+                    const dir = dx < 0 ? 1 : -1;   // nach links wischen = nächster Tag
+                    changeWeek(dir);
+                    animateDaySwitch(dir);
+                }
+            }, { passive: true });
+        })();
+
         function setViewMode(mode) {
             viewMode = mode;
+            document.getElementById('planViewSection')?.classList.toggle('day-swipe-mode', mode === 'day');
             const grid = document.getElementById('weekGridContainer');
             const btnW = document.getElementById('viewBtnWeek');
             const btnD = document.getElementById('viewBtnDay');

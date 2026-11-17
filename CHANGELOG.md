@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 8 – 17.11.2026
+- Tagesansicht: Tage per Wischen nach links/rechts wechseln (Handy/Tablet), mit kurzer Animation.
+- Horizontales Wischen löst nicht mehr «Seite zurück» des Browsers aus.
+
 ## Version 7 – 17.11.2026
 - Alle Bausteine fest im Repo (`vendor/`): Design und Funktionen hängen nicht mehr von fremden Servern ab.
 - Neu: Import «4. Chalk-Planboard (PDF)» – Wochenexporte ohne KI einlesen, auch mehrere PDFs auf einmal; fehlende Stundenplan-Slots (z. B. Basketball) werden ergänzt; gelbe Tagesbalken → Tagesnotiz; doppelter Import wird erkannt.
