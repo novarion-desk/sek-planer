@@ -373,11 +373,10 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 1: LEKTIONS-EDITOR (SCROLLBAR + UNTERRICHTSVERLAUF OBEN)        -->
+    <!-- MODAL 1: LEKTIONS-EDITOR                                              -->
     <!-- ===================================================================== -->
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
         <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-            <!-- Fixierter Modal-Header -->
             <div id="modalHeaderBar" class="shrink-0 px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
                 <div class="flex items-center gap-2">
                     <span id="modalSubjectClass" class="text-sm font-extrabold uppercase tracking-wide">DEUTSCH • S2Aa</span>
@@ -388,9 +387,7 @@
                 </button>
             </div>
 
-            <!-- Scrollbarer Modal-Inhalt (flex-1 min-h-0 overflow-y-auto overscroll-contain verhindert Hintergrund-Scroll) -->
             <div id="lessonModalScrollBody" class="flex-1 min-h-0 p-4 md:p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4 text-xs">
-                <!-- Oberste Zeile: HA auf heute + Prüfungs-Umschalter -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
                     <div class="sm:col-span-8 bg-sky-100/80 border border-sky-300 rounded-xl p-2.5 flex flex-col gap-1">
                         <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
@@ -409,7 +406,6 @@
                     </div>
                 </div>
 
-                <!-- Metadaten: Gefäss, Unit, Stundenthema -->
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div class="sm:col-span-3">
                         <label class="block font-bold text-slate-600 mb-1">Gefäss / Schwerpunkt</label>
@@ -425,7 +421,7 @@
                     </div>
                 </div>
 
-                <!-- UNTERRICHTSVERLAUF (JETZT GANZ OBEN ALS HAUPTELEMENT) -->
+                <!-- UNTERRICHTSVERLAUF -->
                 <div class="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-xs flex flex-col">
                     <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-1">
@@ -462,7 +458,7 @@
                     </div>
                 </div>
 
-                <!-- DIREKTER KI-TUTOR (JETZT UNTER DEM UNTERRICHTSVERLAUF) -->
+                <!-- DIREKTER KI-TUTOR -->
                 <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3 flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
@@ -585,7 +581,6 @@
                 </div>
             </div>
 
-            <!-- Fixierter Modal-Footer -->
             <div class="shrink-0 px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
@@ -940,7 +935,6 @@ HA: ...</pre>
             }
         }
 
-        // Sperrt den Hintergrund-Scroll (Wochenplan), sobald ein Modal geöffnet ist
         function updateBodyScrollLock() {
             const modals = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal'];
             const anyOpen = modals.some(id => {
@@ -950,7 +944,6 @@ HA: ...</pre>
             document.body.style.overflow = anyOpen ? 'hidden' : '';
         }
 
-        // Globaler Schutz gegen ungewolltes Öffnen von Dateien im Browser-Tab
         window.addEventListener('dragover', (e) => { e.preventDefault(); }, false);
         window.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -1114,10 +1107,11 @@ HA: ...</pre>
         }
 
         // =========================================================================
-        // 2. FIREBASE AUTHENTICATION & REGISTRIERUNG (MIT HASH-PRÜFUNG)
+        // 2. FIREBASE AUTHENTICATION & REGISTRIERUNG
         // =========================================================================
-        // SHA-256 Hash des Zugangscodes (damit er nicht im Klartext im HTML steht)
         const INVITE_CODE_HASH = "e5b88488c1e4ef1df278ef24829fd8a68fd31d371989b4125f2c2cc28479cc44";
+        const OWNER_EMAIL = "patrick.krapf63@gmail.com";
+        const OWNER_LEGACY_SYNC_KEY = "zh-sekA-krapf-948271";
 
         async function sha256Hex(str) {
             const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -1258,14 +1252,16 @@ HA: ...</pre>
         }
 
         // =========================================================================
-        // 3. STUNDENPLAN & SCHULJAHRES-DATEN
+        // 3. STUNDENPLAN & SCHULJAHRES-DATEN (FEST HINTERLEGTER 26-LEKTIONEN-PLAN)
         // =========================================================================
         let privateSyncKey = localStorage.getItem('sekPlaner_privateKey') || '';
         let geminiApiKey = localStorage.getItem('sekPlaner_geminiKey') || '';
         let claudeApiKey = localStorage.getItem('sekPlaner_claudeKey') || '';
         let currentSchoolYear = localStorage.getItem('sekPlaner_schoolYear') || '2026/27';
 
+        // Alle 26 Lektionen gemäss Stundenplan_Bregger_2026_27_Sek_Planer_2.xlsx dauerhaft verankert
         const DEFAULT_WEEKLY_TEMPLATE = [
+            // Montag (7 Lektionen)
             { id: "mo-2", day: 0, start: "08:20", end: "09:05", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-3", day: 0, start: "09:10", end: "09:55", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-4", day: 0, start: "10:15", end: "11:00", subject: "D", className: "S2Ac", track: "", room: "C63" },
@@ -1273,19 +1269,23 @@ HA: ...</pre>
             { id: "mo-7", day: 0, start: "12:50", end: "13:35", subject: "Econ", className: "Wahlfach E", track: "", room: "C63" },
             { id: "mo-8", day: 0, start: "13:45", end: "14:30", subject: "E", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-9", day: 0, start: "14:35", end: "15:20", subject: "RKE", className: "S2Aa", track: "", room: "C63" },
+            // Dienstag (4 Lektionen)
             { id: "di-2", day: 1, start: "08:20", end: "09:05", subject: "D", className: "S2Ac", track: "", room: "C63" },
             { id: "di-3", day: 1, start: "09:10", end: "09:55", subject: "Mu", className: "S2Ac", track: "", room: "C63" },
             { id: "di-4", day: 1, start: "10:15", end: "11:00", subject: "Econ", className: "Wahlfach E", track: "", room: "C63" },
             { id: "di-5", day: 1, start: "11:05", end: "11:50", subject: "E", className: "S2Aa", track: "", room: "C63" },
+            // Mittwoch (5 Lektionen)
             { id: "mi-1", day: 2, start: "07:30", end: "08:15", subject: "RZG", className: "S2Aa", track: "", room: "C63" },
             { id: "mi-2", day: 2, start: "08:20", end: "09:05", subject: "Mu", className: "S1BCa", track: "", room: "C63" },
             { id: "mi-3", day: 2, start: "09:10", end: "09:55", subject: "RKE", className: "S2Ac", track: "", room: "E49" },
             { id: "mi-4", day: 2, start: "10:15", end: "11:00", subject: "D", className: "S2Ac", track: "", room: "C63" },
             { id: "mi-5", day: 2, start: "11:05", end: "11:50", subject: "D", className: "S2Aa", track: "", room: "C63" },
+            // Donnerstag (4 Lektionen)
             { id: "do-2", day: 3, start: "08:20", end: "09:05", subject: "Mu", className: "S1Aa", track: "", room: "C63" },
             { id: "do-3", day: 3, start: "09:10", end: "09:55", subject: "D", className: "S2Ac", track: "", room: "C63" },
             { id: "do-4", day: 3, start: "10:15", end: "11:00", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "do-5", day: 3, start: "11:05", end: "11:50", subject: "E", className: "S2Aa", track: "", room: "C63" },
+            // Freitag (6 Lektionen)
             { id: "fr-3", day: 4, start: "09:10", end: "09:55", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "fr-4", day: 4, start: "10:15", end: "11:00", subject: "RZG", className: "S2Aa", track: "", room: "C63" },
             { id: "fr-5", day: 4, start: "11:05", end: "11:50", subject: "BO", className: "S2Aa", track: "", room: "C63" },
@@ -1327,7 +1327,7 @@ HA: ...</pre>
             "2028/29": []
         };
 
-        let weeklyTemplate = [...DEFAULT_WEEKLY_TEMPLATE];
+        let weeklyTemplate = JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
         let calendarEvents = [...(DEFAULT_EVENTS_BY_YEAR[currentSchoolYear] || [])];
         let dayNotesStore = {};
         let lessonsStore = {};
@@ -1355,11 +1355,17 @@ HA: ...</pre>
                 auth.onAuthStateChanged((user) => {
                     currentUser = user;
                     if (user) {
-                        // Eigene isolierte Sync-ID pro Nutzer sicherstellen, falls noch keine gesetzt ist
-                        if (!privateSyncKey) {
+                        const emailLower = (user.email || "").trim().toLowerCase();
+                        if (emailLower === OWNER_EMAIL) {
+                            // Hauptkonto patrick.krapf63@gmail.com nutzt immer den bestehenden Cloud-Backup-Schlüssel
+                            privateSyncKey = OWNER_LEGACY_SYNC_KEY;
+                            localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
+                        } else if (!privateSyncKey || privateSyncKey === OWNER_LEGACY_SYNC_KEY) {
+                            // Jeder andere Account erhält eine eigene isolierte Sync-ID
                             privateSyncKey = `user-${user.uid.slice(0, 16)}`;
                             localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
                         }
+
                         document.getElementById('authGateOverlay').classList.add('hidden');
                         document.getElementById('protectedAppContainer').classList.remove('hidden');
                         document.getElementById('schoolYearSelect').value = currentSchoolYear;
@@ -1407,16 +1413,20 @@ HA: ...</pre>
 
         function loadSchoolYearData(year) {
             const p = getStoragePrefix();
+            const isOwner = currentUser && (currentUser.email || "").toLowerCase() === OWNER_EMAIL;
             const legacyPrefix = `sekPlaner_${year.replace('/', '_')}`;
             try {
-                const l = localStorage.getItem(`${p}_lessons`) || localStorage.getItem(`${legacyPrefix}_lessons`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_lessons') : null);
-                const t = localStorage.getItem(`${p}_template`) || localStorage.getItem(`${legacyPrefix}_template`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_template') : null);
-                const e = localStorage.getItem(`${p}_events`) || localStorage.getItem(`${legacyPrefix}_events`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_events') : null);
-                const d = localStorage.getItem(`${p}_dayNotes`) || localStorage.getItem(`${legacyPrefix}_dayNotes`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_dayNotes') : null);
-                const sn = localStorage.getItem(`${p}_standaloneNotes`) || localStorage.getItem(`${legacyPrefix}_standaloneNotes`);
+                const l = localStorage.getItem(`${p}_lessons`) || (isOwner ? (localStorage.getItem(`${legacyPrefix}_lessons`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_lessons') : null)) : null);
+                const t = localStorage.getItem(`${p}_template`) || (isOwner ? (localStorage.getItem(`${legacyPrefix}_template`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_template') : null)) : null);
+                const e = localStorage.getItem(`${p}_events`) || (isOwner ? (localStorage.getItem(`${legacyPrefix}_events`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_events') : null)) : null);
+                const d = localStorage.getItem(`${p}_dayNotes`) || (isOwner ? (localStorage.getItem(`${legacyPrefix}_dayNotes`) || (year === '2026/27' ? localStorage.getItem('sekPlaner_v2_dayNotes') : null)) : null);
+                const sn = localStorage.getItem(`${p}_standaloneNotes`) || (isOwner ? localStorage.getItem(`${legacyPrefix}_standaloneNotes`) : null);
 
                 lessonsStore = l ? JSON.parse(l) : {};
-                weeklyTemplate = t ? JSON.parse(t) : JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
+                const parsedTemplate = t ? JSON.parse(t) : null;
+                weeklyTemplate = (Array.isArray(parsedTemplate) && parsedTemplate.length > 0)
+                    ? parsedTemplate
+                    : JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
                 calendarEvents = e ? JSON.parse(e) : JSON.parse(JSON.stringify(DEFAULT_EVENTS_BY_YEAR[year] || []));
                 dayNotesStore = d ? JSON.parse(d) : {};
                 standaloneNotesStore = sn ? JSON.parse(sn) : [];
@@ -1446,6 +1456,7 @@ HA: ...</pre>
                 const docId = currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
                 db.collection('sekSync').doc(docId).set({
                     ownerUid: currentUser.uid,
+                    ownerEmail: currentUser.email || "",
                     lessonsStore,
                     weeklyTemplate,
                     calendarEvents,
@@ -1468,15 +1479,29 @@ HA: ...</pre>
             firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    if (data.lessonsStore) lessonsStore = data.lessonsStore;
-                    if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
-                    if (data.calendarEvents) calendarEvents = data.calendarEvents;
-                    if (data.dayNotesStore) dayNotesStore = data.dayNotesStore;
-                    if (data.standaloneNotesStore) standaloneNotesStore = data.standaloneNotesStore;
+                    if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
+                    if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
+                    if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;
+                    if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
+                    if (Array.isArray(data.standaloneNotesStore)) standaloneNotesStore = data.standaloneNotesStore;
+
+                    // Lokal zwischenspeichern, damit Offline-Zugriff und Backup immer aktuell sind
+                    const p = getStoragePrefix();
+                    try {
+                        localStorage.setItem(`${p}_lessons`, JSON.stringify(lessonsStore));
+                        localStorage.setItem(`${p}_template`, JSON.stringify(weeklyTemplate));
+                        localStorage.setItem(`${p}_events`, JSON.stringify(calendarEvents));
+                        localStorage.setItem(`${p}_dayNotes`, JSON.stringify(dayNotesStore));
+                        localStorage.setItem(`${p}_standaloneNotes`, JSON.stringify(standaloneNotesStore));
+                    } catch (e) {}
+
                     renderCalendar();
                     updateOpenNotesBadge();
                     if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
                     if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
+                } else if (Object.keys(lessonsStore).length > 0 || weeklyTemplate.length > 0) {
+                    // Falls lokal schon Daten da sind, aber noch kein Cloud-Dokument existiert: sofort hochladen
+                    saveAllState();
                 }
             }, () => {
                 document.getElementById('syncLed').className = "w-2 h-2 rounded-full bg-rose-500";
