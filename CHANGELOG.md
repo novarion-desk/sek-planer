@@ -1,5 +1,11 @@
 # Änderungen
 
+## Version 12 – 17.11.2026
+- Neu: **Suche** (🔍 oben) über alle Lektionen des Schuljahres – mehrere Wörter kombiniert, Fächer werden erkannt (z. B. «englisch»), eingebautes Wörterbuch für Schulbegriffe Deutsch/Englisch (z. B. Leseverstehen ↔ Reading Comprehension, Prüfung ↔ Test). Treffer markiert, Klick öffnet die Lektion, Klassenfilter.
+- Neu: **«Mit KI suchen»** findet auch sinngemässe Treffer, mit kurzer Begründung.
+- Jahreskalender: Termine und Tagesnotizen lassen sich **bearbeiten** (Bezeichnung, Datum, Klasse, Art) und Tagesnotizen löschen.
+- HA übertragen: Die Auswahl zeigt jetzt das **Thema** der Ziel-Lektion und die nächsten 8 Lektionen.
+
 ## Version 11 – 17.11.2026
 - «Ferien & Spezialtage» ist jetzt der **Jahreskalender**: alles fürs Schuljahr untereinander (Ferien, Spezialtage, Anlässe aus Lektionen, Prüfungen, Tagesnotizen), gegliedert nach Monat und Woche, mit «Heute»-Linie.
 - Filter nach Klasse; Vergangenes grau, per Knopf ausblendbar; Drucken / PDF der Liste.
