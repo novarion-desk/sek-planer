@@ -13,6 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -28,10 +29,15 @@
         .rich-editor-zone:empty::before { content: attr(data-placeholder); color: #94a3b8; font-style: italic; pointer-events: none; }
         .rich-editor-zone ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
         .rich-editor-zone ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
+        @media (min-width: 640px) {
+            #aiRightSidebar { top: var(--hdr, 57px); height: calc(100dvh - var(--hdr, 57px)); }
+        }
 
         @media print {
             body { background: #ffffff !important; overflow: visible !important; }
-            header, #aiRightSidebar, #toast, .no-print { display: none !important; }
+            header, #aiRightSidebar, #toast, .no-print, #notesViewSection, #holidaysViewSection,
+            #lessonModal, #quickNoteModal, #universalImportModal, #scheduleEditorModal, #settingsModal { display: none !important; }
+            #planWithSidebarWrapper { display: flex !important; }
             #printHeaderBanner { display: block !important; }
             #planWithSidebarWrapper, #planViewSection { overflow: visible !important; padding: 0 !important; }
             #weekGridContainer { min-width: 100% !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 6px !important; }
@@ -211,10 +217,10 @@
         <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS -->
         <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
             <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
-                <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1080px]"></div>
+                <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]"></div>
             </main>
 
-            <aside id="aiRightSidebar" class="hidden w-full sm:w-[370px] shrink-0 bg-white border-l border-slate-200 flex flex-col h-[calc(100vh-57px)] sticky top-[57px] z-20 shadow-lg text-xs">
+            <aside id="aiRightSidebar" class="hidden fixed inset-0 z-40 sm:z-20 w-full sm:w-[370px] shrink-0 bg-white border-l border-slate-200 flex flex-col sm:sticky sm:inset-auto shadow-lg text-xs">
                 <div class="px-4 py-3 bg-purple-700 text-white flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <i data-lucide="sparkles" class="w-4 h-4"></i>
@@ -677,7 +683,7 @@
                                     <div class="text-[10.5px] text-slate-500">Unterstützt: .xlsx, .xls, .pdf, .docx, .txt</div>
                                 </div>
                             </div>
-                            <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onclick="event.stopPropagation()" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                            <input type="file" id="universalFileInput" accept=".pdf,.docx,.xls,.xlsx,.csv,.txt" onclick="event.stopPropagation()" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                         </div>
 
                         <details class="lg:col-span-5 bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-[11px]">
@@ -714,7 +720,7 @@ HA: ...</pre>
                             </div>
                             <div class="sm:col-span-3">
                                 <label class="block font-bold text-slate-700 mb-1">Unit / Sequenz-Titel</label>
-                                <input type="text" id="seqUnitTitle" oninput="rebuildUniversalPreview()" placeholder="z. B. Die Welle" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
+                                <input type="text" id="seqUnitTitle" placeholder="z. B. Die Welle" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
                             </div>
                             <div class="sm:col-span-3">
                                 <label class="block font-bold text-slate-700 mb-1">Gefäss-Markierung setzen</label>
@@ -907,7 +913,7 @@ HA: ...</pre>
 
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Dokument-ID in Zürich (Sync-Schlüssel)</label>
-                    <input type="text" id="privateSyncKeyInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900">
+                    <input type="text" id="privateSyncKeyInput" readonly title="Wird automatisch aus deinem Konto abgeleitet" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900">
                 </div>
 
                 <!-- KI KEYS -->
@@ -924,6 +930,17 @@ HA: ...</pre>
                     <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (optional)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
 
                     <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold whitespace-pre-line"></div>
+
+                    <details class="bg-white/80 border border-indigo-200 rounded-lg p-2.5 text-[11px]">
+                        <summary class="cursor-pointer font-extrabold text-indigo-950 select-none">ℹ️ Anleitung: So fügst du deinen KI-Schlüssel ein (klicken)</summary>
+                        <div class="mt-2 pt-2 border-t border-indigo-200/80 text-indigo-950 flex flex-col gap-1.5 leading-snug">
+                            <div><strong>1.</strong> Öffne <strong>aistudio.google.com/apikey</strong> und melde dich mit deinem Google-Konto an.</div>
+                            <div><strong>2.</strong> Klicke auf <strong>«API-Schlüssel erstellen»</strong> (Create API key) und kopiere den Schlüssel (beginnt mit <span class="font-mono">AIza…</span>).</div>
+                            <div><strong>3.</strong> Füge ihn oben ins Feld <strong>«Google Gemini API-Key»</strong> ein und klicke auf <strong>«KI testen»</strong>.</div>
+                            <div><strong>4.</strong> Erscheint ✅, klicke unten auf <strong>«Einstellungen speichern»</strong>.</div>
+                            <div class="text-indigo-800/90">Der Schlüssel gehört zu deinem Konto: Er ist nach dem Anmelden auf all deinen Geräten verfügbar, andere Konten sehen ihn nicht. Optional kannst du zusätzlich einen Claude-Schlüssel (console.anthropic.com → API Keys) als Ausweich-KI eintragen.</div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- LOKALES JSON BACKUP -->
@@ -964,14 +981,43 @@ HA: ...</pre>
             }
         }
 
+        const MODAL_IDS = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal'];
+        let lockedScrollY = 0;
+
+        // iOS-sicherer Scroll-Lock: body fixieren statt nur overflow:hidden
         function updateBodyScrollLock() {
-            const modals = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal'];
-            const anyOpen = modals.some(id => {
+            const anyOpen = MODAL_IDS.some(id => {
                 const el = document.getElementById(id);
                 return el && !el.classList.contains('hidden');
             });
-            document.body.style.overflow = anyOpen ? 'hidden' : '';
+            const b = document.body;
+            if (anyOpen && b.style.position !== 'fixed') {
+                lockedScrollY = window.scrollY;
+                Object.assign(b.style, { position: 'fixed', top: `-${lockedScrollY}px`, left: '0', right: '0', overflow: 'hidden' });
+            } else if (!anyOpen && b.style.position === 'fixed') {
+                Object.assign(b.style, { position: '', top: '', left: '', right: '', overflow: '' });
+                window.scrollTo(0, lockedScrollY);
+            }
         }
+
+        // Headerhöhe als CSS-Variable (für die KI-Sidebar, Header bricht mobil mehrzeilig um)
+        function syncHeaderHeightVar() {
+            const hdr = document.querySelector('#protectedAppContainer header');
+            if (hdr && hdr.offsetHeight > 0) document.documentElement.style.setProperty('--hdr', `${hdr.offsetHeight}px`);
+        }
+        window.addEventListener('resize', syncHeaderHeightVar);
+
+        // Esc schliesst das oberste offene Modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const closers = { quickNoteModal: () => closeQuickNoteModal(), lessonModal: () => closeLessonModal(),
+                universalImportModal: () => closeUniversalImportModal(), scheduleEditorModal: () => closeScheduleEditorModal(),
+                settingsModal: () => closeSettingsModal() };
+            for (const id of ['quickNoteModal', 'settingsModal', 'scheduleEditorModal', 'universalImportModal', 'lessonModal']) {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden')) { closers[id](); break; }
+            }
+        });
 
         window.addEventListener('dragover', (e) => { e.preventDefault(); }, false);
         window.addEventListener('drop', (e) => {
@@ -987,6 +1033,22 @@ HA: ...</pre>
         // =========================================================================
         const TEACHER_SYSTEM_PROMPT = "Du bist Oberstufenlehrer im Kanton Zürich mit 30 Jahren Erfahrung. Niveau A in Deutsch, Musik, Geschichte, Geografie, Medien & Informatik, Englisch. Du kennst den Lehrplan 21 des Kantons Zürich und antwortest praxisnah, direkt umsetzbar und ohne unnötige Floskeln.";
 
+        // ---------- Sicherheit: HTML-Bereinigung & Escaping ----------
+        const RICH_CFG = { ALLOWED_TAGS: ['b', 'strong', 'i', 'em', 'u', 'br', 'div', 'p', 'ul', 'ol', 'li', 'hr', 'span'], ALLOWED_ATTR: ['class'] };
+        function sanitizeRich(html) {
+            if (!html) return "";
+            if (window.DOMPurify) return DOMPurify.sanitize(String(html), RICH_CFG);
+            // Fallback ohne DOMPurify: nur Text behalten
+            return escapeHtml(htmlToPlainText(html)).replace(/\n/g, '<br>');
+        }
+        // Wert sicher als JS-Argument in einem onclick="..."-Attribut
+        function jsArg(v) { return escapeHtml(JSON.stringify(String(v ?? ''))); }
+        function safeAudioSrc(url) {
+            const u = String(url || '');
+            return /^(data:audio\/|blob:|https:\/\/firebasestorage\.googleapis\.com\/)/.test(u) ? escapeHtml(u) : '';
+        }
+        function isISODate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !isNaN(new Date(`${s}T12:00:00`)); }
+
         function markdownBoldToHtml(text) {
             if (!text) return "";
             let html = escapeHtml(text);
@@ -997,21 +1059,35 @@ HA: ...</pre>
 
         function htmlToPlainText(htmlStr) {
             if (!htmlStr) return "";
-            const tmp = document.createElement('div');
-            tmp.innerHTML = htmlStr.replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>|<\/p>|<\/li>/gi, '\n');
-            return (tmp.textContent || tmp.innerText || "").replace(/\n{3,}/g, '\n\n').trim();
+            // DOMParser erzeugt ein inertes Dokument: keine Bilder, keine Event-Handler werden ausgeführt
+            const prepared = String(htmlStr).replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>|<\/p>|<\/li>/gi, '\n');
+            const doc = new DOMParser().parseFromString(prepared, 'text/html');
+            return (doc.body.textContent || "").replace(/\n{3,}/g, '\n\n').trim();
         }
 
         function plainOrHtmlToEditorHtml(val) {
             if (!val) return "";
-            if (/<[a-z][\s\S]*>/i.test(val)) return val;
+            if (/<[a-z][\s\S]*>/i.test(val)) return sanitizeRich(val);
             return markdownBoldToHtml(val);
         }
 
+        async function fetchWithTimeout(url, options, ms = 60000) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), ms);
+            try {
+                return await fetch(url, { ...options, signal: ctrl.signal });
+            } catch (e) {
+                if (e.name === 'AbortError') throw new Error(`Zeitüberschreitung nach ${ms / 1000} s`);
+                throw e;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
         async function callGeminiUnified(userPrompt, conversationHistory = null) {
-            const rawGemini = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || "";
+            const rawGemini = geminiApiKey || "";
             const key = rawGemini.trim().replace(/^["']|["']$/g, '');
-            const rawClaude = localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey || "";
+            const rawClaude = claudeApiKey || "";
             const cKey = rawClaude.trim().replace(/^["']|["']$/g, '');
 
             if (!key && !cKey) {
@@ -1034,7 +1110,7 @@ HA: ...</pre>
                 }
 
                 const payload = { contents };
-                const savedWorkingModel = localStorage.getItem('sekPlaner_workingModel');
+                const savedWorkingModel = localStorage.getItem(accountStorageName('workingModel'));
                 const modelsToTry = [...new Set([
                     ...(savedWorkingModel ? [savedWorkingModel] : []),
                     "gemini-2.5-flash",
@@ -1044,15 +1120,16 @@ HA: ...</pre>
 
                 for (const modelName of modelsToTry) {
                     try {
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(key)}`;
-                        const res = await fetch(url, {
+                        // Schlüssel im Header statt in der URL (landet so nicht in Logs/Verlauf)
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+                        const res = await fetchWithTimeout(url, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
                             body: JSON.stringify(payload)
                         });
                         const data = await res.json();
                         if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            localStorage.setItem('sekPlaner_workingModel', modelName);
+                            localStorage.setItem(accountStorageName('workingModel'), modelName);
                             return data.candidates[0].content.parts[0].text.trim();
                         }
                         if (data?.error?.message) {
@@ -1070,7 +1147,7 @@ HA: ...</pre>
                         ? conversationHistory.map(m => ({ role: m.role === "model" ? "assistant" : "user", content: m.parts[0].text }))
                         : [{ role: "user", content: userPrompt }];
 
-                    const cRes = await fetch("https://api.anthropic.com/v1/messages", {
+                    const cRes = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -1109,9 +1186,7 @@ HA: ...</pre>
             }
             geminiApiKey = gVal;
             claudeApiKey = cVal;
-            localStorage.setItem('sekPlaner_geminiKey', gVal);
-            localStorage.setItem('sekPlaner_claudeKey', cVal);
-            localStorage.removeItem('sekPlaner_workingModel');
+            saveAccountApiKeys();
 
             const btn = document.getElementById('testApiBtn');
             const statusBox = document.getElementById('apiTestStatusBox');
@@ -1123,7 +1198,7 @@ HA: ...</pre>
 
             try {
                 const reply = await callGeminiUnified("Antworte exakt mit einem Satz: Verbindung als Sek-A-Tutor erfolgreich!");
-                const activeModel = localStorage.getItem('sekPlaner_workingModel') || "Claude";
+                const activeModel = localStorage.getItem(accountStorageName('workingModel')) || "Claude";
                 statusBox.className = "rounded-lg p-2.5 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
                 statusBox.innerText = `✅ [${activeModel}] ${reply}`;
             } catch (err) {
@@ -1277,7 +1352,21 @@ HA: ...</pre>
 
         async function handleFirebaseLogout() {
             if (!auth) return;
+            await flushPendingSave();
             if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
+            cloudReady = false;
+
+            // Lokale Daten bleiben beim jeweiligen Konto gespeichert (getrennt nach UID).
+            // Nur der Arbeitsspeicher wird geleert, damit das nächste Konto nichts davon sieht.
+            geminiApiKey = '';
+            claudeApiKey = '';
+            localStorage.removeItem('sekPlaner_privateKey');
+            privateSyncKey = '';
+            lessonsStore = {};
+            dayNotesStore = {};
+            standaloneNotesStore = [];
+            calendarEvents = [];
+            generalChatHistory = [];
             await auth.signOut();
         }
 
@@ -1285,8 +1374,61 @@ HA: ...</pre>
         // 3. STUNDENPLAN & SCHULJAHRES-DATEN (26 LEKTIONEN STANDARD)
         // =========================================================================
         let privateSyncKey = localStorage.getItem('sekPlaner_privateKey') || '';
-        let geminiApiKey = localStorage.getItem('sekPlaner_geminiKey') || '';
-        let claudeApiKey = localStorage.getItem('sekPlaner_claudeKey') || '';
+        // KI-Schlüssel gehören zum Konto: lokal pro UID + in der Cloud (Dokument apikeys_<uid>)
+        let geminiApiKey = '';
+        let claudeApiKey = '';
+
+        function accountStorageName(kind) {
+            return `sekPlaner_${currentUser ? currentUser.uid : 'local'}_${kind}`;
+        }
+        function apiKeysDocId() { return `apikeys_${currentUser.uid}`; }
+
+        async function loadAccountApiKeys(user, isOwner) {
+            geminiApiKey = localStorage.getItem(accountStorageName('geminiKey')) || '';
+            claudeApiKey = localStorage.getItem(accountStorageName('claudeKey')) || '';
+            // Einmalige Übernahme der bisher gerätweit gespeicherten Schlüssel – nur für den Hauptaccount
+            const legacyG = localStorage.getItem('sekPlaner_geminiKey');
+            const legacyC = localStorage.getItem('sekPlaner_claudeKey');
+            let migrated = false;
+            if (isOwner && !geminiApiKey && legacyG) { geminiApiKey = legacyG; migrated = true; }
+            if (isOwner && !claudeApiKey && legacyC) { claudeApiKey = legacyC; migrated = true; }
+            ['sekPlaner_geminiKey', 'sekPlaner_claudeKey', 'sekPlaner_workingModel'].forEach(k => localStorage.removeItem(k));
+
+            if (db) {
+                try {
+                    const snap = await db.collection('sekSync').doc(apiKeysDocId()).get();
+                    if (currentUser !== user) return;   // inzwischen abgemeldet / anderes Konto
+                    if (snap.exists) {
+                        const d = snap.data() || {};
+                        if (typeof d.geminiKey === 'string' && d.geminiKey) geminiApiKey = d.geminiKey;
+                        if (typeof d.claudeKey === 'string' && d.claudeKey) claudeApiKey = d.claudeKey;
+                    } else if (geminiApiKey || claudeApiKey) {
+                        migrated = true;   // lokal vorhandene Schlüssel in die Cloud übernehmen
+                    }
+                } catch (e) { /* offline → lokale Kopie verwenden */ }
+            }
+            try {
+                localStorage.setItem(accountStorageName('geminiKey'), geminiApiKey);
+                localStorage.setItem(accountStorageName('claudeKey'), claudeApiKey);
+            } catch (e) {}
+            if (migrated) saveAccountApiKeys();
+        }
+
+        function saveAccountApiKeys() {
+            if (!currentUser) return Promise.resolve();
+            try {
+                localStorage.setItem(accountStorageName('geminiKey'), geminiApiKey);
+                localStorage.setItem(accountStorageName('claudeKey'), claudeApiKey);
+                localStorage.removeItem(accountStorageName('workingModel'));
+            } catch (e) {}
+            if (!db) return Promise.resolve();
+            return db.collection('sekSync').doc(apiKeysDocId()).set({
+                ownerUid: currentUser.uid,
+                geminiKey: geminiApiKey,
+                claudeKey: claudeApiKey,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(err => showToast(`KI-Schlüssel nur lokal gespeichert (${err.code || err.message})`));
+        }
         let currentSchoolYear = localStorage.getItem('sekPlaner_schoolYear') || '2026/27';
 
         const DEFAULT_WEEKLY_TEMPLATE = [
@@ -1368,6 +1510,7 @@ HA: ...</pre>
         let selectedAiPhase = 'einstieg';
         let currentImportCategory = 'sequence';
         let universalPreviewItems = [];
+        let importEdits = {};   // fileIndex → manuelle Korrekturen in der Kontrolltabelle
         let universalAllSlots1 = [];
         let universalAllSlots2 = [];
         let generalChatHistory = [];
@@ -1379,18 +1522,19 @@ HA: ...</pre>
                 auth.onAuthStateChanged((user) => {
                     currentUser = user;
                     if (user) {
+                        // Sync-Schlüssel IMMER aus dem Konto ableiten (nie einen alten Wert eines
+                        // anderen Kontos aus dem localStorage übernehmen)
                         const emailLower = (user.email || "").trim().toLowerCase();
-                        if (emailLower === OWNER_EMAIL) {
-                            privateSyncKey = OWNER_LEGACY_SYNC_KEY;
-                            localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
-                        } else if (!privateSyncKey || privateSyncKey === OWNER_LEGACY_SYNC_KEY) {
-                            privateSyncKey = `user-${user.uid.slice(0, 16)}`;
-                            localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
-                        }
+                        privateSyncKey = emailLower === OWNER_EMAIL ? OWNER_LEGACY_SYNC_KEY : `user-${user.uid.slice(0, 16)}`;
+                        localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
+                        loadAccountApiKeys(user, emailLower === OWNER_EMAIL);
 
                         document.getElementById('authGateOverlay').classList.add('hidden');
                         document.getElementById('protectedAppContainer').classList.remove('hidden');
                         document.getElementById('schoolYearSelect').value = currentSchoolYear;
+                        document.getElementById('holidayTitleSjLabel').innerText = `SJ ${currentSchoolYear}`;
+                        document.getElementById('scheduleSjLabel').innerText = `SJ ${currentSchoolYear}`;
+                        requestAnimationFrame(syncHeaderHeightVar);
                         loadSchoolYearData(currentSchoolYear);
                         connectPrivateFirestoreSync();
                         renderCalendar();
@@ -1439,7 +1583,7 @@ HA: ...</pre>
 
             let helpHint = "";
             if (lastSyncStatus.state === 'error' && String(lastSyncStatus.message).includes('permission')) {
-                helpHint = "\n⚠️ LÖSUNG FÜR 'permission-denied':\nÖffne console.firebase.google.com → Projekt 'zufallsgenerator-209f3' → Firestore Database → Regeln (Rules) und setze:\nallow read, write: if request.auth != null;";
+                helpHint = "\n⚠️ 'permission-denied': Die Firestore-Regeln erlauben diesem Konto keinen Zugriff auf dieses Dokument.\nPrüfe in der Firebase Console, ob das Feld 'ownerUid' im Dokument deiner UID (oben) entspricht.";
             }
 
             box.innerText = `Konto: ${userEmail}\nUID: ${userUid}\nDokument-ID: ${lastSyncStatus.docId || '—'}\nGeladen: ${slotCount} Stundenplan-Lektionen, ${lessonCount} geplante Einträge\nStatus: ${lastSyncStatus.message}${helpHint}`;
@@ -1450,21 +1594,40 @@ HA: ...</pre>
             return `sekPlaner_${uidTag}_${currentSchoolYear.replace('/', '_')}`;
         }
 
-        function switchSchoolYear(newYear) {
+        // Schuljahr = 1. August bis 31. Juli
+        function schoolYearRange(sy) {
+            const y = parseInt(String(sy).split('/')[0], 10);
+            return { start: `${y}-08-01`, end: `${y + 1}-07-31` };
+        }
+        function schoolYearForISO(iso) {
+            const [y, m] = iso.split('-').map(Number);
+            const startY = m >= 8 ? y : y - 1;
+            return `${startY}/${String((startY + 1) % 100).padStart(2, '0')}`;
+        }
+        function isSupportedSchoolYear(sy) {
+            return [...document.getElementById('schoolYearSelect').options].some(o => o.value === sy);
+        }
+
+        async function switchSchoolYear(newYear, keepWeek = false) {
+            await flushPendingSave();   // ausstehende Änderungen noch ins ALTE Jahr schreiben
             currentSchoolYear = newYear;
             localStorage.setItem('sekPlaner_schoolYear', newYear);
+            document.getElementById('schoolYearSelect').value = newYear;
             document.getElementById('holidayTitleSjLabel').innerText = `SJ ${newYear}`;
             document.getElementById('scheduleSjLabel').innerText = `SJ ${newYear}`;
 
             loadSchoolYearData(newYear);
             connectPrivateFirestoreSync();
 
-            const startYear = parseInt(newYear.split('/')[0], 10);
-            const now = new Date();
-            if (now.getFullYear() === startYear || now.getFullYear() === startYear + 1) {
-                currentMonday = getMonday(now);
-            } else {
-                currentMonday = getMonday(new Date(`${startYear}-08-18`));
+            if (!keepWeek) {
+                const { start, end } = schoolYearRange(newYear);
+                const todayISO = formatDateISO(new Date());
+                if (todayISO >= start && todayISO <= end) {
+                    currentMonday = getMonday(new Date());
+                } else {
+                    currentMonday = getMonday(new Date(`${start}T12:00:00`));
+                    if (formatDateISO(currentMonday) < start) currentMonday.setDate(currentMonday.getDate() + 7);
+                }
             }
 
             renderCalendar();
@@ -1502,11 +1665,25 @@ HA: ...</pre>
         }
 
         function getActiveDocId() {
-            const baseId = "planer_" + btoa(privateSyncKey).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
+            // encodeURIComponent → Umlaute erlaubt; für reine ASCII-Schlüssel identische ID wie bisher
+            const baseId = "planer_" + btoa(unescape(encodeURIComponent(privateSyncKey))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
             return currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
         }
 
-        function saveAllState() {
+        // =========================================================================
+        // SYNC-KERN
+        // - Cloud wird erst beschrieben, nachdem der erste SERVER-Snapshot geladen ist
+        //   (verhindert, dass leere/Standard-Daten eines neuen Geräts die Cloud überschreiben)
+        // - Felder werden komplett ersetzt (mergeFields) → Löschungen kommen in der Cloud an
+        // - Debounce: viele kleine Änderungen = ein Schreibvorgang
+        // =========================================================================
+        let cloudReady = false;
+        let pushTimer = null;
+        let pushInFlight = null;
+        const SYNC_FIELDS = ['ownerUid', 'ownerEmail', 'lessonsStore', 'weeklyTemplate', 'calendarEvents', 'dayNotesStore', 'standaloneNotesStore', 'updatedAt'];
+        const CLOUD_DOC_LIMIT_BYTES = 950 * 1024;   // Firestore-Limit: 1 MiB pro Dokument
+
+        function persistLocal() {
             const p = getStoragePrefix();
             try {
                 localStorage.setItem(`${p}_lessons`, JSON.stringify(lessonsStore));
@@ -1514,71 +1691,211 @@ HA: ...</pre>
                 localStorage.setItem(`${p}_events`, JSON.stringify(calendarEvents));
                 localStorage.setItem(`${p}_dayNotes`, JSON.stringify(dayNotesStore));
                 localStorage.setItem(`${p}_standaloneNotes`, JSON.stringify(standaloneNotesStore));
-            } catch (err) {}
-
-            updateOpenNotesBadge();
-
-            if (db && currentUser && privateSyncKey) {
-                const docId = getActiveDocId();
-                db.collection('sekSync').doc(docId).set({
-                    ownerUid: currentUser.uid,
-                    ownerEmail: currentUser.email || "",
-                    lessonsStore,
-                    weeklyTemplate,
-                    calendarEvents,
-                    dayNotesStore,
-                    standaloneNotesStore,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true }).then(() => {
-                    updateSyncIndicator('ok', 'Synchronisiert mit Server Zürich', docId);
-                }).catch((err) => {
-                    updateSyncIndicator('error', `Schreibfehler: ${err.code || err.message}`, docId);
-                });
+            } catch (err) {
+                updateSyncIndicator('error', `Lokaler Browser-Speicher voll (${err.name}) – bitte Backup herunterladen und alte Sprachmemos löschen.`, privateSyncKey ? getActiveDocId() : '');
+                showToast("⚠️ Lokaler Speicher voll – Backup herunterladen!");
             }
+        }
+
+        function saveAllState() {
+            persistLocal();
+            updateOpenNotesBadge();
+            if (!cloudReady) return;
+            clearTimeout(pushTimer);
+            pushTimer = setTimeout(() => { pushTimer = null; pushToCloud(); }, 700);
+        }
+
+        async function flushPendingSave() {
+            if (pushTimer) {
+                clearTimeout(pushTimer);
+                pushTimer = null;
+                await pushToCloud();
+            } else if (pushInFlight) {
+                await pushInFlight;
+            }
+        }
+
+        function pushToCloud() {
+            if (!db || !currentUser || !privateSyncKey || !cloudReady) return Promise.resolve();
+            const docId = getActiveDocId();
+            const payload = {
+                ownerUid: currentUser.uid,
+                ownerEmail: currentUser.email || "",
+                lessonsStore,
+                weeklyTemplate,
+                calendarEvents,
+                dayNotesStore,
+                standaloneNotesStore
+            };
+            const json = JSON.stringify(payload);
+            const bytes = new Blob([json]).size;
+            const pushedState = JSON.parse(json);   // Stand genau so, wie er hochgeladen wird
+            if (bytes > CLOUD_DOC_LIMIT_BYTES) {
+                updateSyncIndicator('error', `Cloud-Dokument zu gross (${Math.round(bytes / 1024)} KB, Limit 1024 KB). Bitte alte Sprachmemos löschen – Änderungen sind nur lokal gespeichert!`, docId);
+                showToast("⚠️ Cloud-Limit erreicht – Änderungen nur lokal gespeichert!");
+                return Promise.resolve();
+            }
+            payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+            const p = db.collection('sekSync').doc(docId).set(payload, { mergeFields: SYNC_FIELDS })
+                .then(() => {
+                    if (getActiveDocId() === docId) storeBaseline(pushedState);
+                    const warn = bytes > 700 * 1024 ? ` – Achtung: ${Math.round(bytes / 1024)} KB von 1024 KB belegt` : '';
+                    updateSyncIndicator('ok', `Synchronisiert mit Server Zürich${warn}`, docId);
+                })
+                .catch((err) => {
+                    updateSyncIndicator('error', `Schreibfehler: ${err.code || err.message}`, docId);
+                })
+                .finally(() => { if (pushInFlight === p) pushInFlight = null; });
+            pushInFlight = p;
+            return p;
+        }
+
+        function refreshViewsAfterSync() {
+            renderCalendar();
+            updateOpenNotesBadge();
+            if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
+            if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
+        }
+
+        // ---------- 3-Wege-Abgleich (lokal / Cloud / letzter gemeinsamer Stand) ----------
+        function stableStringify(v) {
+            if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
+            if (Array.isArray(v)) return `[${v.map(stableStringify).join(',')}]`;
+            if (typeof v.toMillis === 'function') return JSON.stringify(v.toMillis());
+            return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(',')}}`;
+        }
+        function hashOf(v) {
+            if (v === undefined) return undefined;
+            const str = stableStringify(v);
+            let h = 5381;
+            for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+            return `${(h >>> 0).toString(36)}.${str.length}`;
+        }
+        function baselineStorageKey() { return `${getStoragePrefix()}_cloudBaseline_${getActiveDocId()}`; }
+        function loadBaseline() {
+            try { return JSON.parse(localStorage.getItem(baselineStorageKey()) || 'null'); } catch (e) { return null; }
+        }
+        function storeBaseline(state = null) {
+            const st = state || { lessonsStore, dayNotesStore, weeklyTemplate, calendarEvents, standaloneNotesStore };
+            const mapHashes = (obj) => Object.fromEntries(Object.entries(obj || {}).map(([k, v]) => [k, hashOf(v)]));
+            const base = {
+                lessons: mapHashes(st.lessonsStore),
+                dayNotes: mapHashes(st.dayNotesStore),
+                template: hashOf(st.weeklyTemplate),
+                events: hashOf(st.calendarEvents),
+                standalone: hashOf(st.standaloneNotesStore)
+            };
+            try { localStorage.setItem(baselineStorageKey(), JSON.stringify(base)); } catch (e) {}
+        }
+        // Gibt zusammengeführte Map zurück + ob lokal etwas Neueres dabei war
+        function mergeMap3(local, cloud, baseHashes) {
+            const out = {};
+            let localWins = false;
+            const keys = new Set([...Object.keys(local || {}), ...Object.keys(cloud || {})]);
+            keys.forEach(k => {
+                const l = local?.[k], c = cloud?.[k];
+                const b = baseHashes ? baseHashes[k] : undefined;
+                const lh = hashOf(l), ch = hashOf(c);
+                let localChanged;
+                if (!baseHashes) localChanged = (c === undefined && l !== undefined);   // ohne Basis: nur rein lokale Einträge behalten
+                else localChanged = lh !== b;
+                if (localChanged && !(l === undefined && ch !== b)) {
+                    if (l !== undefined) out[k] = l;
+                    if (lh !== ch) localWins = true;
+                } else if (c !== undefined) {
+                    out[k] = c;
+                }
+            });
+            return { merged: out, localWins };
+        }
+        function mergeValue3(local, cloud, baseHash, fallbackCloud) {
+            if (cloud === undefined) return { value: local, localWins: false };
+            if (baseHash && hashOf(local) !== baseHash && hashOf(cloud) === baseHash) return { value: local, localWins: true };
+            return { value: fallbackCloud ?? cloud, localWins: false };
         }
 
         function connectPrivateFirestoreSync() {
             if (!db || !currentUser || !privateSyncKey) return;
             if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
+            cloudReady = false;
             const docId = getActiveDocId();
             updateSyncIndicator('connecting', 'Verbinde mit Server Zürich...', docId);
 
             firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
-                    if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
-                    if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;
-                    if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
-                    if (Array.isArray(data.standaloneNotesStore)) standaloneNotesStore = data.standaloneNotesStore;
+                // Eigenes Echo bzw. noch nicht hochgeladene lokale Änderung → nicht überschreiben
+                if (doc.metadata.hasPendingWrites || pushTimer) return;
 
-                    const p = getStoragePrefix();
-                    try {
-                        localStorage.setItem(`${p}_lessons`, JSON.stringify(lessonsStore));
-                        localStorage.setItem(`${p}_template`, JSON.stringify(weeklyTemplate));
-                        localStorage.setItem(`${p}_events`, JSON.stringify(calendarEvents));
-                        localStorage.setItem(`${p}_dayNotes`, JSON.stringify(dayNotesStore));
-                        localStorage.setItem(`${p}_standaloneNotes`, JSON.stringify(standaloneNotesStore));
-                    } catch (e) {}
-
-                    updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
-                    renderCalendar();
-                    updateOpenNotesBadge();
-                    if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
-                    if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
-                } else {
+                if (!doc.exists) {
+                    if (doc.metadata.fromCache) return;   // offline ≠ leer! Nichts anlegen.
+                    cloudReady = true;
                     updateSyncIndicator('ok', 'Neues Cloud-Dokument wird angelegt...', docId);
-                    saveAllState();
+                    pushToCloud();
+                    return;
                 }
+                if (doc.metadata.fromCache && !cloudReady) return;   // erst auf echten Server-Stand warten
+
+                const data = doc.data();
+                const firstLoad = !cloudReady;
+                const cloudLessons = (data.lessonsStore && typeof data.lessonsStore === 'object') ? data.lessonsStore : {};
+                const cloudDayNotes = (data.dayNotesStore && typeof data.dayNotesStore === 'object') ? data.dayNotesStore : {};
+                const cloudTemplate = (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) ? data.weeklyTemplate : undefined;
+                const cloudEvents = Array.isArray(data.calendarEvents) ? data.calendarEvents : undefined;
+                const cloudStandalone = Array.isArray(data.standaloneNotesStore) ? data.standaloneNotesStore : [];
+                let needsPush = false;
+
+                if (firstLoad) {
+                    // Beim ersten Laden: lokale Änderungen seit dem letzten Abgleich behalten,
+                    // alles andere vom Server übernehmen (leere/alte lokale Stände gewinnen nie)
+                    const base = loadBaseline();
+                    const ml = mergeMap3(lessonsStore, cloudLessons, base?.lessons);
+                    const md = mergeMap3(dayNotesStore, cloudDayNotes, base?.dayNotes);
+                    const mt = mergeValue3(weeklyTemplate, cloudTemplate, base?.template);
+                    const me = mergeValue3(calendarEvents, cloudEvents, base?.events);
+                    const ms = mergeValue3(standaloneNotesStore, cloudStandalone, base?.standalone);
+                    lessonsStore = ml.merged;
+                    dayNotesStore = md.merged;
+                    weeklyTemplate = mt.value;
+                    calendarEvents = me.value;
+                    standaloneNotesStore = ms.value;
+                    needsPush = ml.localWins || md.localWins || mt.localWins || me.localWins || ms.localWins;
+                } else {
+                    lessonsStore = cloudLessons;   // ersetzen statt mergen → Löschungen kommen an
+                    dayNotesStore = cloudDayNotes;
+                    if (cloudTemplate) weeklyTemplate = cloudTemplate;
+                    if (cloudEvents) calendarEvents = cloudEvents;
+                    standaloneNotesStore = cloudStandalone;
+                }
+
+                cloudReady = true;
+                persistLocal();
+                if (needsPush) saveAllState(); else storeBaseline();
+                updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
+                refreshViewsAfterSync();
             }, (err) => {
                 updateSyncIndicator('error', `Lesefehler: ${err.code || err.message}`, docId);
             });
         }
 
+        // Nur auf einem Gerät ohne bisherigen Abgleich vor dem ersten Laden blockieren
+        function requireCloudReady() {
+            if (db && currentUser && !cloudReady && navigator.onLine && !loadBaseline()) {
+                showToast("Cloud-Daten werden noch geladen – bitte einen Moment warten.");
+                return false;
+            }
+            return true;
+        }
+
         async function forcePushLocalToCloud() {
             if (!db || !currentUser) return;
-            saveAllState();
+            if (!cloudReady) {
+                showToast("Cloud-Stand ist noch nicht geladen – Upload abgebrochen, damit nichts überschrieben wird.");
+                return;
+            }
+            persistLocal();
             showToast("Speichere aktuellen Stand in der Cloud...");
+            clearTimeout(pushTimer);
+            pushTimer = null;
+            await pushToCloud();
         }
 
         async function runCloudRecoveryScan() {
@@ -1602,21 +1919,16 @@ HA: ...</pre>
                 for (const cid of candidateIds) {
                     try {
                         const snap = await db.collection('sekSync').doc(cid).get();
-                        if (snap.exists) foundDocs.set(snap.id, snap.data());
+                        if (snap.exists && (!snap.data().ownerUid || snap.data().ownerUid === currentUser.uid)) foundDocs.set(snap.id, snap.data());
                     } catch (e) {}
                 }
 
                 // 2. Abfrage nach ownerUid oder ownerEmail
                 try {
                     const qSnap = await db.collection('sekSync').where('ownerUid', '==', currentUser.uid).get();
-                    qSnap.forEach(d => foundDocs.set(d.id, d.data()));
+                    qSnap.forEach(d => { if (!d.id.startsWith('apikeys_')) foundDocs.set(d.id, d.data()); });
                 } catch (e) {}
 
-                // 3. Gesamte Sammlung prüfen (falls Security Rules es erlauben)
-                try {
-                    const allSnap = await db.collection('sekSync').limit(25).get();
-                    allSnap.forEach(d => foundDocs.set(d.id, d.data()));
-                } catch (e) {}
 
                 if (foundDocs.size === 0) {
                     resBox.innerHTML = `<div class="bg-rose-50 border border-rose-200 text-rose-900 rounded-lg p-2.5 font-semibold">Keine Cloud-Dokumente lesbar. Bitte prüfe die Firestore-Regeln in der Firebase Console (siehe oben).</div>`;
@@ -1632,7 +1944,7 @@ HA: ...</pre>
                                     <div class="font-mono font-bold text-slate-900">${escapeHtml(docId)}</div>
                                     <div class="text-[10.5px] text-slate-600">${lCount} geplante Lektionen • ${tCount} Stundenplan-Slots</div>
                                 </div>
-                                <button type="button" onclick="restoreFromCloudDoc('${escapeHtml(docId)}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shrink-0">
+                                <button type="button" onclick="restoreFromCloudDoc(${jsArg(docId)})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shrink-0">
                                     Jetzt wiederherstellen
                                 </button>
                             </div>
@@ -1668,6 +1980,8 @@ HA: ...</pre>
         // 4. NAVIGATION, SIDEBAR TOGGLE, DRUCKANSICHT & WOCHENRASTER
         // =========================================================================
         function printSubstitutePlan() {
+            // Immer aus dem Wochenplan drucken – nie den Notizen-Tab mit privaten Pendenzen
+            if (document.getElementById('planWithSidebarWrapper').classList.contains('hidden')) switchMainTab('plan');
             document.getElementById('printWeekSubTitle').innerText = document.getElementById('weekTitleDisplay').innerText + " • " + document.getElementById('kwBadge').innerText;
             window.print();
         }
@@ -1690,13 +2004,13 @@ HA: ...</pre>
             for (let w = 0; w < 4; w++) {
                 const mon = new Date(currentMonday);
                 mon.setDate(currentMonday.getDate() + w * 7);
-                weeklyTemplate.sort((a, b) => a.day - b.day || a.start.localeCompare(b.start)).forEach(s => {
+                [...weeklyTemplate].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start)).forEach(s => {
                     const d = new Date(mon);
                     d.setDate(mon.getDate() + s.day);
                     const iso = formatDateISO(d);
                     const st = getStyleForSlot(s.subject, s.className);
                     const tr = s.track ? ` • ${s.track}` : '';
-                    options.push(`<option value="${iso}_${s.id}">${dayShort[s.day]}, ${formatDateCH(iso)} • ${st.label} ${s.className}${tr} (${s.start})</option>`);
+                    options.push(`<option value="${escapeHtml(`${iso}_${s.id}`)}">${dayShort[s.day]}, ${formatDateCH(iso)} • ${escapeHtml(`${st.label} ${s.className}${tr}`)} (${escapeHtml(s.start)})</option>`);
                 });
             }
             select.innerHTML = options.join('');
@@ -1784,13 +2098,27 @@ HA: ...</pre>
             return [...new Set(weeklyTemplate.map(s => s.className).filter(Boolean))].sort();
         }
 
+        let selectedDayIdx = Math.min((new Date().getDay() + 6) % 7, 4);
+
         function changeWeek(delta) {
-            currentMonday.setDate(currentMonday.getDate() + delta * 7);
+            if (viewMode === 'day') {
+                // In der Tagesansicht blättern die Pfeile tageweise (Mo–Fr)
+                selectedDayIdx += delta;
+                if (selectedDayIdx > 4) { selectedDayIdx = 0; currentMonday.setDate(currentMonday.getDate() + 7); }
+                if (selectedDayIdx < 0) { selectedDayIdx = 4; currentMonday.setDate(currentMonday.getDate() - 7); }
+            } else {
+                currentMonday.setDate(currentMonday.getDate() + delta * 7);
+            }
             renderCalendar();
         }
 
-        function jumpToCurrentWeek() {
+        async function jumpToCurrentWeek() {
+            const todaySY = schoolYearForISO(formatDateISO(new Date()));
+            if (todaySY !== currentSchoolYear && isSupportedSchoolYear(todaySY)) {
+                await switchSchoolYear(todaySY, true);
+            }
             currentMonday = getMonday(new Date());
+            selectedDayIdx = Math.min((new Date().getDay() + 6) % 7, 4);
             renderCalendar();
         }
 
@@ -1800,7 +2128,7 @@ HA: ...</pre>
             const btnW = document.getElementById('viewBtnWeek');
             const btnD = document.getElementById('viewBtnDay');
             if (mode === 'week') {
-                grid.className = "grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1080px]";
+                grid.className = "grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]";
                 btnW.className = "px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs";
                 btnD.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
             } else {
@@ -1854,10 +2182,9 @@ HA: ...</pre>
             container.innerHTML = '';
 
             const todayISO = formatDateISO(new Date());
-            const todayIdx = (new Date().getDay() + 6) % 7;
 
             for (let d = 0; d < 5; d++) {
-                if (viewMode === 'day' && d !== (todayIdx < 5 ? todayIdx : 0)) continue;
+                if (viewMode === 'day' && d !== selectedDayIdx) continue;
 
                 const dayDate = new Date(currentMonday);
                 dayDate.setDate(currentMonday.getDate() + d);
@@ -1885,7 +2212,7 @@ HA: ...</pre>
                     </div>
                     <div class="bg-[#FEF9C3] border border-amber-200/90 rounded-xl px-2.5 py-2 flex flex-col gap-1 shadow-2xs">
                         ${eventsHtml ? `<div class="flex flex-wrap">${eventsHtml}</div>` : ''}
-                        <input type="text" value="${escapeHtml(dayNotesStore[iso] || '')}" onchange="saveDayNote('${iso}', this.value)" placeholder="Tagesnotiz..." class="w-full bg-transparent text-[11px] text-amber-950 placeholder:text-amber-700/45 font-medium focus:outline-none">
+                        <input type="text" value="${escapeHtml(dayNotesStore[iso] || '')}" onchange="saveDayNote(${jsArg(iso)}, this.value)" placeholder="Tagesnotiz..." class="w-full bg-transparent text-[11px] text-amber-950 placeholder:text-amber-700/45 font-medium focus:outline-none">
                     </div>
                 `;
 
@@ -1912,10 +2239,10 @@ HA: ...</pre>
                                 <div class="text-[11px] font-extrabold tracking-wide uppercase leading-tight">
                                     ${escapeHtml(style.label)} • ${escapeHtml(slot.className)}${activeTrack ? ` • <span class="underline decoration-white/70">${escapeHtml(activeTrack)}</span>` : ''}
                                 </div>
-                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${slot.start} – ${slot.end} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}</div>
+                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}</div>
                             </div>
                             <div class="flex items-center gap-1 shrink-0 no-print">
-                                <button type="button" onclick="event.stopPropagation(); openQuickNoteModal('${key}', '${escapeHtml(style.label)} ${escapeHtml(slot.className)}')" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">
+                                <button type="button" onclick="event.stopPropagation(); openQuickNoteModal(${jsArg(key)}, ${jsArg(`${style.label} ${slot.className}`)})" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">
                                     + Notiz
                                 </button>
                                 ${openTodos > 0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-amber-950 font-extrabold text-[10px]" title="Offene Pendenzen">${openTodos}</span>` : ''}
@@ -1953,6 +2280,7 @@ HA: ...</pre>
         // 4B. SCHNELL-NOTIZ
         // =========================================================================
         function openQuickNoteModal(lessonKey, label) {
+            if (!requireCloudReady()) return;
             activeQuickNoteKey = lessonKey;
             document.getElementById('quickNoteTitle').innerText = `Schnell-Pendenz: ${label}`;
             document.getElementById('quickNoteInput').value = "";
@@ -2016,7 +2344,7 @@ HA: ...</pre>
         function findUpcomingSlotsForCourse(subject, className, preferredTrack, fromISO, fromStart, weeksAhead = 4) {
             const allSameCourse = [];
             const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
-            const baseMonday = getMonday(new Date(fromISO));
+            const baseMonday = getMonday(new Date(`${fromISO}T12:00:00`));
 
             for (let w = 0; w <= weeksAhead; w++) {
                 const mon = new Date(baseMonday);
@@ -2083,7 +2411,20 @@ HA: ...</pre>
             return results;
         }
 
+        let lessonModalInitialState = "";
+        function getLessonFormState() {
+            const ids = ['editLessonHomeworkToday', 'editLessonTrack', 'editLessonUnit', 'editLessonTitle', 'editLessonHomework', 'homeworkTargetLessonSelect'];
+            return JSON.stringify([
+                ids.map(id => document.getElementById(id).value),
+                document.getElementById('editLessonIsExam').checked,
+                ['editPhaseEinstieg', 'editPhaseHauptteil', 'editPhaseSchluss'].map(id => htmlToPlainText(document.getElementById(id).innerHTML)),
+                tempAudioClips.map(c => [c.id, c.transcript]),
+                tempLessonTodos
+            ]);
+        }
+
         function openLessonModal(key, slot, dayDate) {
+            if (!requireCloudReady()) return;
             activeLessonKey = key;
             activeSlotMeta = { slot, dayDate };
             lastClearedLessonBackup = null;
@@ -2118,15 +2459,15 @@ HA: ...</pre>
             const hwSelect = document.getElementById('homeworkTargetLessonSelect');
             const nextSlots = findUpcomingSlotsForCourse(slot.subject, slot.className, activeTrack, iso, slot.start, 4);
             hwSelect.innerHTML = `<option value="">— Nicht übertragen —</option>` +
-                nextSlots.map((ns, idx) => `<option value="${ns.key}" ${(data.homeworkTargetKey === ns.key || (!data.homeworkTargetKey && idx === 0)) ? 'selected' : ''}>${ns.label}</option>`).join('');
+                nextSlots.map((ns, idx) => `<option value="${escapeHtml(ns.key)}" ${(data.homeworkTargetKey === ns.key || (!data.homeworkTargetKey && idx === 0)) ? 'selected' : ''}>${escapeHtml(ns.label)}</option>`).join('');
 
             const parSelect = document.getElementById('parallelTargetLessonSelect');
             const parallelSlots = findParallelSlotsNextTwoWeeks(slot, dayDate);
             if (parallelSlots.length > 0) {
-                parSelect.innerHTML = parallelSlots.map(ps => `<option value="${ps.key}">${ps.label}</option>`).join('') +
+                parSelect.innerHTML = parallelSlots.map(ps => `<option value="${escapeHtml(ps.key)}">${escapeHtml(ps.label)}</option>`).join('') +
                     `<option value="">— Keine Übertragung —</option>`;
             } else {
-                parSelect.innerHTML = `<option value="">— Keine Parallelklasse für ${style.label} in den nächsten 2 Wochen —</option>`;
+                parSelect.innerHTML = `<option value="">— Keine Parallelklasse für ${escapeHtml(style.label)} in den nächsten 2 Wochen —</option>`;
             }
 
             tempAudioClips = Array.isArray(data.audioClips) ? [...data.audioClips] : [];
@@ -2143,9 +2484,14 @@ HA: ...</pre>
             const scrollContainer = document.getElementById('lessonModalScrollBody');
             if (scrollContainer) scrollContainer.scrollTop = 0;
             refreshIcons();
+            lessonModalInitialState = getLessonFormState();
         }
 
-        function closeLessonModal() {
+        function closeLessonModal(force = false) {
+            const modalEl = document.getElementById('lessonModal');
+            if (modalEl.classList.contains('hidden')) return;
+            if (!force && activeLessonKey && getLessonFormState() !== lessonModalInitialState &&
+                !confirm('Ungespeicherte Änderungen in dieser Lektion verwerfen?')) return;
             stopVoiceMemo();
             document.getElementById('lessonModal').classList.add('hidden');
             updateBodyScrollLock();
@@ -2227,12 +2573,15 @@ HA: ...</pre>
             const parTrack = parSlot ? getEffectiveTrack(lessonsStore[parTargetKey], parSlot) : "";
             let parNextHwKey = "";
 
-            if (incHw && homework && parSlot) {
+            const existingParForHw = lessonsStore[parTargetKey];
+            const hwWillApply = parMode === 'overwrite' || !(existingParForHw && existingParForHw.homework);
+            if (incHw && homework && parSlot && hwWillApply) {
                 const upcomingForPar = findUpcomingSlotsForCourse(parSlot.subject, parSlot.className, parTrack, parIso, parSlot.start, 4);
                 if (upcomingForPar.length > 0) {
                     parNextHwKey = upcomingForPar[0].key;
                     const targetNextLesson = lessonsStore[parNextHwKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     targetNextLesson.homeworkDueToday = `${homework} (aufgegeben am ${formatDateCH(parIso)})`;
+                    targetNextLesson.homeworkSourceKey = parTargetKey;
                     lessonsStore[parNextHwKey] = targetNextLesson;
                 }
             }
@@ -2271,8 +2620,10 @@ HA: ...</pre>
             showToast("Ausgewählte Inhalte auf parallele Klasse übertragen!");
         }
 
-        function saveLessonModal() {
-            if (!activeLessonKey || !activeSlotMeta) return;
+        // Übernimmt die Modal-Felder in lessonsStore (ohne zu schliessen)
+        function commitLessonModal() {
+            if (!activeLessonKey || !activeSlotMeta) return false;
+            const previous = lessonsStore[activeLessonKey];
             const homeworkDueToday = document.getElementById('editLessonHomeworkToday').value.trim();
             const isExam = document.getElementById('editLessonIsExam').checked;
             const enteredTrack = document.getElementById('editLessonTrack').value.trim();
@@ -2288,6 +2639,7 @@ HA: ...</pre>
             const hwTargetKey = document.getElementById('homeworkTargetLessonSelect').value;
 
             lessonsStore[activeLessonKey] = {
+                ...(previous || {}),
                 homeworkDueToday,
                 isExam,
                 trackOverride,
@@ -2304,15 +2656,31 @@ HA: ...</pre>
                 todos: tempLessonTodos
             };
 
+            // Alte «HA auf heute» entfernen, wenn Ziel gewechselt oder HA gelöscht wurde
+            const prevTarget = previous?.homeworkTargetKey;
+            if (prevTarget && (prevTarget !== hwTargetKey || !homework)) {
+                const old = lessonsStore[prevTarget];
+                if (old && old.homeworkSourceKey === activeLessonKey) {
+                    old.homeworkDueToday = "";
+                    delete old.homeworkSourceKey;
+                }
+            }
+
             if (homework && hwTargetKey) {
                 const sourceDateCH = formatDateCH(activeLessonKey.split('_')[0]);
                 const targetLesson = lessonsStore[hwTargetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: unit, title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                 targetLesson.homeworkDueToday = `${homework} (aufgegeben am ${sourceDateCH})`;
+                targetLesson.homeworkSourceKey = activeLessonKey;
                 if (!targetLesson.unit && unit) targetLesson.unit = unit;
                 lessonsStore[hwTargetKey] = targetLesson;
             }
+            lessonModalInitialState = getLessonFormState();
+            return true;
+        }
 
-            closeLessonModal();
+        function saveLessonModal() {
+            if (!commitLessonModal()) return;
+            closeLessonModal(true);
             renderCalendar();
             saveAllState();
             showToast("Lektion gespeichert!");
@@ -2376,49 +2744,84 @@ HA: ...</pre>
             showToast("Lektionsinhalt wiederhergestellt!");
         }
 
+        // Alle Slots eines Kurses ab Datum bis Schuljahresende (Ferien ausgenommen)
+        function courseSlotKeys(subject, className, fromISO, minStart = "00:00", trackLower = null) {
+            const slots = weeklyTemplate
+                .filter(s => s.subject === subject && s.className === className &&
+                             (trackLower === null || (s.track || '').trim().toLowerCase() === trackLower))
+                .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+            const end = schoolYearRange(currentSchoolYear).end;
+            const keys = [];
+            const mon = getMonday(new Date(`${fromISO}T12:00:00`));
+            while (formatDateISO(mon) <= end) {
+                for (const s of slots) {
+                    const d = new Date(mon);
+                    d.setDate(mon.getDate() + s.day);
+                    const iso = formatDateISO(d);
+                    if (iso < fromISO || (iso === fromISO && s.start < minStart)) continue;
+                    if (!isHolidayDate(iso, className)) keys.push(`${iso}_${s.id}`);
+                }
+                mon.setDate(mon.getDate() + 7);
+            }
+            return keys;
+        }
+
+        // Verschiebt Inhalt von oldKeys[i] nach newKeys[i]; bricht ab statt Lektionen zu verlieren
+        function reflowLessons(oldKeys, newKeys) {
+            const items = oldKeys.map(k => lessonsStore[k]);
+            let last = items.length - 1;
+            while (last >= 0 && !items[last]) last--;
+            if (last < 0) return true;
+            if (last >= newKeys.length) return false;
+            const keyMap = {};
+            oldKeys.forEach(k => delete lessonsStore[k]);
+            items.slice(0, last + 1).forEach((it, i) => {
+                if (it) {
+                    lessonsStore[newKeys[i]] = it;
+                    keyMap[oldKeys[i]] = newKeys[i];
+                }
+            });
+            // HA-Verknüpfungen nachziehen
+            Object.values(lessonsStore).forEach(l => {
+                if (!l) return;
+                if (l.homeworkTargetKey && keyMap[l.homeworkTargetKey]) l.homeworkTargetKey = keyMap[l.homeworkTargetKey];
+                if (l.homeworkSourceKey && keyMap[l.homeworkSourceKey]) l.homeworkSourceKey = keyMap[l.homeworkSourceKey];
+            });
+            return true;
+        }
+
+        // Gefäss-Filter nur, wenn das Gefäss im Stundenplan an Slots hängt; sonst alle Slots des Kurses
+        function resolveTemplateTrackFilter(subject, className, trackLower) {
+            if (!trackLower) return null;
+            const hasTemplateTrack = weeklyTemplate.some(s => s.subject === subject && s.className === className &&
+                (s.track || '').trim().toLowerCase() === trackLower);
+            return hasTemplateTrack ? trackLower : null;
+        }
+
         function bumpLessonsForward() {
             if (!activeSlotMeta) return;
+            commitLessonModal();   // ungespeicherte Änderungen nicht verlieren
             const { slot, dayDate } = activeSlotMeta;
             const startISO = formatDateISO(dayDate);
             const activeTrack = document.getElementById('editLessonTrack').value.trim().toLowerCase();
 
-            bumpCourseLessonsFromDate(slot.subject, slot.className, activeTrack, startISO, slot.start);
-            closeLessonModal();
+            const ok = bumpCourseLessonsFromDate(slot.subject, slot.className, activeTrack, startISO, slot.start);
+            if (!ok) {
+                saveAllState();
+                showToast("Nicht geschoben: Bis Schuljahresende ist kein freier Slot mehr – sonst ginge die letzte Lektion verloren.");
+                return;
+            }
+            closeLessonModal(true);
             renderCalendar();
             saveAllState();
             showToast(`Lektionen (${slot.subject} ${slot.className}${activeTrack ? ' – ' + activeTrack : ''}) um 1 Slot geschoben!`);
         }
 
         function bumpCourseLessonsFromDate(subject, className, activeTrackLower, startISO, minStartTime = "00:00") {
-            const futureKeys = [];
-            const baseMon = getMonday(new Date(startISO));
-            for (let w = 0; w < 26; w++) {
-                const mon = new Date(baseMon);
-                mon.setDate(baseMon.getDate() + w * 7);
-                weeklyTemplate
-                    .filter(s => s.subject === subject && s.className === className)
-                    .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
-                    .forEach(s => {
-                        const d = new Date(mon);
-                        d.setDate(mon.getDate() + s.day);
-                        const iso = formatDateISO(d);
-                        if (!isHolidayDate(iso, className)) {
-                            const k = `${iso}_${s.id}`;
-                            if (iso > startISO || (iso === startISO && s.start >= minStartTime)) {
-                                const slotTrack = getEffectiveTrack(lessonsStore[k], s).toLowerCase();
-                                if (!activeTrackLower || slotTrack === activeTrackLower) {
-                                    futureKeys.push(k);
-                                }
-                            }
-                        }
-                    });
-            }
-            if (futureKeys.length < 2) return;
-            for (let i = futureKeys.length - 1; i > 0; i--) {
-                if (lessonsStore[futureKeys[i - 1]]) lessonsStore[futureKeys[i]] = JSON.parse(JSON.stringify(lessonsStore[futureKeys[i - 1]]));
-                else delete lessonsStore[futureKeys[i]];
-            }
-            delete lessonsStore[futureKeys[0]];
+            const trackFilter = resolveTemplateTrackFilter(subject, className, activeTrackLower);
+            const keys = courseSlotKeys(subject, className, startISO, minStartTime, trackFilter);
+            if (keys.length < 2) return keys.length === 0 || !lessonsStore[keys[0]];
+            return reflowLessons(keys, keys.slice(1));
         }
 
         function selectAiPhase(phaseKey) {
@@ -2479,7 +2882,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         }
 
         function insertAiIntoPhase(mode) {
-            const htmlContent = document.getElementById('lessonAiResultEditor').innerHTML.trim();
+            const htmlContent = sanitizeRich(document.getElementById('lessonAiResultEditor').innerHTML.trim());
             if (!htmlToPlainText(htmlContent)) return;
             const fieldMap = { einstieg: 'editPhaseEinstieg', hauptteil: 'editPhaseHauptteil', schluss: 'editPhaseSchluss' };
             const targetEl = document.getElementById(fieldMap[selectedAiPhase]);
@@ -2537,6 +2940,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
                 box.appendChild(aiBubble);
                 box.scrollTop = box.scrollHeight;
             } catch (err) {
+                generalChatHistory.pop();   // unbeantwortete Frage nicht im Verlauf lassen
                 const errBubble = document.createElement('div');
                 errBubble.className = "self-start bg-rose-50 border border-rose-200 text-rose-900 rounded-xl p-2.5 text-[11px] whitespace-pre-line";
                 errBubble.innerText = "⚠️ " + err.message;
@@ -2548,7 +2952,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
         }
 
         function copyChatReplyToLesson(elId) {
-            const html = document.getElementById(elId)?.innerHTML.trim();
+            const html = sanitizeRich(document.getElementById(elId)?.innerHTML.trim() || "");
             const targetKey = document.getElementById('generalChatTargetLesson').value;
             if (!html || !targetKey) return;
 
@@ -2582,12 +2986,15 @@ Text: "${text}"`;
                 const raw = await callGeminiUnified(prompt);
                 const jsonMatch = raw.match(/\[[\s\S]*\]/);
                 const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw.replace(/```json|```/g, '').trim());
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    pendingAiHolidays = parsed;
-                    document.getElementById('holidayAiPreviewList').innerHTML = parsed.map(p =>
+                const validated = normalizeAiEvents(parsed);
+                if (validated.length > 0) {
+                    pendingAiHolidays = validated;
+                    document.getElementById('holidayAiPreviewList').innerHTML = validated.map(p =>
                         `<div class="text-xs font-semibold text-slate-800">• <strong>${formatDateCH(p.start)}${p.end && p.end !== p.start ? ' – ' + formatDateCH(p.end) : ''}</strong>: ${escapeHtml(p.name)} [${escapeHtml(p.targetClass || 'ALL')}] (${p.type === 'holiday' ? 'Blockiert Slots' : 'Spezialtag'})</div>`
                     ).join('');
                     document.getElementById('holidayAiPreviewBox').classList.remove('hidden');
+                } else {
+                    showToast("Keine gültigen Termine (Datum JJJJ-MM-TT) erkannt.");
                 }
             } catch (err) {
                 showToast("KI-Hinweis: " + err.message);
@@ -2595,6 +3002,19 @@ Text: "${text}"`;
                 btn.innerText = "Mit KI erkennen";
                 btn.disabled = false;
             }
+        }
+
+        // KI-Ergebnis prüfen: gültige Daten, Ende ≥ Start, nur bekannte Klassen
+        function normalizeAiEvents(parsed) {
+            if (!Array.isArray(parsed)) return [];
+            const classes = getUniqueClasses();
+            return parsed
+                .filter(p => p && isISODate(p.start))
+                .map(p => {
+                    const end = isISODate(p.end) && p.end >= p.start ? p.end : p.start;
+                    const cls = classes.find(c => c.toUpperCase() === String(p.targetClass || '').toUpperCase()) || 'ALL';
+                    return { name: String(p.name || 'Termin').slice(0, 120), start: p.start, end, type: p.type === 'holiday' ? 'holiday' : 'special', targetClass: cls };
+                });
         }
 
         function confirmAiHolidays() {
@@ -2645,13 +3065,13 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                     const trackKey = `${s.subject}|${s.className}|${tr}`;
                     if (!uniqueTargets.has(trackKey)) {
                         uniqueTargets.add(trackKey);
-                        optionsHtml.push(`<option value="${trackKey}">${st.label} (${s.className}) • Gefäss: ${tr}</option>`);
+                        optionsHtml.push(`<option value="${escapeHtml(trackKey)}">${escapeHtml(`${st.label} (${s.className}) • Gefäss: ${tr}`)}</option>`);
                     }
                 }
                 const baseKey = `${s.subject}|${s.className}|`;
                 if (!uniqueTargets.has(baseKey)) {
                     uniqueTargets.add(baseKey);
-                    optionsHtml.push(`<option value="${baseKey}">${st.label} (${s.className})${tr ? ' • Alle Gefässe' : ''}</option>`);
+                    optionsHtml.push(`<option value="${escapeHtml(baseKey)}">${escapeHtml(`${st.label} (${s.className})`)}${tr ? ' • Alle Gefässe' : ''}</option>`);
                 }
             });
 
@@ -2659,6 +3079,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             select2.innerHTML = `<option value="">— Keine 2. Klasse —</option>` + optionsHtml.join('');
 
             document.getElementById('seqStartDate').value = formatDateISO(currentMonday);
+            importEdits = {};
             document.getElementById('autoDateDetectedHint').classList.add('hidden');
             populatePreferredSlotsDropdown(1);
             populatePreferredSlotsDropdown(2);
@@ -2695,7 +3116,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             let html = `<option value="ALL">Alle ${matchingWeeklySlots.length} Lektionen/Woche (der Reihe nach)</option>`;
             html += `<option value="1_PER_WEEK_FIRST">1 Lektion/Woche (jeweils 1. verfügbare Lektion der Woche)</option>`;
             matchingWeeklySlots.forEach(s => {
-                html += `<option value="SLOT_${s.id}">1 Lektion/Woche: Immer ${dayNames[s.day]} (${s.start}–${s.end})${s.track ? ' • ' + s.track : ''}</option>`;
+                html += `<option value="SLOT_${escapeHtml(s.id)}">1 Lektion/Woche: Immer ${dayNames[s.day]} (${escapeHtml(s.start)}–${escapeHtml(s.end)})${s.track ? ' • ' + escapeHtml(s.track) : ''}</option>`;
             });
             slotSelect.innerHTML = html;
         }
@@ -2759,6 +3180,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
         function handleRawTextareaManualInput() {
             const val = document.getElementById('universalRawTextarea').value;
+            importEdits = {};
             if (currentImportCategory === 'sequence') {
                 applyDetectedStartDateIfAvailable(val);
             }
@@ -2779,6 +3201,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
         function handleUniversalFileUpload(event) {
             const file = event.target.files[0];
             if (file) processUploadedFile(file);
+            event.target.value = '';   // gleiche Datei erneut wählbar
         }
 
         async function processUploadedFile(file) {
@@ -2789,6 +3212,10 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
             try {
                 const lowerName = file.name.toLowerCase();
+                if (lowerName.endsWith('.doc')) {
+                    throw new Error("Altes Word-Format (.doc) wird nicht unterstützt – bitte in Word als .docx speichern.");
+                }
+                importEdits = {};
                 if (lowerName.endsWith('.docx') && window.mammoth) {
                     const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
                     textarea.value = res.value.trim();
@@ -2799,12 +3226,14 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const content = await page.getTextContent();
-                        text += content.items.map(it => it.str).join(" ") + "\n";
+                        // Zeilenumbrüche aus dem PDF erhalten (sonst wird eine ganze Seite zu einer Lektion)
+                        text += content.items.map(it => it.str + (it.hasEOL ? "\n" : " ")).join("") + "\n";
                     }
                     textarea.value = text.trim();
                 } else if ((lowerName.endsWith('.xls') || lowerName.endsWith('.xlsx')) && window.XLSX) {
                     const wb = XLSX.read(await file.arrayBuffer());
-                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+                    // raw:false → Zeiten als «08:20» statt als Excel-Zahl (0.347…)
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false });
                     textarea.value = rows.filter(r => r && r.length > 0).map(r => r.join(' | ')).join('\n');
                 } else {
                     textarea.value = await file.text();
@@ -2818,7 +3247,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                 rebuildUniversalPreview();
 
                 if (currentImportCategory === 'schedule' && lowerName.endsWith('.pdf')) {
-                    const hasKey = Boolean((localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey || "").trim());
+                    const hasKey = Boolean((geminiApiKey || claudeApiKey || "").trim());
                     if (hasKey) {
                         await analyzeScheduleWithAi();
                         return;
@@ -2986,7 +3415,8 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function extractLessonBlocksFromText(rawText) {
-            const firstLessonMatch = rawText.match(/(?:^|\n)\s*(Lektion\s+1\b)/i);
+            // erlaubt auch Markdown wie «**Lektion 1:**» oder «### Lektion 1»
+            const firstLessonMatch = rawText.match(/(?:^|\n)[\s*#>_]*(Lektion\s+1\b)/i);
             if (firstLessonMatch && typeof firstLessonMatch.index === 'number') {
                 const headerIntro = rawText.slice(0, firstLessonMatch.index).trim();
                 const unitInput = document.getElementById('seqUnitTitle');
@@ -2997,42 +3427,49 @@ Text:\n${raw.slice(0, 12000)}`;
                     }
                 }
                 const bodyFromLektion1 = rawText.slice(firstLessonMatch.index).trim();
-                return bodyFromLektion1.split(/(?=(?:^|\n)\s*Lektion\s+\d+\b)/i).map(b => b.trim()).filter(Boolean);
+                return bodyFromLektion1.split(/(?=\n[\s*#>_]*Lektion\s+\d+\b)/i).map(b => b.trim()).filter(Boolean);
             }
             return rawText.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
         }
 
         function parseLessonBlockStructure(blockText) {
             const lines = blockText.split('\n').map(l => l.trim()).filter(Boolean);
-            const rawFirstLine = lines[0] || "";
+            // Markdown-Zeichen nur für die Erkennung der Überschriften entfernen
+            const plain = (l) => l.replace(/^[\s*#>_]+/, '').replace(/\*\*/g, '').replace(/__/g, '').trim();
+            const rawFirstLine = plain(lines[0] || "");
             const title = rawFirstLine.replace(/^Lektion\s+\d+\s*[:.\-–]\s*/i, '').trim() || rawFirstLine;
-            let einstieg = "";
-            let hauptteilLines = [];
-            let schluss = "";
-            let homework = "";
+
+            const sections = { einstieg: [], hauptteil: [], schluss: [], homework: [] };
+            const headers = [
+                [/^Einstieg\s*:\s*/i, 'einstieg'],
+                [/^Hauptteil\s*:\s*/i, 'hauptteil'],
+                [/^Schluss\s*:\s*/i, 'schluss'],
+                [/^(HA|Hausaufgaben?)\s*:\s*/i, 'homework']
+            ];
+            let current = 'hauptteil';   // Text ohne Überschrift → Hauptteil (wie bisher)
 
             for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (/^Einstieg\s*:/i.test(line)) {
-                    einstieg = line.replace(/^Einstieg\s*:\s*/i, '').trim();
-                } else if (/^Hauptteil\s*:/i.test(line)) {
-                    hauptteilLines.push(line.replace(/^Hauptteil\s*:\s*/i, '').trim());
-                } else if (/^Schluss\s*:/i.test(line)) {
-                    schluss = line.replace(/^Schluss\s*:\s*/i, '').trim();
-                } else if (/^(HA|Hausaufgaben?)\s*:/i.test(line)) {
-                    homework = line.replace(/^(HA|Hausaufgaben?)\s*:\s*/i, '').trim();
+                const p = plain(lines[i]);
+                const hit = headers.find(([re]) => re.test(p));
+                if (hit) {
+                    current = hit[1];
+                    const rest = p.replace(hit[0], '').trim();
+                    if (rest) sections[current].push(rest);
                 } else {
-                    hauptteilLines.push(line);
+                    // Folgezeilen gehören zum zuletzt erkannten Abschnitt (z. B. mehrzeiliger Einstieg)
+                    sections[current].push(lines[i].replace(/\*\*/g, ''));
                 }
             }
 
-            const hauptteil = hauptteilLines.join('\n').trim();
+            const einstieg = sections.einstieg.join('\n').trim();
+            const hauptteil = sections.hauptteil.join('\n').trim();
+            const schluss = sections.schluss.join('\n').trim();
             return {
                 title,
                 einstieg,
                 hauptteil: (!einstieg && !hauptteil && !schluss) ? title : hauptteil,
                 schluss,
-                homework
+                homework: sections.homework.join(' ').trim()
             };
         }
 
@@ -3066,7 +3503,7 @@ Text:\n${raw.slice(0, 12000)}`;
         function collectAllSlotsWithHolidayMarkers(courseVal, startDateStr, minCount) {
             if (!courseVal || !startDateStr) return [];
             const [targetSubject, targetClass, targetTrack] = courseVal.split('|');
-            const startMonday = getMonday(new Date(startDateStr));
+            const startMonday = getMonday(new Date(`${startDateStr}T12:00:00`));
             const items = [];
             const dayShort = ["Mo", "Di", "Mi", "Do", "Fr"];
             let lessonSlotCount = 0;
@@ -3075,6 +3512,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 const mon = new Date(startMonday);
                 mon.setDate(startMonday.getDate() + w * 7);
                 const weekISO = formatDateISO(mon);
+                if (weekISO > schoolYearRange(currentSchoolYear).end) break;   // nicht ins nächste Schuljahr schreiben
                 const kw = getWeekNumber(mon);
 
                 const midWeek = new Date(mon);
@@ -3268,31 +3706,31 @@ Text:\n${raw.slice(0, 12000)}`;
                 const recSlots2 = buildRecommendedSlotsByRhythm(universalAllSlots2, rhythm2);
 
                 universalPreviewItems = blocksToImport.map((block, idx) => {
-                    const slot1 = recSlots1[idx] || recSlots1[recSlots1.length - 1];
-                    const slot2 = recSlots2.length > 0
-                        ? (recSlots2[idx] || recSlots2[recSlots2.length - 1])
-                        : null;
+                    // Kein Rückfall auf den letzten Slot mehr (sonst überschreiben sich überzählige Lektionen)
+                    const slot1 = recSlots1[idx] || null;
+                    const slot2 = courseVal2 ? (recSlots2[idx] || null) : null;
 
-                    const parsed = parseLessonBlockStructure(block);
+                    const fileIndex = currentOffset + idx + 1;
+                    const parsed = { ...parseLessonBlockStructure(block), ...(importEdits[fileIndex] || {}) };
 
                     return {
                         selected: true,
-                        fileIndex: currentOffset + idx + 1,
+                        fileIndex,
                         block,
                         parsed,
                         c1: {
-                            active: true,
+                            active: Boolean(slot1),
                             targetKey: slot1 ? slot1.key : "",
                             existing: slot1 ? slot1.existing : null,
                             hasExisting: slot1 ? slot1.occupied : false,
                             mode: (slot1 && slot1.occupied) ? 'append' : 'replace'
                         },
-                        c2: slot2 ? {
-                            active: true,
-                            targetKey: slot2.key,
-                            existing: slot2.existing,
-                            hasExisting: slot2.occupied,
-                            mode: slot2.occupied ? 'append' : 'replace'
+                        c2: courseVal2 ? {
+                            active: Boolean(slot2),
+                            targetKey: slot2 ? slot2.key : "",
+                            existing: slot2 ? slot2.existing : null,
+                            hasExisting: slot2 ? slot2.occupied : false,
+                            mode: (slot2 && slot2.occupied) ? 'append' : 'replace'
                         } : null
                     };
                 });
@@ -3323,8 +3761,11 @@ Text:\n${raw.slice(0, 12000)}`;
                     autoIdx++;
                 }
                 if (rawParsed.length > 0) {
+                    // Tage/Zeiten sind hier nur geraten → standardmässig nichts übernehmen
                     buildScheduleActionItems(rawParsed);
+                    universalPreviewItems.forEach(it => { it.action = 'skip'; it.selected = false; });
                     renderSchedulePreviewTable();
+                    showToast("Tage/Zeiten nur geschätzt – bitte prüfen oder «Escola-Tabelle mit KI exakt zuordnen» nutzen.");
                 } else {
                     thead.innerHTML = '';
                     tbody.innerHTML = `<tr><td class="py-6 text-center text-slate-600 font-semibold">PDF-Rohtext erkannt – bitte oben rechts auf <strong>«Escola-Tabelle mit KI exakt zuordnen»</strong> klicken.</td></tr>`;
@@ -3353,12 +3794,17 @@ Text:\n${raw.slice(0, 12000)}`;
                     const tObj = getTargetObj(r);
                     if (!tObj) continue;
                     if (tObj.mode === 'skip') cursor++;
-                    const nextSlot = pureSlotsPool[cursor] || pureSlotsPool[pureSlotsPool.length - 1];
+                    const nextSlot = pureSlotsPool[cursor] || null;
                     if (nextSlot) {
                         tObj.targetKey = nextSlot.key;
                         tObj.existing = nextSlot.existing;
                         tObj.hasExisting = nextSlot.occupied;
                         if (tObj.mode !== 'skip') tObj.mode = nextSlot.occupied ? 'append' : 'replace';
+                    } else {
+                        tObj.targetKey = "";
+                        tObj.existing = null;
+                        tObj.hasExisting = false;
+                        tObj.active = false;
                     }
                     cursor++;
                 }
@@ -3379,8 +3825,8 @@ Text:\n${raw.slice(0, 12000)}`;
                     if (!tObj) continue;
                     if (tObj.mode === 'skip') weekCursor++;
 
-                    const targetWeekISO = futureWeeks[weekCursor] || futureWeeks[futureWeeks.length - 1];
-                    const slotsInThatWeek = pureSlotsPool.filter(sl => sl.weekISO === targetWeekISO);
+                    const targetWeekISO = futureWeeks[weekCursor] || null;
+                    const slotsInThatWeek = targetWeekISO ? pureSlotsPool.filter(sl => sl.weekISO === targetWeekISO) : [];
 
                     const chosenSlot =
                         slotsInThatWeek.find(sl => sl.slotId === preferredSlotId) ||
@@ -3392,6 +3838,11 @@ Text:\n${raw.slice(0, 12000)}`;
                         tObj.existing = chosenSlot.existing;
                         tObj.hasExisting = chosenSlot.occupied;
                         if (tObj.mode !== 'skip') tObj.mode = chosenSlot.occupied ? 'append' : 'replace';
+                    } else {
+                        tObj.targetKey = "";
+                        tObj.existing = null;
+                        tObj.hasExisting = false;
+                        tObj.active = false;
                     }
                     weekCursor++;
                 }
@@ -3405,6 +3856,7 @@ Text:\n${raw.slice(0, 12000)}`;
             if (!targetObj || !slotObj) return;
 
             targetObj.targetKey = newTargetKey;
+            targetObj.active = true;
             targetObj.existing = slotObj.existing;
             targetObj.hasExisting = slotObj.occupied;
             if (targetObj.mode !== 'skip') {
@@ -3481,17 +3933,20 @@ Text:\n${raw.slice(0, 12000)}`;
                         </div>
 
                         <select onchange="onSequenceClassTargetChange(${rowIndex}, ${classNum}, this.value)" class="w-full bg-white border ${targetObj.hasExisting ? 'border-amber-400' : 'border-slate-300'} rounded-md px-2 py-1 font-bold text-[11px] text-slate-900">
+                            ${!targetObj.targetKey ? `<option value="" selected>— Kein freier Slot bis Schuljahresende —</option>` : ''}
                             ${allPool.map(sl => {
                                 if (sl.isHolidayMarker) {
-                                    return `<option disabled class="bg-rose-50 text-rose-800 font-bold">${sl.label}</option>`;
+                                    return `<option disabled class="bg-rose-50 text-rose-800 font-bold">${escapeHtml(sl.label)}</option>`;
                                 }
-                                return `<option value="${sl.key}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${sl.label}</option>`;
+                                return `<option value="${escapeHtml(sl.key)}" ${sl.key === targetObj.targetKey ? 'selected' : ''}>${escapeHtml(sl.label)}</option>`;
                             }).join('')}
                         </select>
 
                         ${targetObj.hasExisting
                             ? `<div class="bg-amber-100/95 border border-amber-300 rounded p-1.5 text-[10.5px] text-amber-950 whitespace-pre-line leading-snug"><span class="font-extrabold uppercase text-[9.5px] text-amber-800 block mb-0.5">⚠️ Bereits in dieser Lektion:</span>${escapeHtml(existingSummary)}</div>`
-                            : `<div class="text-[10px] text-emerald-700 font-semibold px-1">✓ Slot ist noch frei</div>`
+                            : (targetObj.targetKey
+                                ? `<div class="text-[10px] text-emerald-700 font-semibold px-1">✓ Slot ist noch frei</div>`
+                                : `<div class="text-[10px] text-rose-700 font-bold px-1">⚠️ Wird nicht importiert – bitte Startdatum/Rhythmus anpassen</div>`)
                         }
                     </div>
                 </td>
@@ -3544,11 +3999,11 @@ Text:\n${raw.slice(0, 12000)}`;
                                 <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-extrabold text-[10px]">Lektion #${it.fileIndex}</span>
                                 <span class="text-[10px] text-slate-400">Direkt anpassbar</span>
                             </div>
-                            <input type="text" value="${escapeHtml(it.parsed.title)}" oninput="universalPreviewItems[${i}].parsed.title = this.value" placeholder="Stundentitel..." class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 font-extrabold text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <input type="text" value="${escapeHtml(it.parsed.title)}" oninput="universalPreviewItems[${i}].parsed.title = this.value; rememberImportEdit(${i})" placeholder="Stundentitel..." class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 font-extrabold text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <textarea rows="3" oninput="updateParsedBodyFromPreview(${i}, this.value)" class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-[11px] text-slate-700 leading-snug focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">${escapeHtml(combinedBodyText)}</textarea>
                             <div class="flex items-center gap-1.5">
                                 <span class="text-[10px] font-extrabold text-sky-800 shrink-0">HA:</span>
-                                <input type="text" value="${escapeHtml(it.parsed.homework || '')}" oninput="universalPreviewItems[${i}].parsed.homework = this.value" placeholder="Keine HA (hier eintragbar)..." class="w-full bg-sky-50/60 border border-sky-200 rounded px-2 py-1 text-[10.5px] font-semibold text-sky-950 focus:bg-white focus:outline-none">
+                                <input type="text" value="${escapeHtml(it.parsed.homework || '')}" oninput="universalPreviewItems[${i}].parsed.homework = this.value; rememberImportEdit(${i})" placeholder="Keine HA (hier eintragbar)..." class="w-full bg-sky-50/60 border border-sky-200 rounded px-2 py-1 text-[10.5px] font-semibold text-sky-950 focus:bg-white focus:outline-none">
                             </div>
                         </td>
                         ${buildClassCellHtml(i, 1, it.c1, universalAllSlots1, 'text-indigo-900')}
@@ -3567,6 +4022,12 @@ Text:\n${raw.slice(0, 12000)}`;
             it.parsed.einstieg = reparsed.einstieg;
             it.parsed.hauptteil = reparsed.hauptteil;
             it.parsed.schluss = reparsed.schluss;
+            rememberImportEdit(rowIdx);
+        }
+
+        function rememberImportEdit(rowIdx) {
+            const it = universalPreviewItems[rowIdx];
+            if (it) importEdits[it.fileIndex] = { ...it.parsed };
         }
 
         function renderSchedulePreviewTable() {
@@ -3637,7 +4098,7 @@ Text:\n${raw.slice(0, 12000)}`;
             tbody.innerHTML = universalPreviewItems.map((it, i) => `
                 <tr class="${it.hasConflict ? 'bg-amber-50/70' : 'bg-white'}">
                     <td class="py-2 px-3"><input type="checkbox" ${it.selected ? 'checked' : ''} onchange="universalPreviewItems[${i}].selected = this.checked" class="rounded text-indigo-600"></td>
-                    <td class="py-2 px-3 font-bold whitespace-nowrap">${formatDateCH(it.start)}${it.end !== it.start ? ` – ${formatDateCH(it.end)}` : ''}</td>
+                    <td class="py-2 px-3 font-bold whitespace-nowrap">${escapeHtml(formatDateCH(it.start))}${it.end !== it.start ? ` – ${escapeHtml(formatDateCH(it.end))}` : ''}</td>
                     <td class="py-2 px-3">
                         <div class="font-semibold text-slate-900">${escapeHtml(it.name)}</div>
                         ${it.hasConflict ? `<div class="text-[10.5px] font-bold text-amber-800 mt-0.5">⚠️ Konflikt: ${escapeHtml(it.conflictText)}</div>` : ''}
@@ -3674,7 +4135,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function writeParsedLessonToTarget(targetObj, parsed, unitTitle, trackLabel, nextTargetKey) {
-            if (!targetObj || !targetObj.active || !targetObj.targetKey) return false;
+            if (!targetObj || !targetObj.active || !targetObj.targetKey || targetObj.mode === 'skip') return false;
             const existing = lessonsStore[targetObj.targetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
 
             const slotId = targetObj.targetKey.split('_')[1];
@@ -3716,6 +4177,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 const sourceDateCH = formatDateCH(targetObj.targetKey.split('_')[0]);
                 const nextLesson = lessonsStore[nextTargetKey] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: unitTitle || "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", homeworkTargetKey: "", link: "", audioClips: [], todos: [] };
                 nextLesson.homeworkDueToday = `${parsed.homework} (aufgegeben am ${sourceDateCH})`;
+                nextLesson.homeworkSourceKey = targetObj.targetKey;
                 if (!nextLesson.unit && unitTitle) nextLesson.unit = unitTitle;
                 lessonsStore[nextTargetKey] = nextLesson;
             }
@@ -3732,7 +4194,16 @@ Text:\n${raw.slice(0, 12000)}`;
                 }
                 activeRows.forEach((it, idx) => {
                     if (it.action === 'replace') {
-                        weeklyTemplate = weeklyTemplate.filter(s => !(Number(s.day) === Number(it.day) && s.start === it.start));
+                        // Bestehenden Slot aktualisieren statt löschen → geplante Lektionen bleiben verknüpft
+                        const existing = weeklyTemplate.find(s => Number(s.day) === Number(it.day) && s.start === it.start);
+                        if (existing) {
+                            Object.assign(existing, {
+                                end: it.end, subject: it.subject, className: it.className,
+                                track: it.track || existing.track || "", room: it.room || existing.room || "C63"
+                            });
+                            weeklyTemplate = weeklyTemplate.filter(s => s === existing || !(Number(s.day) === Number(it.day) && s.start === it.start));
+                            return;
+                        }
                     }
                     weeklyTemplate.push({
                         id: `imp-${Date.now()}-${idx}`,
@@ -3756,33 +4227,65 @@ Text:\n${raw.slice(0, 12000)}`;
             if (chosen.length === 0) return;
 
             if (currentImportCategory === 'sequence') {
+                // Doppelte Ziel-Slots verhindern (sonst überschreiben sich Lektionen gegenseitig)
+                const usedKeys = new Map();
+                for (const row of chosen) {
+                    for (const c of [row.c1, row.c2]) {
+                        if (!c || !c.active || !c.targetKey || c.mode === 'skip') continue;
+                        if (usedKeys.has(c.targetKey)) {
+                            alert(`Der Slot ${formatDateCH(c.targetKey.split('_')[0])} ist doppelt zugewiesen (Lektion #${usedKeys.get(c.targetKey)} und #${row.fileIndex}).\nBitte in der Kontrolltabelle korrigieren.`);
+                            return;
+                        }
+                        usedKeys.set(c.targetKey, row.fileIndex);
+                    }
+                }
                 const unitTitle = document.getElementById('seqUnitTitle').value.trim();
                 const trackLabel = document.getElementById('seqTrackLabel').value.trim();
                 let countWritten = 0;
 
                 chosen.forEach((row, idx) => {
                     const nextRow = chosen[idx + 1];
-                    const nextKey1 = nextRow?.c1?.active ? nextRow.c1.targetKey : "";
-                    const nextKey2 = nextRow?.c2?.active ? nextRow.c2.targetKey : "";
+                    const nextKey1 = (nextRow?.c1?.active && nextRow.c1.mode !== 'skip') ? nextRow.c1.targetKey : "";
+                    const nextKey2 = (nextRow?.c2?.active && nextRow.c2.mode !== 'skip') ? nextRow.c2.targetKey : "";
 
                     if (writeParsedLessonToTarget(row.c1, row.parsed, unitTitle, trackLabel, nextKey1)) countWritten++;
                     if (row.c2 && writeParsedLessonToTarget(row.c2, row.parsed, unitTitle, trackLabel, nextKey2)) countWritten++;
                 });
                 showToast(`${countWritten} Lektions-Einträge (inkl. HA-Verknüpfung) gespeichert!`);
             } else {
+                const blocked = [];
                 chosen.forEach(it => {
-                    calendarEvents.push({ id: it.id, type: it.type, targetClass: it.targetClass || 'ALL', name: it.name, start: it.start, end: it.end });
-                    if (it.type === 'holiday' && it.conflictAction === 'apply_and_bump') {
-                        const targetClasses = (!it.targetClass || it.targetClass === 'ALL') ? getUniqueClasses() : [it.targetClass];
+                    if (!isISODate(it.start)) return;
+                    const end = isISODate(it.end) && it.end >= it.start ? it.end : it.start;
+                    const ev = { id: it.id, type: it.type, targetClass: it.targetClass || 'ALL', name: it.name, start: it.start, end };
+
+                    // Slot-Listen VOR dem Eintragen der Ferien bilden, danach die Lektionen neu verteilen
+                    const plans = [];
+                    if (ev.type === 'holiday' && it.conflictAction === 'apply_and_bump') {
+                        const targetClasses = ev.targetClass === 'ALL' ? getUniqueClasses() : [ev.targetClass];
                         targetClasses.forEach(cls => {
-                            const subjectsForClass = [...new Set(weeklyTemplate.filter(s => s.className.toUpperCase() === cls.toUpperCase()).map(s => s.subject))];
-                            subjectsForClass.forEach(subj => {
-                                bumpCourseLessonsFromDate(subj, cls, "", it.start, "00:00");
+                            const groups = new Set(weeklyTemplate
+                                .filter(s => s.className.toUpperCase() === cls.toUpperCase())
+                                .map(s => `${s.subject}\u0000${(s.track || '').trim().toLowerCase()}\u0000${s.className}`));
+                            groups.forEach(g => {
+                                const [subj, tr, clsExact] = g.split('\u0000');
+                                plans.push({ subj, tr, cls: clsExact, before: courseSlotKeys(subj, clsExact, ev.start, "00:00", tr) });
                             });
                         });
                     }
+
+                    calendarEvents.push(ev);
+
+                    plans.forEach(pl => {
+                        const after = courseSlotKeys(pl.subj, pl.cls, ev.start, "00:00", pl.tr);
+                        if (!reflowLessons(pl.before, after)) blocked.push(`${pl.subj} ${pl.cls}`);
+                    });
                 });
-                showToast(`${chosen.length} Termine übernommen!`);
+                if (blocked.length > 0) {
+                    alert(`Termine übernommen. Diese Kurse wurden NICHT verschoben, weil bis Schuljahresende kein Platz mehr ist:\n${[...new Set(blocked)].join(', ')}`);
+                } else {
+                    showToast(`${chosen.length} Termine übernommen!`);
+                }
             }
 
             closeUniversalImportModal();
@@ -3830,11 +4333,11 @@ Text:\n${raw.slice(0, 12000)}`;
                         <div class="flex items-center justify-between gap-1">
                             <div class="truncate">
                                 <div class="font-extrabold text-slate-900">${escapeHtml(style.label)} ${escapeHtml(s.className)}</div>
-                                <div class="text-[10px] text-slate-500">${s.start}–${s.end}</div>
+                                <div class="text-[10px] text-slate-500">${escapeHtml(s.start)}–${escapeHtml(s.end)}</div>
                             </div>
-                            <button type="button" onclick="deleteScheduleSlot('${s.id}')" class="text-rose-500 hover:bg-rose-50 p-1 rounded font-bold">✕</button>
+                            <button type="button" onclick="deleteScheduleSlot(${jsArg(s.id)})" class="text-rose-500 hover:bg-rose-50 p-1 rounded font-bold">✕</button>
                         </div>
-                        <input type="text" value="${escapeHtml(s.track || '')}" onchange="updateSlotTrackInTemplate('${s.id}', this.value)" placeholder="Gefäss (z. B. Literatur)" class="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[10.5px] font-semibold text-indigo-900">
+                        <input type="text" value="${escapeHtml(s.track || '')}" onchange="updateSlotTrackInTemplate(${jsArg(s.id)}, this.value)" placeholder="Gefäss (z. B. Literatur)" class="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[10.5px] font-semibold text-indigo-900">
                     `;
                     col.appendChild(item);
                 });
@@ -3856,6 +4359,10 @@ Text:\n${raw.slice(0, 12000)}`;
             saveAllState();
         }
         function deleteScheduleSlot(slotId) {
+            const slot = weeklyTemplate.find(s => s.id === slotId);
+            const planned = Object.keys(lessonsStore).filter(k => k.endsWith(`_${slotId}`) && hasLessonContent(lessonsStore[k])).length;
+            const label = slot ? `${slot.subject} ${slot.className} (${slot.start})` : 'diese Lektion';
+            if (!confirm(`${label} aus dem Stundenplan entfernen?${planned > 0 ? `\n\nAchtung: ${planned} geplante Lektion(en) an diesem Slot werden danach nicht mehr angezeigt (sie bleiben im Backup erhalten).` : ''}`)) return;
             weeklyTemplate = weeklyTemplate.filter(s => s.id !== slotId);
             renderManualScheduleEditor();
             renderCalendar();
@@ -3931,6 +4438,15 @@ Text:\n${raw.slice(0, 12000)}`;
             showToast("Allgemeine Pendenz gespeichert!");
         }
 
+        function toggleStandaloneTodoById(id) {
+            const idx = standaloneNotesStore.findIndex(sn => String(sn.id) === String(id));
+            if (idx >= 0) toggleStandaloneTodo(idx);
+        }
+        function deleteStandaloneTodoById(id) {
+            const idx = standaloneNotesStore.findIndex(sn => String(sn.id) === String(id));
+            if (idx >= 0) deleteStandaloneTodo(idx);
+        }
+
         function toggleStandaloneTodo(idx) {
             if (standaloneNotesStore[idx]) {
                 standaloneNotesStore[idx].done = !standaloneNotesStore[idx].done;
@@ -3998,26 +4514,26 @@ Text:\n${raw.slice(0, 12000)}`;
                         return `
                             <div class="border ${item.sn.done ? 'bg-slate-50 border-slate-200 opacity-65' : 'bg-white border-amber-300 shadow-2xs'} rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
                                 <label class="flex items-center gap-3 cursor-pointer flex-1">
-                                    <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodo(${item.snIdx})" class="w-4 h-4 rounded text-indigo-600">
+                                    <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodoById(${jsArg(item.sn.id)})" class="w-4 h-4 rounded text-indigo-600">
                                     <div class="flex flex-col">
                                         <span class="${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'}">${escapeHtml(item.sn.text)}</span>
-                                        <span class="text-[11px] text-amber-800 font-semibold mt-0.5">Allgemeine Pendenz (${item.sn.createdAt || ''})</span>
+                                        <span class="text-[11px] text-amber-800 font-semibold mt-0.5">Allgemeine Pendenz (${escapeHtml(item.sn.createdAt || '')})</span>
                                     </div>
                                 </label>
-                                <button type="button" onclick="deleteStandaloneTodo(${item.snIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
+                                <button type="button" onclick="deleteStandaloneTodoById(${jsArg(item.sn.id)})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
                             </div>`;
                     }
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
                     return `
                         <div class="border ${item.todo.done ? 'bg-slate-50 border-slate-200 opacity-65' : 'bg-white border-amber-200 shadow-2xs'} rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
                             <label class="flex items-center gap-3 cursor-pointer flex-1">
-                                <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo('${item.key}', ${item.todoIdx})" class="w-4 h-4 rounded text-indigo-600">
+                                <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="w-4 h-4 rounded text-indigo-600">
                                 <div class="flex flex-col">
                                     <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'}">${escapeHtml(item.todo.text)}</span>
-                                    <span class="text-[11px] text-slate-500 mt-0.5"><strong>${formatDateCH(item.isoDate)}</strong> (${item.slot.start || ''}) • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
+                                    <span class="text-[11px] text-slate-500 mt-0.5"><strong>${escapeHtml(formatDateCH(item.isoDate))}</strong> (${escapeHtml(item.slot.start || '')}) • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
                                 </div>
                             </label>
-                            <button type="button" onclick="deleteGlobalTodo('${item.key}', ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
+                            <button type="button" onclick="deleteGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-2 py-1">Löschen</button>
                         </div>`;
                 }).join('');
 
@@ -4028,12 +4544,12 @@ Text:\n${raw.slice(0, 12000)}`;
                     return `
                         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 text-xs">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-[11px] font-bold text-slate-600">${formatDateCH(item.isoDate)} • ${item.clip.createdAt || ''}</span>
+                                <span class="text-[11px] font-bold text-slate-600">${escapeHtml(formatDateCH(item.isoDate))} • ${escapeHtml(item.clip.createdAt || '')}</span>
                                 <span class="px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span>
                             </div>
                             <div class="bg-white border border-slate-200/80 rounded-lg p-2.5 text-slate-800 leading-relaxed">${item.clip.transcript ? escapeHtml(item.clip.transcript) : '<span class="italic text-slate-400">Ohne Text-Transkription</span>'}</div>
-                            ${item.clip.audioDataUrl ? `<audio controls src="${item.clip.audioDataUrl}" class="w-full h-7"></audio>` : ''}
-                            ${item.clip.transcript ? `<button type="button" onclick="convertTranscriptToTodo('${item.key}', ${item.clipIdx})" class="self-end px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-[10.5px] font-bold">→ Als Pendenz übernehmen</button>` : ''}
+                            ${safeAudioSrc(item.clip.audioDataUrl) ? `<audio controls src="${safeAudioSrc(item.clip.audioDataUrl)}" class="w-full h-7"></audio>` : ''}
+                            ${item.clip.transcript ? `<button type="button" onclick="convertTranscriptToTodo(${jsArg(item.key)}, ${item.clipIdx})" class="self-end px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-[10.5px] font-bold">→ Als Pendenz übernehmen</button>` : ''}
                         </div>`;
                 }).join('');
         }
@@ -4063,6 +4579,9 @@ Text:\n${raw.slice(0, 12000)}`;
             const startBtn = document.getElementById('startVoiceBtn');
             const stopBtn = document.getElementById('stopVoiceBtn');
             const liveBox = document.getElementById('voiceLivePreview');
+            // Ziel beim Start festhalten: der Clip landet sicher in DIESER Lektion,
+            // auch wenn das Modal vor dem Ende der Verarbeitung geschlossen wird
+            const targetClips = tempAudioClips;
             currentTranscript = "";
             isRecordingActive = true;
             liveBox.innerText = "Mikrofon aktiv – sprich jetzt...";
@@ -4072,11 +4591,12 @@ Text:\n${raw.slice(0, 12000)}`;
 
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SpeechRec) {
-                speechRecognizer = new SpeechRec();
-                speechRecognizer.lang = 'de-CH';
-                speechRecognizer.continuous = true;
-                speechRecognizer.interimResults = true;
-                speechRecognizer.onresult = (event) => {
+                const recognizer = new SpeechRec();
+                speechRecognizer = recognizer;
+                recognizer.lang = 'de-CH';
+                recognizer.continuous = true;
+                recognizer.interimResults = true;
+                recognizer.onresult = (event) => {
                     let interim = "";
                     for (let i = event.resultIndex; i < event.results.length; i++) {
                         if (event.results[i].isFinal) currentTranscript += event.results[i][0].transcript + " ";
@@ -4084,38 +4604,57 @@ Text:\n${raw.slice(0, 12000)}`;
                     }
                     liveBox.innerText = (currentTranscript + interim).trim() || "Höre zu...";
                 };
-                speechRecognizer.onend = () => {
-                    if (isRecordingActive && speechRecognizer) {
-                        try { speechRecognizer.start(); } catch (e) {}
+                recognizer.onerror = (e) => {
+                    // Ohne Berechtigung nicht endlos neu starten
+                    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        if (speechRecognizer === recognizer) speechRecognizer = null;
                     }
                 };
-                try { speechRecognizer.start(); } catch (e) {}
+                recognizer.onend = () => {
+                    if (isRecordingActive && speechRecognizer === recognizer) {
+                        try { recognizer.start(); } catch (e) {}
+                    }
+                };
+                try { recognizer.start(); } catch (e) {}
             } else {
                 liveBox.innerText = "Audioaufnahme läuft (Browser unterstützt keine Live-Spracherkennung – Text unten eintragbar).";
             }
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioChunks = [];
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const finalTranscriptText = currentTranscript.trim() || (liveBox.innerText !== "Mikrofon aktiv – sprich jetzt..." && !liveBox.innerText.startsWith("Audioaufnahme läuft") ? liveBox.innerText.trim() : "");
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const chunks = [];
+                audioChunks = chunks;
+                const rec = new MediaRecorder(stream);
+                mediaRecorder = rec;
+                rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                rec.onstop = () => {
+                    const finalTranscriptText = currentTranscript.trim() || (liveBox.innerText !== "Mikrofon aktiv – sprich jetzt..." && !liveBox.innerText.startsWith("Audioaufnahme läuft") && liveBox.innerText !== "Höre zu..." ? liveBox.innerText.trim() : "");
+                    // Echten Typ verwenden (Safari/iOS nimmt mp4 auf, nicht webm)
+                    const mime = rec.mimeType || (chunks[0] && chunks[0].type) || 'audio/webm';
+                    const blob = new Blob(chunks, { type: mime });
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        tempAudioClips.push({
+                        targetClips.push({
                             id: Date.now(),
                             createdAt: new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }),
                             audioDataUrl: reader.result,
                             transcript: finalTranscriptText
                         });
-                        renderAudioClipsList();
+                        if (tempAudioClips === targetClips) renderAudioClipsList();
+                        // Lektion wurde schon gespeichert (gleiches Array im Store) → Clip nachträglich sichern
+                        if (Object.values(lessonsStore).some(l => l && l.audioClips === targetClips)) {
+                            saveAllState();
+                            if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
+                            showToast("Sprachmemo gespeichert.");
+                        }
                     };
                     reader.readAsDataURL(blob);
                     stream.getTracks().forEach(t => t.stop());
                 };
-                mediaRecorder.start();
+                rec.start();
+                if (!isRecordingActive) {   // Stopp wurde schon gedrückt, während die Freigabe lief
+                    try { rec.stop(); } catch (e) {}
+                }
             } catch (err) {
                 showToast("Mikrofon-Zugriff bitte im Browser erlauben.");
                 stopVoiceMemo();
@@ -4148,8 +4687,8 @@ Text:\n${raw.slice(0, 12000)}`;
             list.innerHTML = tempAudioClips.map((clip, idx) => `
                 <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10.5px] font-bold text-slate-600">Memo (${clip.createdAt})</span>
-                        <audio controls src="${clip.audioDataUrl}" class="h-6 max-w-[155px]"></audio>
+                        <span class="text-[10.5px] font-bold text-slate-600">Memo (${escapeHtml(clip.createdAt)})</span>
+                        <audio controls src="${safeAudioSrc(clip.audioDataUrl)}" class="h-6 max-w-[155px]"></audio>
                         <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 text-[10.5px] font-bold">✕</button>
                     </div>
                     <textarea rows="2" oninput="updateAudioClipTranscript(${idx}, this.value)" placeholder="Transkribierter Text (hier bearbeitbar)..." class="w-full text-[11px] text-slate-800 bg-slate-50 border border-slate-200 rounded p-1.5 focus:bg-white focus:outline-none">${escapeHtml(clip.transcript || '')}</textarea>
@@ -4172,16 +4711,16 @@ Text:\n${raw.slice(0, 12000)}`;
 
         function renderSpecialDaysTable() {
             const tbody = document.getElementById('allSpecialDaysTbody');
-            const sorted = [...calendarEvents].sort((a, b) => a.start.localeCompare(b.start));
+            const sorted = [...calendarEvents].sort((a, b) => String(a.start).localeCompare(String(b.start)));
             tbody.innerHTML = sorted.map(ev => {
                 const clsLabel = !ev.targetClass || ev.targetClass === 'ALL' ? 'Alle Klassen' : ev.targetClass;
                 return `
                     <tr class="hover:bg-slate-50">
-                        <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">${formatDateCH(ev.start)}${ev.end && ev.end !== ev.start ? ` – ${formatDateCH(ev.end)}` : ''}</td>
+                        <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">${escapeHtml(formatDateCH(ev.start))}${ev.end && ev.end !== ev.start ? ` – ${escapeHtml(formatDateCH(ev.end))}` : ''}</td>
                         <td class="py-2 px-3 font-semibold text-slate-900">${escapeHtml(ev.name)}</td>
                         <td class="py-2 px-3 font-bold text-indigo-900">${escapeHtml(clsLabel)}</td>
                         <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold ${ev.type === 'holiday' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}">${ev.type === 'holiday' ? 'Ferien / Blockiert' : 'Spezialtag / Anlass'}</span></td>
-                        <td class="py-2 px-3 text-right"><button type="button" onclick="deleteCalendarEvent('${ev.id}')" class="text-rose-600 hover:underline font-bold">Löschen</button></td>
+                        <td class="py-2 px-3 text-right"><button type="button" onclick="deleteCalendarEvent(${jsArg(ev.id)})" class="text-rose-600 hover:underline font-bold">Löschen</button></td>
                     </tr>
                 `;
             }).join('');
@@ -4194,6 +4733,10 @@ Text:\n${raw.slice(0, 12000)}`;
             const end = document.getElementById('newEventEnd').value || start;
             const name = document.getElementById('newEventName').value.trim();
             if (!start || !name) return;
+            if (end < start) {
+                showToast("«Bis Datum» liegt vor «Von Datum» – bitte korrigieren.");
+                return;
+            }
             calendarEvents.push({ id: `ev-${Date.now()}`, type, targetClass, name, start, end });
             document.getElementById('newEventName').value = "";
             renderSpecialDaysTable();
@@ -4222,7 +4765,8 @@ Text:\n${raw.slice(0, 12000)}`;
                     const endISO = m[4] ? `${m[6]}-${m[5].padStart(2, '0')}-${m[4].padStart(2, '0')}` : startISO;
                     const title = clean.replace(dateRegex, '').replace(/^[:\-–\s]+|[:\-–\s]+$/g, '').trim() || "Schulanlass / Termin";
                     const isHol = /ferien|auffahrt|pfingst|knabenschiessen|sechseläuten|schulfrei|exkursion|lager/i.test(title);
-                    const matchedClass = knownClasses.find(c => new RegExp(`\\b${c}\\b`, 'i').test(title)) || 'ALL';
+                    const escRe = (c) => c.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&');
+                    const matchedClass = knownClasses.find(c => new RegExp('\\b' + escRe(c) + '\\b', 'i').test(title)) || 'ALL';
                     found.push({ id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type: isHol ? 'holiday' : 'special', targetClass: matchedClass, name: title.slice(0, 80), start: startISO, end: endISO });
                 }
             });
@@ -4230,8 +4774,8 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function openSettingsModal() {
-            document.getElementById('settingsGeminiKeyInput').value = localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey;
-            document.getElementById('settingsClaudeKeyInput').value = localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey;
+            document.getElementById('settingsGeminiKeyInput').value = geminiApiKey;
+            document.getElementById('settingsClaudeKeyInput').value = claudeApiKey;
             document.getElementById('privateSyncKeyInput').value = privateSyncKey;
             document.getElementById('apiTestStatusBox').classList.add('hidden');
             document.getElementById('cloudRecoveryResultsBox').classList.add('hidden');
@@ -4249,18 +4793,10 @@ Text:\n${raw.slice(0, 12000)}`;
         function saveSettingsModal() {
             const gKey = document.getElementById('settingsGeminiKeyInput').value.trim();
             const cKey = document.getElementById('settingsClaudeKeyInput').value.trim();
-            const sKey = document.getElementById('privateSyncKeyInput').value.trim();
             geminiApiKey = gKey;
             claudeApiKey = cKey;
-            localStorage.setItem('sekPlaner_geminiKey', gKey);
-            localStorage.setItem('sekPlaner_claudeKey', cKey);
-            localStorage.removeItem('sekPlaner_workingModel');
-            if (sKey.length >= 6) {
-                privateSyncKey = sKey;
-                localStorage.setItem('sekPlaner_privateKey', sKey);
-                connectPrivateFirestoreSync();
-                saveAllState();
-            }
+            saveAccountApiKeys();
+            // Sync-Schlüssel wird aus dem Konto abgeleitet und hier nicht mehr geändert
             closeSettingsModal();
             showToast("Einstellungen gespeichert!");
         }
@@ -4279,16 +4815,17 @@ Text:\n${raw.slice(0, 12000)}`;
 
         async function importFullBackup(event) {
             const file = event.target.files[0];
+            event.target.value = '';
             if (!file) return;
             try {
                 const data = JSON.parse(await file.text());
                 if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
-                if (data.weeklyTemplate) weeklyTemplate = data.weeklyTemplate;
-                if (data.calendarEvents) calendarEvents = data.calendarEvents;
+                if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
+                if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;
                 if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
-                if (data.standaloneNotesStore) standaloneNotesStore = data.standaloneNotesStore;
+                if (Array.isArray(data.standaloneNotesStore)) standaloneNotesStore = data.standaloneNotesStore;
                 saveAllState();
-                renderCalendar();
+                refreshViewsAfterSync();
                 showToast("Backup zusammengeführt & wiederhergestellt!");
             } catch (e) {
                 showToast("Ungültige Backup-Datei.");
@@ -4296,13 +4833,15 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function escapeHtml(str) {
-            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
+        let toastTimer = null;
         function showToast(msg) {
             const t = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             t.classList.remove('opacity-0');
-            setTimeout(() => t.classList.add('opacity-0'), 3000);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.add('opacity-0'), 3000);
         }
     </script>
 </body>
