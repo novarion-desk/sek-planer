@@ -134,7 +134,7 @@
     <!-- ===================================================================== -->
     <!-- APP-CONTAINER                                                         -->
     <!-- ===================================================================== -->
-    <div id="protectedAppContainer" class="hidden flex-1 flex flex-col">
+    <div id="protectedAppContainer" class="hidden flex-1 flex flex-col pb-16 md:pb-0">
 
         <div id="printHeaderBanner" class="hidden border-b-2 border-slate-800 pb-2 mb-3">
             <div class="flex justify-between items-baseline">
@@ -144,7 +144,56 @@
         </div>
 
         <!-- TOP HEADER -->
-        <header class="w-full bg-white border-b border-slate-200/90 py-2.5 px-4 md:px-6 flex flex-wrap justify-between items-center gap-3 sticky top-0 z-30 shadow-2xs">
+        <!-- HANDY: schmale, fixe Kopfzeile -->
+        <div id="mobileTopBar" class="md:hidden sticky top-0 z-30 bg-white border-b border-slate-200 px-2 py-1.5 flex items-center gap-1.5 shadow-2xs no-print">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                <i data-lucide="calendar-days" class="w-4 h-4"></i>
+            </div>
+            <button type="button" onclick="mobileNav(-1)" class="p-2 rounded-lg bg-slate-100 text-slate-700 shrink-0" aria-label="Zurück"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <div id="mobileDateLabel" class="flex-1 min-w-0 text-center font-extrabold text-sm text-slate-900 truncate">–</div>
+            <button type="button" onclick="mobileNav(1)" class="p-2 rounded-lg bg-slate-100 text-slate-700 shrink-0" aria-label="Weiter"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+            <button type="button" onclick="mobileGoToday()" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shrink-0">Heute</button>
+            <button type="button" onclick="openSearchModal()" class="p-2 rounded-lg border border-slate-200 text-slate-600 shrink-0" aria-label="Suchen"><i data-lucide="search" class="w-4 h-4"></i></button>
+            <button type="button" onclick="toggleMobileMenu(event)" class="relative p-2 rounded-lg border border-slate-200 text-slate-600 shrink-0" aria-label="Menü">
+                <i data-lucide="menu" class="w-4 h-4"></i>
+                <span id="syncLedMobile" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400"></span>
+            </button>
+            <div id="mobileMenu" class="hidden absolute right-2 top-full mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-lg p-2 flex flex-col gap-0.5 text-sm z-40" onclick="event.stopPropagation()">
+                <div class="grid grid-cols-2 gap-1 mb-1">
+                    <button type="button" id="mobViewWeek" onclick="setViewMode('week');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Woche</button>
+                    <button type="button" id="mobViewDay" onclick="setViewMode('day');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Tag</button>
+                </div>
+                <button type="button" onclick="closeMobileMenu();openUniversalImportModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-600"></i> Datei / Sequenz</button>
+                <button type="button" onclick="closeMobileMenu();openScheduleEditorModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-500"></i> Stundenplan</button>
+                <button type="button" onclick="closeMobileMenu();printSubstitutePlan()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="printer" class="w-4 h-4 text-slate-500"></i> Stellvertretung drucken</button>
+                <button type="button" onclick="closeMobileMenu();toggleAiSidebar()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="sparkles" class="w-4 h-4 text-purple-600"></i> KI-Chat</button>
+                <label class="flex items-center gap-2 px-2 py-2 rounded-lg"><i data-lucide="calendar-range" class="w-4 h-4 text-slate-500"></i> Schuljahr
+                    <select id="schoolYearSelectMobile" onchange="switchSchoolYear(this.value);closeMobileMenu()" class="ml-auto bg-indigo-50 border border-indigo-200 rounded-lg px-1.5 py-1 font-bold text-indigo-950 text-xs">
+                        <option value="2026/27">2026/27</option>
+                        <option value="2027/28">2027/28</option>
+                        <option value="2028/29">2028/29</option>
+                    </select>
+                </label>
+                <button type="button" onclick="closeMobileMenu();openSettingsModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="settings" class="w-4 h-4 text-emerald-600"></i> Einstellungen &amp; Backup <span id="mobileSyncText" class="ml-auto text-[10px] font-bold text-slate-400"></span></button>
+                <button type="button" onclick="closeMobileMenu();handleFirebaseLogout()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-rose-50 text-rose-700 text-left"><i data-lucide="log-out" class="w-4 h-4"></i> Abmelden</button>
+            </div>
+        </div>
+
+        <!-- HANDY: Reiter unten -->
+        <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 grid grid-cols-3 no-print" style="padding-bottom: env(safe-area-inset-bottom)">
+            <button type="button" id="mobTabPlan" onclick="switchMainTab('plan')" class="flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold text-indigo-700">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i><span>Wochenplan</span>
+            </button>
+            <button type="button" id="mobTabNotes" onclick="switchMainTab('notes')" class="relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold text-slate-500">
+                <i data-lucide="check-square" class="w-5 h-5"></i><span>Notizen</span>
+                <span id="openNotesBadgeMobile" class="hidden absolute top-1 left-1/2 ml-2 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-extrabold">0</span>
+            </button>
+            <button type="button" id="mobTabHolidays" onclick="switchMainTab('holidays')" class="flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold text-slate-500">
+                <i data-lucide="calendar-heart" class="w-5 h-5"></i><span>Jahreskalender</span>
+            </button>
+        </nav>
+
+        <header class="w-full bg-white border-b border-slate-200/90 py-2.5 px-4 md:px-6 hidden md:flex flex-wrap justify-between items-center gap-3 sticky top-0 z-30 shadow-2xs">
             <div class="flex items-center flex-wrap gap-2">
                 <div class="flex items-center gap-2 mr-1">
                     <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
@@ -2119,6 +2168,13 @@ HA: ...</pre>
                 else if (state === 'error') led.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
                 else led.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
             }
+            const ledM = document.getElementById('syncLedMobile');
+            if (ledM) {
+                const c = state === 'ok' ? 'bg-emerald-500' : state === 'error' ? 'bg-rose-500 animate-pulse' : 'bg-amber-400';
+                ledM.className = `absolute top-1 right-1 w-2 h-2 rounded-full ${c}`;
+            }
+            const txtM = document.getElementById('mobileSyncText');
+            if (txtM) txtM.innerText = state === 'ok' ? '● synchron' : state === 'error' ? '● Fehler' : '● verbindet';
             refreshCloudDiagnosticUI();
         }
 
@@ -2799,6 +2855,11 @@ HA: ...</pre>
             const wdWrap = document.getElementById('weekDayToggleWrap');
 
             [wrapper, notesSec, holSec].forEach(s => s.classList.add('hidden'));
+            [['plan', 'mobTabPlan'], ['notes', 'mobTabNotes'], ['holidays', 'mobTabHolidays']].forEach(([t, id]) => {
+                const el = document.getElementById(id);
+                if (el) el.className = `${id === 'mobTabNotes' ? 'relative ' : ''}flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold ${t === tab ? 'text-indigo-700' : 'text-slate-500'}`;
+            });
+            window.scrollTo(0, 0);
             [btnPlan, btnNotes, btnHol].forEach(b => b.className = "px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5");
 
             if (tab === 'plan') {
@@ -2873,6 +2934,48 @@ HA: ...</pre>
         }
 
         let selectedDayIdx = Math.min((new Date().getDay() + 6) % 7, 4);
+
+        // ---------- Handy: Kopfzeile ----------
+        function updateMobileDateLabel() {
+            const el = document.getElementById('mobileDateLabel');
+            if (!el) return;
+            const dayNames = ["Mo", "Di", "Mi", "Do", "Fr"];
+            if (viewMode === 'day') {
+                const d = new Date(currentMonday); d.setDate(currentMonday.getDate() + selectedDayIdx);
+                const isToday = formatDateISO(d) === formatDateISO(new Date());
+                el.innerText = `${dayNames[selectedDayIdx]} ${d.getDate()}.${d.getMonth() + 1}.${isToday ? ' · heute' : ''}`;
+            } else {
+                const fri = new Date(currentMonday); fri.setDate(currentMonday.getDate() + 4);
+                el.innerText = `KW ${getWeekNumber(currentMonday)} · ${currentMonday.getDate()}.${currentMonday.getMonth() + 1}.–${fri.getDate()}.${fri.getMonth() + 1}.`;
+            }
+            const w = document.getElementById('mobViewWeek'), dd = document.getElementById('mobViewDay');
+            if (w && dd) {
+                w.className = `py-1.5 rounded-lg border font-bold text-xs ${viewMode === 'week' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-700'}`;
+                dd.className = `py-1.5 rounded-lg border font-bold text-xs ${viewMode === 'day' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-700'}`;
+            }
+            const sy = document.getElementById('schoolYearSelectMobile');
+            if (sy) sy.value = currentSchoolYear;
+        }
+        function mobileNav(dir) {
+            if (document.getElementById('planWithSidebarWrapper').classList.contains('hidden')) switchMainTab('plan');
+            changeWeek(dir);
+            if (viewMode === 'day' && typeof animateDaySwitch === 'function') animateDaySwitch(dir);
+        }
+        async function mobileGoToday() {
+            closeMobileMenu();
+            if (document.getElementById('planWithSidebarWrapper').classList.contains('hidden')) switchMainTab('plan');
+            await jumpToCurrentWeek();
+            const wd = (new Date().getDay() + 6) % 7;
+            if (wd > 4) { currentMonday.setDate(currentMonday.getDate() + 7); selectedDayIdx = 0; renderCalendar(); }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function toggleMobileMenu(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+            refreshIcons();
+        }
+        function closeMobileMenu() { document.getElementById('mobileMenu')?.classList.add('hidden'); }
+        document.addEventListener('click', () => closeMobileMenu());
 
         function changeWeek(delta) {
             if (viewMode === 'day') {
@@ -3005,6 +3108,7 @@ HA: ...</pre>
         }
 
         function renderCalendar() {
+            updateMobileDateLabel();
             const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
             const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
@@ -5746,6 +5850,8 @@ Text:\n${raw.slice(0, 12000)}`;
             });
             standaloneNotesStore.forEach(sn => { if (!sn.done) count++; });
 
+            const badgeM = document.getElementById('openNotesBadgeMobile');
+            if (badgeM) { badgeM.innerText = count; badgeM.classList.toggle('hidden', count === 0); }
             const badge = document.getElementById('openNotesBadge');
             if (count > 0) {
                 badge.innerText = count;

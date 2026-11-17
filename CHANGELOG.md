@@ -5,6 +5,8 @@
 - Synchronisation pro Lektion: Gleichzeitige Änderungen an verschiedenen Lektionen auf zwei Geräten gehen nicht mehr verloren; Änderungen erscheinen in ca. 1 Sekunde auf dem anderen Gerät.
 - Neu: «Frühere Versionen» in jeder Lektion – vor jeder Änderung wird der alte Stand in der Cloud gesichert (letzte 20 pro Lektion, auf allen Geräten verfügbar), dazu die Tagesstände aus den Cloud-Sicherungen. Vorschau und Wiederherstellen per Klick.
 - Ältere Versionen im Archiv (v6–v13) sperren sich nach der Umstellung selbst, damit sie keine Daten überschreiben.
+## Version 13.1 – 17.11.2026
+- Handy: schmale, fixe Kopfzeile mit Datum, ‹ ›, «Heute», Suche und Menü ☰ (Woche/Tag, Datei/Sequenz, Stundenplan, Stellvertretung, KI-Chat, Schuljahr, Einstellungen, Abmelden). Reiter Wochenplan / Notizen / Jahreskalender unten als Leiste. Computer und Tablet unverändert.
 
 ## Version 13 – 17.11.2026
 - Als App installierbar (Android/Chrome «App installieren», iPhone «Zum Home-Bildschirm»): eigenes Symbol (Planer-Heft), öffnet im Vollbild ohne Adressleiste.
