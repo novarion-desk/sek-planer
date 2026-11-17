@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Sek Planer (ZH) – Unterrichtscockpit</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <!-- Alle Bausteine liegen fest im Repository (vendor/) – keine Abhängigkeit von fremden Servern -->
+    <script src="vendor/lucide.min.js"></script>
+    <script src="vendor/mammoth.browser.min.js"></script>
+    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="vendor/pdf.min.js"></script>
+    <script src="vendor/firebase-app-compat.js"></script>
+    <script src="vendor/firebase-auth-compat.js"></script>
+    <script src="vendor/firebase-firestore-compat.js"></script>
+    <script src="vendor/purify.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -45,6 +45,8 @@
             input[type="text"] { border: none !important; background: transparent !important; }
         }
     </style>
+    <!-- Tailwind nach den eigenen Styles laden: gleiche Reihenfolge wie früher mit dem Tailwind-CDN -->
+    <link rel="stylesheet" href="vendor/tailwind.css">
 </head>
 <body class="bg-[#F4F6FA] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
@@ -203,7 +205,7 @@
                     <span>KI-Chat</span>
                 </button>
 
-                <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="Cloud-Diagnose, API-Key & Backup">
+                <button type="button" id="settingsHeaderBtn" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="Cloud-Diagnose, API-Key & Backup">
                     <span id="syncLed" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                     <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                 </button>
@@ -650,7 +652,7 @@
             </div>
 
             <div class="flex-1 min-h-0 p-4 md:p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                     <button type="button" id="impTypeBtn_sequence" onclick="setImportCategory('sequence')" class="p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-indigo-950 text-xs">1. Lektionenablauf / Sequenz</span>
                         <span class="text-[10.5px] text-indigo-800">Word / Text / NotebookLM-Output mit Wochenrhythmus &amp; Standard-Slot auf 1 oder 2 Klassen verteilen</span>
@@ -662,6 +664,10 @@
                     <button type="button" id="impTypeBtn_holidays" onclick="setImportCategory('holidays')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">3. Ferien &amp; Spezialtage</span>
                         <span class="text-[10.5px] text-slate-600">Jahresprogramm / Exkursionen inkl. Konflikt-Prüfung mit bestehenden Lektionen</span>
+                    </button>
+                    <button type="button" id="impTypeBtn_chalk" onclick="setImportCategory('chalk')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
+                        <span class="font-extrabold text-slate-900 text-xs">4. Chalk-Planboard (PDF)</span>
+                        <span class="text-[10.5px] text-slate-600">Wochenexport «Week Day By Day» – auch mehrere PDFs auf einmal. Ohne KI, ordnet jede Lektion ihrem Slot zu</span>
                     </button>
                 </div>
 
@@ -683,7 +689,7 @@
                                     <div class="text-[10.5px] text-slate-500">Unterstützt: .xlsx, .xls, .pdf, .docx, .txt</div>
                                 </div>
                             </div>
-                            <input type="file" id="universalFileInput" accept=".pdf,.docx,.xls,.xlsx,.csv,.txt" onclick="event.stopPropagation()" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                            <input type="file" id="universalFileInput" multiple accept=".pdf,.docx,.xls,.xlsx,.csv,.txt" onclick="event.stopPropagation()" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                         </div>
 
                         <details class="lg:col-span-5 bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-[11px]">
@@ -766,6 +772,17 @@ HA: ...</pre>
                             <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                             <span>Escola-Tabelle mit KI exakt zuordnen</span>
                         </button>
+                    </div>
+
+                    <div id="importOptionsChalk" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-sky-50/70 p-2.5 rounded-lg">
+                        <span id="chalkImportSummary" class="text-[11px] font-semibold text-sky-950">Chalk: «Week Day By Day» als PDF exportieren und hier hochladen (mehrere Wochen gleichzeitig möglich). Text ohne Abschnitt landet im Hauptteil, gelbe Tagesbalken in der Tagesnotiz.</span>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <label class="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                                <input type="checkbox" id="chalkAddMissingSlots" checked class="rounded text-sky-600">
+                                <span>Fehlende Stundenplan-Lektionen ergänzen</span>
+                            </label>
+                            <button type="button" onclick="resetChalkImport()" class="px-2.5 py-1 bg-white border border-sky-200 text-sky-900 rounded-lg font-bold text-[11px]">Liste leeren</button>
+                        </div>
                     </div>
 
                     <div id="importOptionsHolidays" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-amber-50/60 p-2.5 rounded-lg">
@@ -966,9 +983,15 @@ HA: ...</pre>
                 <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3.5 flex flex-col gap-2 text-emerald-950">
                     <div class="font-extrabold flex items-center gap-1.5">
                         <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
-                        <span>Lokale Backup-Datei (.json)</span>
+                        <span>Sicherungen &amp; Backup</span>
                     </div>
-                    <div class="flex gap-2 pt-1">
+                    <div id="backupStatusBox" class="bg-white border border-emerald-200 rounded-lg p-2.5 text-[11px] font-semibold leading-relaxed whitespace-pre-line">Lade Sicherungsstand…</div>
+
+                    <div class="font-bold text-[11px] pt-1">Automatische Cloud-Sicherungen (täglich, 30 Tage):</div>
+                    <div id="cloudBackupList" class="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scroll text-[11px]"></div>
+
+                    <div class="font-bold text-[11px] pt-1">Backup-Datei (.json, alle Schuljahre):</div>
+                    <div class="flex gap-2">
                         <button type="button" onclick="exportFullBackup()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">
                             Backup herunterladen (.json)
                         </button>
@@ -1043,7 +1066,7 @@ HA: ...</pre>
             e.preventDefault();
             const importModal = document.getElementById('universalImportModal');
             if (importModal && !importModal.classList.contains('hidden') && e.dataTransfer?.files?.length > 0) {
-                processUploadedFile(e.dataTransfer.files[0]);
+                processUploadedFiles(e.dataTransfer.files);
             }
         }, false);
 
@@ -1774,6 +1797,7 @@ HA: ...</pre>
             openaiApiKey = localStorage.getItem(accountStorageName('openaiKey')) || '';
             const storedPref = localStorage.getItem(accountStorageName('preferredAi'));
             preferredAi = AI_PROVIDERS.includes(storedPref) ? storedPref : 'gemini';
+            lastManualExportAt = localStorage.getItem(accountStorageName('lastManualExport')) || '';
             // Einmalige Übernahme der bisher gerätweit gespeicherten Schlüssel – nur für den Hauptaccount
             const legacyG = localStorage.getItem('sekPlaner_geminiKey');
             const legacyC = localStorage.getItem('sekPlaner_claudeKey');
@@ -1792,6 +1816,11 @@ HA: ...</pre>
                         if (typeof d.claudeKey === 'string' && d.claudeKey) claudeApiKey = d.claudeKey;
                         if (typeof d.openaiKey === 'string' && d.openaiKey) openaiApiKey = d.openaiKey;
                         if (AI_PROVIDERS.includes(d.preferredAi)) preferredAi = d.preferredAi;
+                        if (typeof d.lastManualExportAt === 'string' && d.lastManualExportAt > (lastManualExportAt || '')) {
+                            lastManualExportAt = d.lastManualExportAt;
+                            try { localStorage.setItem(accountStorageName('lastManualExport'), lastManualExportAt); } catch (e) {}
+                        }
+                        refreshBackupStatusUI();
                     } else if (geminiApiKey || claudeApiKey || openaiApiKey) {
                         migrated = true;   // lokal vorhandene Schlüssel in die Cloud übernehmen
                     }
@@ -1824,7 +1853,7 @@ HA: ...</pre>
                 openaiKey: openaiApiKey,
                 preferredAi,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(err => showToast(`KI-Schlüssel nur lokal gespeichert (${err.code || err.message})`));
+            }, { merge: true }).catch(err => showToast(`KI-Schlüssel nur lokal gespeichert (${err.code || err.message})`));
         }
         let currentSchoolYear = localStorage.getItem('sekPlaner_schoolYear') || '2026/27';
 
@@ -2269,6 +2298,11 @@ HA: ...</pre>
                 cloudReady = true;
                 persistLocal();
                 if (needsPush) saveAllState(); else storeBaseline();
+                if (firstLoad) {
+                    maybeCreateDailyCloudBackup();
+                    refreshBackupStatusUI();
+                    maybeShowBackupReminder();
+                }
                 updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
                 refreshViewsAfterSync();
             }, (err) => {
@@ -2326,7 +2360,7 @@ HA: ...</pre>
                 // 2. Abfrage nach ownerUid oder ownerEmail
                 try {
                     const qSnap = await db.collection('sekSync').where('ownerUid', '==', currentUser.uid).get();
-                    qSnap.forEach(d => { if (!d.id.startsWith('apikeys_')) foundDocs.set(d.id, d.data()); });
+                    qSnap.forEach(d => { if (!/^(apikeys_|backup_|backupindex_)/.test(d.id)) foundDocs.set(d.id, d.data()); });
                 } catch (e) {}
 
 
@@ -3485,6 +3519,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
             document.getElementById('seqStartDate').value = formatDateISO(currentMonday);
             importEdits = {};
+            chalkImport = { files: [], days: {}, lessons: [] };
             document.getElementById('autoDateDetectedHint').classList.add('hidden');
             populatePreferredSlotsDropdown(1);
             populatePreferredSlotsDropdown(2);
@@ -3533,7 +3568,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
         function setImportCategory(cat) {
             currentImportCategory = cat;
-            ['sequence', 'schedule', 'holidays'].forEach(c => {
+            ['sequence', 'schedule', 'holidays', 'chalk'].forEach(c => {
                 const btn = document.getElementById(`impTypeBtn_${c}`);
                 btn.className = c === cat
                     ? "p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left flex flex-col gap-1 transition-all"
@@ -3542,6 +3577,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             document.getElementById('importOptionsSequence').classList.toggle('hidden', cat !== 'sequence');
             document.getElementById('importOptionsSchedule').classList.toggle('hidden', cat !== 'schedule');
             document.getElementById('importOptionsHolidays').classList.toggle('hidden', cat !== 'holidays');
+            document.getElementById('importOptionsChalk').classList.toggle('hidden', cat !== 'chalk');
             document.getElementById('formatSeqAiBtn').classList.toggle('hidden', cat !== 'sequence');
             rebuildUniversalPreview();
         }
@@ -3597,16 +3633,24 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             event.stopPropagation();
             const box = document.getElementById('dropZoneBox');
             box.classList.remove('border-indigo-600', 'bg-indigo-50');
-            const file = event.dataTransfer?.files?.[0];
-            if (file) {
-                processUploadedFile(file);
-            }
+            const files = event.dataTransfer?.files;
+            if (files && files.length > 0) processUploadedFiles(files);
         }
 
         function handleUniversalFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) processUploadedFile(file);
+            const files = [...(event.target.files || [])];
             event.target.value = '';   // gleiche Datei erneut wählbar
+            if (files.length > 0) processUploadedFiles(files);
+        }
+
+        // Chalk: alle PDFs nacheinander einlesen; sonst nur die erste Datei (wie bisher)
+        async function processUploadedFiles(fileList) {
+            const files = [...fileList];
+            if (currentImportCategory === 'chalk') {
+                for (const f of files) await importChalkPdfFile(f);
+                return;
+            }
+            if (files[0]) await processUploadedFile(files[0]);
         }
 
         async function processUploadedFile(file) {
@@ -3615,6 +3659,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             if (dropLabel) dropLabel.innerText = `Geladen: ${file.name}`;
             showToast(`Lese ${file.name} ein...`);
 
+            if (currentImportCategory === 'chalk') { await importChalkPdfFile(file); return; }
             try {
                 const lowerName = file.name.toLowerCase();
                 if (lowerName.endsWith('.doc')) {
@@ -3625,7 +3670,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                     const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
                     textarea.value = res.value.trim();
                 } else if (lowerName.endsWith('.pdf') && window.pdfjsLib) {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
                     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
                     let text = "";
                     for (let i = 1; i <= pdf.numPages; i++) {
@@ -4080,6 +4125,12 @@ Text:\n${raw.slice(0, 12000)}`;
             const tbody = document.getElementById('universalPreviewTbody');
             universalPreviewItems = [];
 
+            if (currentImportCategory === 'chalk') {
+                buildChalkPreviewItems();
+                renderChalkPreviewTable();
+                return;
+            }
+
             if (!rawText) {
                 thead.innerHTML = '';
                 tbody.innerHTML = `<tr><td class="py-6 text-center text-slate-400 italic">Bitte oben eine Datei hochladen oder Text einfügen.</td></tr>`;
@@ -4530,9 +4581,309 @@ Text:\n${raw.slice(0, 12000)}`;
             `).join('');
         }
 
+        // =========================================================================
+        // 8B. CHALK-PLANBOARD-IMPORT (PDF «Week Day By Day», ohne KI)
+        // =========================================================================
+        let chalkImport = { files: [], days: {}, lessons: [] };
+
+        // Text einer PDF zeilenweise in Lesereihenfolge (oben → unten) auslesen
+        async function extractPdfLines(pdf) {
+            const lines = [];
+            for (let p = 1; p <= pdf.numPages; p++) {
+                const page = await pdf.getPage(p);
+                const content = await page.getTextContent();
+                const rows = [];
+                content.items.forEach(it => {
+                    if (!it.str || !it.str.trim()) return;
+                    const x = it.transform[4], y = it.transform[5];
+                    let row = rows.find(r => Math.abs(r.y - y) < 3);
+                    if (!row) { row = { y, parts: [] }; rows.push(row); }
+                    row.parts.push({ x, str: it.str, w: it.width || 0 });
+                });
+                rows.sort((a, b) => b.y - a.y);
+                rows.forEach(r => {
+                    r.parts.sort((a, b) => a.x - b.x);
+                    let text = '';
+                    let lastEnd = null;
+                    r.parts.forEach(pt => {
+                        if (lastEnd !== null && pt.x - lastEnd > 1.5 && !text.endsWith(' ')) text += ' ';
+                        text += pt.str;
+                        lastEnd = pt.x + pt.w;
+                    });
+                    lines.push({ page: p, text: text.replace(/\s+/g, ' ').trim() });
+                });
+            }
+            return lines;
+        }
+
+        function parseChalkLines(lines) {
+            const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+                januar: 1, februar: 2, 'märz': 3, mai: 5, juni: 6, juli: 7, oktober: 10, dezember: 12 };
+            const to24 = (t) => {
+                const m = t.trim().toLowerCase().match(/^(\d{1,2}):(\d{2})\s*([ap])\.?m\.?$/);
+                if (!m) { const m2 = t.trim().match(/^(\d{1,2}):(\d{2})$/); return m2 ? `${m2[1].padStart(2, '0')}:${m2[2]}` : null; }
+                let h = parseInt(m[1], 10) % 12;
+                if (m[3] === 'p') h += 12;
+                return `${String(h).padStart(2, '0')}:${m[2]}`;
+            };
+            const dateRe = /^Lessons\s*for\s*(?:[A-Za-zäöü]+),\s*([A-Za-zäöü]+)\s+(\d{1,2}),\s*(\d{4})/i;
+            const headerRe = /^(.*?)\s*(\d{1,2}:\d{2}\s*[ap]\.?m\.?)\s*[-–]\s*(\d{1,2}:\d{2}\s*[ap]\.?m\.?)\s*$/i;
+            const footerRe = /(Page\s+\d+\s+of\s+\d+|^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\.\s+\w+\.?\s+\d{1,2},\s+\d{4}(\s*\(Day\s+\w+\))?$)/i;
+
+            const days = [];
+            const lessons = [];
+            let day = null, current = null, expectCourse = false;
+            for (const { text } of lines) {
+                if (!text) continue;
+                const dm = text.match(dateRe);
+                if (dm && MONTHS[dm[1].toLowerCase()]) {
+                    const mo = MONTHS[dm[1].toLowerCase()];
+                    day = { iso: `${dm[3]}-${String(mo).padStart(2, '0')}-${dm[2].padStart(2, '0')}`, notes: [] };
+                    days.push(day);
+                    current = null;
+                    expectCourse = false;
+                    continue;
+                }
+                if (footerRe.test(text)) continue;
+                const hm = text.match(headerRe);
+                if (hm && day && to24(hm[2])) {
+                    current = { iso: day.iso, start: to24(hm[2]), end: to24(hm[3]), title: hm[1].trim(), course: '', lines: [] };
+                    lessons.push(current);
+                    expectCourse = true;
+                    continue;
+                }
+                if (expectCourse && current) { current.course = text; expectCourse = false; continue; }
+                if (current) current.lines.push(text);
+                else if (day) day.notes.push(text);
+            }
+            return { days, lessons };
+        }
+
+        // «Deutsch 2Aa» → { subject: 'D', className: 'S2Aa' }
+        function chalkCourseToSlotInfo(course) {
+            const c = String(course || '').trim();
+            if (/^english\s+conversation/i.test(c)) return { subject: 'Econ', className: 'Wahlfach E' };
+            const parts = c.split(/\s+/);
+            let className = '';
+            if (parts.length > 1 && /^\d[A-Za-z]+$/.test(parts[parts.length - 1])) className = 'S' + parts.pop();
+            const name = parts.join(' ').toLowerCase();
+            const map = [
+                [/^deutsch/, 'D'], [/^englisch|^english/, 'E'], [/^musik/, 'Mu'], [/^geschichte|^geografie|^geographie|^rzg/, 'RZG'],
+                [/^rke|^religion/, 'RKE'], [/^bo$|^berufliche/, 'BO'], [/^medien|^informatik|^m\s*&\s*i|^mi$/, 'MI']
+            ];
+            const hit = map.find(([re]) => re.test(name));
+            return { subject: hit ? hit[1] : parts.join(' '), className: className || 'Wahlfach' };
+        }
+
+        function findTemplateSlotForChalk(iso, start, info) {
+            const dayIdx = (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
+            if (dayIdx > 4) return { slot: null, timeMismatch: false };
+            const sameCourse = (s) => s.subject.toUpperCase() === info.subject.toUpperCase() && s.className.toUpperCase() === info.className.toUpperCase();
+            const atTime = weeklyTemplate.filter(s => Number(s.day) === dayIdx && s.start === start);
+            const exact = atTime.find(sameCourse);
+            if (exact) return { slot: exact, timeMismatch: false };
+            // Gleicher Kurs am selben Tag, aber andere Zeit (z. B. Stundenplan-Änderung)
+            const sameDay = weeklyTemplate.filter(s => Number(s.day) === dayIdx && sameCourse(s));
+            if (sameDay.length === 1) return { slot: sameDay[0], timeMismatch: true };
+            if (atTime.length === 1) return { slot: atTime[0], timeMismatch: false, courseMismatch: true };
+            return { slot: null, timeMismatch: false };
+        }
+
+        async function importChalkPdfFile(file) {
+            const dropLabel = document.getElementById('dropZoneLabel');
+            if (!/\.pdf$/i.test(file.name)) { showToast(`${file.name}: Bitte den Chalk-Export als PDF hochladen.`); return; }
+            if (!window.pdfjsLib) { showToast("PDF-Leser nicht geladen."); return; }
+            showToast(`Lese ${file.name} ein...`);
+            try {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+                const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+                const { days, lessons } = parseChalkLines(await extractPdfLines(pdf));
+                if (lessons.length === 0) { showToast(`${file.name}: Keine Chalk-Lektionen erkannt.`); return; }
+                days.forEach(d => { chalkImport.days[d.iso] = d.notes; });
+                lessons.forEach(l => {
+                    // Gleiche Lektion (z. B. Datei doppelt hochgeladen) ersetzen statt verdoppeln
+                    const idx = chalkImport.lessons.findIndex(x => x.iso === l.iso && x.start === l.start && x.course === l.course);
+                    const entry = { ...l, content: l.lines.join('\n') };
+                    if (idx >= 0) chalkImport.lessons[idx] = entry; else chalkImport.lessons.push(entry);
+                });
+                chalkImport.lessons.sort((a, b) => (a.iso + a.start).localeCompare(b.iso + b.start));
+                if (!chalkImport.files.includes(file.name)) chalkImport.files.push(file.name);
+                if (dropLabel) dropLabel.innerText = `Geladen: ${chalkImport.files.join(', ')}`;
+                document.getElementById('universalRawTextarea').value =
+                    `Chalk-Import: ${chalkImport.files.length} Datei(en), ${chalkImport.lessons.length} Lektionen, ${Object.keys(chalkImport.days).length} Tage`;
+                rebuildUniversalPreview();
+                showToast(`${lessons.length} Lektionen aus ${file.name} erkannt!`);
+            } catch (e) {
+                showToast(`${file.name} konnte nicht gelesen werden: ${e.message}`);
+            }
+        }
+
+        function resetChalkImport() {
+            chalkImport = { files: [], days: {}, lessons: [] };
+            document.getElementById('universalRawTextarea').value = '';
+            document.getElementById('dropZoneLabel').innerText = 'Datei hierher ziehen (Drag & Drop) oder klicken';
+            rebuildUniversalPreview();
+        }
+
+        function buildChalkPreviewItems() {
+            const { start: syStart, end: syEnd } = schoolYearRange(currentSchoolYear);
+            universalPreviewItems = chalkImport.lessons.map(l => {
+                const info = l.userInfo || chalkCourseToSlotInfo(l.course);
+                const { slot, timeMismatch, courseMismatch } = findTemplateSlotForChalk(l.iso, l.start, info);
+                const key = slot ? `${l.iso}_${slot.id}` : '';
+                const existing = key ? lessonsStore[key] : null;
+                const outOfYear = l.iso < syStart || l.iso > syEnd;
+                const isEmpty = !l.content.trim() && (!l.title || /^untitled lesson$/i.test(l.title));
+                const firstLine = (l.content.split('\n')[0] || '').trim();
+                const alreadyThere = Boolean(existing && firstLine && htmlToPlainText(existing.hauptteil || '').includes(firstLine));
+                let mode = l.userMode;
+                if (!mode) mode = alreadyThere ? 'skip' : (hasLessonContent(existing) ? 'append' : 'replace');
+                const selected = l.userSelected !== undefined ? l.userSelected : (!outOfYear && !isEmpty && !alreadyThere);
+                return { lesson: l, info, slot, key, existing, timeMismatch, courseMismatch, outOfYear, isEmpty, alreadyThere, mode, selected };
+            });
+        }
+
+        function renderChalkPreviewTable() {
+            const thead = document.getElementById('universalPreviewThead');
+            const tbody = document.getElementById('universalPreviewTbody');
+            const dayShort = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+            const summary = document.getElementById('chalkImportSummary');
+            if (chalkImport.lessons.length === 0) {
+                thead.innerHTML = '';
+                tbody.innerHTML = `<tr><td class="py-6 text-center text-slate-400 italic">Bitte oben eine oder mehrere Chalk-PDFs hochladen.</td></tr>`;
+                return;
+            }
+            const unmatched = universalPreviewItems.filter(it => !it.slot && !it.outOfYear).length;
+            summary.innerText = `${chalkImport.files.length} Datei(en) • ${universalPreviewItems.length} Lektionen • ${universalPreviewItems.filter(i => i.selected).length} ausgewählt` +
+                (unmatched ? ` • ${unmatched} ohne Stundenplan-Slot` : '');
+
+            thead.innerHTML = `<tr>
+                <th class="py-2 px-2.5 w-9">Wahl</th>
+                <th class="py-2 px-2.5 w-36">Datum &amp; Zeit</th>
+                <th class="py-2 px-2.5 w-56">Chalk → Stundenplan</th>
+                <th class="py-2 px-3 min-w-[320px]">Inhalt (direkt anpassbar – landet im Hauptteil)</th>
+                <th class="py-2 px-2.5 w-44">Aktion</th>
+            </tr>`;
+
+            let lastIso = null;
+            const rows = [];
+            universalPreviewItems.forEach((it, i) => {
+                const l = it.lesson;
+                if (l.iso !== lastIso) {
+                    lastIso = l.iso;
+                    const notes = chalkImport.days[l.iso] || [];
+                    const d = new Date(`${l.iso}T12:00:00`);
+                    rows.push(`<tr class="bg-slate-100/90 border-y border-slate-200"><td colspan="5" class="py-1 px-3 text-[10.5px] font-extrabold text-slate-600 uppercase tracking-wide">
+                        📅 ${dayShort[d.getDay()]}, ${escapeHtml(formatDateCH(l.iso))}${notes.length ? ` <span class="normal-case font-bold text-amber-800">• Tagesnotiz: ${escapeHtml(notes.join(' · '))}</span>` : ''}</td></tr>`);
+                }
+                let slotInfo;
+                if (it.outOfYear) slotInfo = `<span class="text-rose-700 font-bold">⚠️ Gehört nicht zum Schuljahr ${escapeHtml(currentSchoolYear)}</span>`;
+                else if (it.slot) {
+                    const st = getStyleForSlot(it.slot.subject, it.slot.className);
+                    slotInfo = `<span class="font-bold text-emerald-800">✓ ${escapeHtml(st.label)} ${escapeHtml(it.slot.className)} (${escapeHtml(it.slot.start)})</span>` +
+                        (it.timeMismatch ? `<div class="text-[10px] text-amber-800 font-semibold">Zeit im Stundenplan weicht ab</div>` : '') +
+                        (it.courseMismatch ? `<div class="text-[10px] text-amber-800 font-semibold">⚠️ Stundenplan hat hier ein anderes Fach</div>` : '');
+                } else {
+                    slotInfo = `<span class="font-bold text-amber-800">＋ Neuer Slot: ${escapeHtml(it.info.subject)} ${escapeHtml(it.info.className)}</span><div class="text-[10px] text-slate-500">wird beim Übernehmen im Stundenplan ergänzt</div>`;
+                }
+                const existingNote = it.alreadyThere
+                    ? `<div class="text-[10px] text-slate-500 font-semibold mt-0.5">Schon importiert</div>`
+                    : (hasLessonContent(it.existing) ? `<div class="text-[10px] text-amber-800 font-semibold mt-0.5">Slot enthält bereits Inhalt</div>` : '');
+                rows.push(`<tr class="${it.selected ? 'bg-white' : 'bg-slate-50 opacity-60'} align-top">
+                    <td class="py-2 px-2.5"><input type="checkbox" ${it.selected ? 'checked' : ''} onchange="chalkSetField(${i}, 'userSelected', this.checked)" class="rounded text-indigo-600 mt-1"></td>
+                    <td class="py-2 px-2.5 whitespace-nowrap font-bold text-slate-800">${escapeHtml(l.start || '')}–${escapeHtml(l.end || '')}<div class="text-[10px] font-semibold text-slate-500">${escapeHtml(l.course)}</div></td>
+                    <td class="py-2 px-2.5 text-[11px]">${slotInfo}</td>
+                    <td class="py-2 px-3"><textarea rows="${Math.min(6, Math.max(2, l.content.split('\n').length))}" oninput="chalkSetField(${i}, 'content', this.value, true)" class="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-[11px] text-slate-700 leading-snug focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="(leer)">${escapeHtml(l.content)}</textarea></td>
+                    <td class="py-2 px-2.5">
+                        <select onchange="chalkSetField(${i}, 'userMode', this.value)" class="w-full bg-white border border-slate-300 rounded px-2 py-1 font-bold text-[11px]">
+                            <option value="replace" ${it.mode === 'replace' ? 'selected' : ''}>${hasLessonContent(it.existing) ? '🔄 Ersetzen' : '✓ Einsetzen'}</option>
+                            <option value="append" ${it.mode === 'append' ? 'selected' : ''}>➕ Dazufügen</option>
+                            <option value="skip" ${it.mode === 'skip' ? 'selected' : ''}>⏭️ Nicht übernehmen</option>
+                        </select>
+                        ${existingNote}
+                    </td>
+                </tr>`);
+            });
+            tbody.innerHTML = rows.join('');
+        }
+
+        function chalkSetField(i, field, value, silent = false) {
+            const it = universalPreviewItems[i];
+            if (!it) return;
+            it.lesson[field] = value;
+            if (field === 'userMode' && value === 'skip') it.lesson.userSelected = false;
+            if (field === 'userMode' && value !== 'skip' && it.lesson.userSelected === undefined) it.lesson.userSelected = true;
+            if (silent) return;   // beim Tippen nicht neu zeichnen (Cursor bleibt)
+            buildChalkPreviewItems();
+            renderChalkPreviewTable();
+        }
+
+        function applyChalkImport() {
+            buildChalkPreviewItems();
+            const chosen = universalPreviewItems.filter(it => it.selected && it.mode !== 'skip' && !it.outOfYear);
+            const addMissing = document.getElementById('chalkAddMissingSlots').checked;
+            let slotsAdded = 0;
+
+            // 1) Fehlende Slots ergänzen (z. B. Basketball) – unabhängig davon, ob die Lektion Inhalt hat
+            if (addMissing) {
+                universalPreviewItems.filter(it => !it.slot && !it.outOfYear).forEach((it, idx) => {
+                    const dayIdx = (new Date(`${it.lesson.iso}T12:00:00`).getDay() + 6) % 7;
+                    if (dayIdx > 4) return;
+                    let slot = weeklyTemplate.find(s => Number(s.day) === dayIdx && s.start === it.lesson.start &&
+                        s.subject === it.info.subject && s.className === it.info.className);
+                    if (!slot) {
+                        slot = { id: `chalk-${Date.now()}-${idx}`, day: dayIdx, start: it.lesson.start, end: it.lesson.end || it.lesson.start,
+                                 subject: it.info.subject, className: it.info.className, track: "", room: "C63" };
+                        weeklyTemplate.push(slot);
+                        slotsAdded++;
+                    }
+                    it.slot = slot;
+                    it.key = `${it.lesson.iso}_${slot.id}`;
+                });
+            }
+
+            // 2) Lektionen schreiben
+            let written = 0;
+            chosen.forEach(it => {
+                if (!it.slot) return;
+                const key = `${it.lesson.iso}_${it.slot.id}`;
+                const title = /^untitled lesson$/i.test(it.lesson.title || '') ? '' : (it.lesson.title || '');
+                const content = (it.lesson.content || '').trim();
+                if (!content && !title) return;
+                const parsed = parseLessonBlockStructure(`Lektion 1: ${title || '-'}\n${content}`);
+                parsed.title = title;
+                if (!content) parsed.hauptteil = '';
+                if (writeParsedLessonToTarget({ active: true, targetKey: key, mode: it.mode === 'append' ? 'append' : 'replace' }, parsed, '', '', '')) written++;
+            });
+
+            // 3) Tagesnotizen (gelbe Balken in Chalk)
+            let notesAdded = 0;
+            Object.entries(chalkImport.days).forEach(([iso, notes]) => {
+                const { start, end } = schoolYearRange(currentSchoolYear);
+                if (iso < start || iso > end || !notes.length) return;
+                const text = notes.join(' · ');
+                const existingNote = dayNotesStore[iso] || '';
+                if (existingNote.includes(text)) return;
+                dayNotesStore[iso] = existingNote ? `${existingNote} · ${text}` : text;
+                notesAdded++;
+            });
+
+            closeUniversalImportModal();
+            renderCalendar();
+            saveAllState();
+            showToast(`Chalk-Import: ${written} Lektionen, ${notesAdded} Tagesnotizen${slotsAdded ? `, ${slotsAdded} neue Stundenplan-Slots` : ''} übernommen!`);
+            chalkImport = { files: [], days: {}, lessons: [] };
+        }
+
         function toggleAllUniversalItems(state) {
             if (currentImportCategory === 'schedule') {
                 setAllScheduleActions(state ? 'add' : 'skip');
+                return;
+            }
+            if (currentImportCategory === 'chalk') {
+                universalPreviewItems.forEach(it => { if (!it.outOfYear) it.lesson.userSelected = state; });
+                buildChalkPreviewItems();
+                renderChalkPreviewTable();
                 return;
             }
             universalPreviewItems.forEach(it => it.selected = state);
@@ -4591,6 +4942,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function applyUniversalImportSelection() {
+            if (currentImportCategory === 'chalk') { applyChalkImport(); return; }
             if (currentImportCategory === 'schedule') {
                 const activeRows = universalPreviewItems.filter(it => it.action === 'add' || it.action === 'replace');
                 if (activeRows.length === 0) {
@@ -5242,6 +5594,8 @@ Text:\n${raw.slice(0, 12000)}`;
             document.getElementById('apiTestStatusBox').classList.add('hidden');
             document.getElementById('cloudRecoveryResultsBox').classList.add('hidden');
             refreshCloudDiagnosticUI();
+            refreshBackupStatusUI();
+            renderCloudBackupList();
             const modalEl = document.getElementById('settingsModal');
             modalEl.classList.remove('hidden');
             modalEl.scrollTop = 0;
@@ -5267,16 +5621,228 @@ Text:\n${raw.slice(0, 12000)}`;
             showToast("Einstellungen gespeichert!");
         }
 
-        function exportFullBackup() {
-            const payload = { schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(), weeklyTemplate, calendarEvents, dayNotesStore, lessonsStore, standaloneNotesStore };
+        // =========================================================================
+        // 11. SICHERUNGEN: tägliche Cloud-Sicherung, Sicherungsstand, Erinnerung
+        // =========================================================================
+        const CLOUD_BACKUP_DAYS = 30;
+
+        async function gzipToBase64(str) {
+            if (!window.CompressionStream) return { enc: 'json', data: str };
+            const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+            const buf = new Uint8Array(await new Response(stream).arrayBuffer());
+            let bin = '';
+            for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+            return { enc: 'gzip-b64', data: btoa(bin) };
+        }
+        async function base64GunzipToString(enc, data) {
+            if (enc === 'json') return data;
+            const bin = atob(data);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+            return await new Response(stream).text();
+        }
+
+        function currentStateSnapshot() {
+            return JSON.parse(JSON.stringify({ lessonsStore, weeklyTemplate, calendarEvents, dayNotesStore, standaloneNotesStore }, dropVolatileFields));
+        }
+        function backupIndexDocId(docId) { return `backupindex_${docId}`; }
+
+        // Legt eine komprimierte Sicherung in Firestore ab und führt die Liste (Index) nach
+        async function createCloudBackup(label = 'daily') {
+            if (!db || !currentUser || !privateSyncKey) return false;
+            const docId = getActiveDocId();
+            const now = new Date();
+            const today = formatDateISO(now);
+            const id = label === 'daily' ? `backup_${docId}_${today}` : `backup_${docId}_${today}_${label}_${now.getTime()}`;
+            const state = currentStateSnapshot();
+            const { enc, data } = await gzipToBase64(JSON.stringify(state));
+            if (data.length > 1000000) {
+                updateSyncIndicator('error', 'Cloud-Sicherung zu gross – bitte Backup-Datei herunterladen!', docId);
+                return false;
+            }
+            const entry = { id, date: today, time: now.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }), label,
+                            lessons: Object.keys(state.lessonsStore || {}).length, kb: Math.round(data.length / 1024) };
+            await db.collection('sekSync').doc(id).set({
+                ownerUid: currentUser.uid, kind: 'backup', parentDoc: docId, schoolYear: currentSchoolYear,
+                date: today, label, enc, data, lessons: entry.lessons, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // Index aktualisieren und alte Sicherungen (> 30 Tage) entfernen
+            const idxRef = db.collection('sekSync').doc(backupIndexDocId(docId));
+            const idxSnap = await idxRef.get();
+            let entries = idxSnap.exists && Array.isArray(idxSnap.data().entries) ? idxSnap.data().entries : [];
+            entries = entries.filter(e => e.id !== id);
+            entries.unshift(entry);
+            const cutoff = new Date(now);
+            cutoff.setDate(cutoff.getDate() - CLOUD_BACKUP_DAYS);
+            const cutoffISO = formatDateISO(cutoff);
+            const tooOld = entries.filter(e => e.date < cutoffISO);
+            entries = entries.filter(e => e.date >= cutoffISO).slice(0, 60);
+            await idxRef.set({ ownerUid: currentUser.uid, kind: 'backupindex', parentDoc: docId, entries, lastBackupAt: now.toISOString() });
+            for (const old of tooOld) {
+                try { await db.collection('sekSync').doc(old.id).delete(); } catch (e) {}
+            }
+            try { localStorage.setItem(accountStorageName(`lastCloudBackup_${docId}`), now.toISOString()); } catch (e) {}
+            return true;
+        }
+
+        // Einmal pro Tag (beim ersten Laden) – sichert den Stand VOR den heutigen Änderungen
+        async function maybeCreateDailyCloudBackup() {
+            if (!db || !currentUser) return;
+            const docId = getActiveDocId();
+            const last = localStorage.getItem(accountStorageName(`lastCloudBackup_${docId}`)) || '';
+            if (last.slice(0, 10) === formatDateISO(new Date())) return;
+            try {
+                const idxSnap = await db.collection('sekSync').doc(backupIndexDocId(docId)).get();
+                const entries = idxSnap.exists ? (idxSnap.data().entries || []) : [];
+                if (entries.some(e => e.date === formatDateISO(new Date()) && e.label === 'daily')) {
+                    localStorage.setItem(accountStorageName(`lastCloudBackup_${docId}`), new Date().toISOString());
+                    return;
+                }
+                await createCloudBackup('daily');
+            } catch (e) {
+                console.warn('Tägliche Cloud-Sicherung fehlgeschlagen:', e);
+            }
+            refreshBackupStatusUI();
+        }
+
+        async function renderCloudBackupList() {
+            const list = document.getElementById('cloudBackupList');
+            if (!list) return;
+            if (!db || !currentUser) { list.innerHTML = ''; return; }
+            list.innerHTML = `<div class="text-slate-500 italic">Lade Liste…</div>`;
+            try {
+                const idxSnap = await db.collection('sekSync').doc(backupIndexDocId(getActiveDocId())).get();
+                const entries = idxSnap.exists ? (idxSnap.data().entries || []) : [];
+                if (entries.length === 0) {
+                    list.innerHTML = `<div class="text-slate-500 italic">Noch keine Cloud-Sicherung vorhanden (wird beim nächsten Öffnen der App angelegt).</div>`;
+                    return;
+                }
+                list.innerHTML = entries.map(e => `
+                    <div class="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5">
+                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : escapeHtml(e.label)}</span>` : ''}</span>
+                        <button type="button" onclick="restoreCloudBackup(${jsArg(e.id)})" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10.5px] shrink-0">Wiederherstellen</button>
+                    </div>`).join('');
+            } catch (err) {
+                list.innerHTML = `<div class="text-rose-700 font-semibold">Liste nicht lesbar: ${escapeHtml(err.code || err.message)}</div>`;
+            }
+        }
+
+        async function restoreCloudBackup(id) {
+            if (!confirm('Diesen Stand wiederherstellen?\n\nDer aktuelle Stand wird vorher automatisch als Sicherung abgelegt – du kannst also jederzeit zurück.')) return;
+            try {
+                const snap = await db.collection('sekSync').doc(id).get();
+                if (!snap.exists) { showToast('Sicherung nicht gefunden.'); return; }
+                const d = snap.data();
+                const state = JSON.parse(await base64GunzipToString(d.enc, d.data));
+                await createCloudBackup('before-restore');   // Sicherheitsnetz
+                lessonsStore = state.lessonsStore || {};
+                if (Array.isArray(state.weeklyTemplate) && state.weeklyTemplate.length) weeklyTemplate = state.weeklyTemplate;
+                calendarEvents = Array.isArray(state.calendarEvents) ? state.calendarEvents : [];
+                dayNotesStore = state.dayNotesStore || {};
+                standaloneNotesStore = Array.isArray(state.standaloneNotesStore) ? state.standaloneNotesStore : [];
+                saveAllState();
+                await flushPendingSave();
+                refreshViewsAfterSync();
+                renderCloudBackupList();
+                refreshBackupStatusUI();
+                showToast(`Stand vom ${formatDateCH(d.date)} wiederhergestellt!`);
+            } catch (err) {
+                showToast('Wiederherstellung fehlgeschlagen: ' + (err.code || err.message));
+            }
+        }
+
+        // ---------- Sicherungsstand & Erinnerung ----------
+        let lastManualExportAt = '';
+        function daysSince(iso) {
+            if (!iso) return Infinity;
+            return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+        }
+        function describeAgo(iso) {
+            const d = daysSince(iso);
+            if (d === Infinity) return 'noch nie';
+            if (d === 0) return `heute, ${new Date(iso).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+            if (d === 1) return 'gestern';
+            return `vor ${d} Tagen (${new Date(iso).toLocaleDateString('de-CH')})`;
+        }
+        function refreshBackupStatusUI() {
+            const box = document.getElementById('backupStatusBox');
+            const lastCloud = currentUser && privateSyncKey ? localStorage.getItem(accountStorageName(`lastCloudBackup_${getActiveDocId()}`)) : '';
+            const manualDays = daysSince(lastManualExportAt);
+            if (box) {
+                box.innerText = `☁️ Letzte automatische Cloud-Sicherung: ${describeAgo(lastCloud)}\n` +
+                    `💾 Letzte Backup-Datei (manuell): ${describeAgo(lastManualExportAt)}` +
+                    (manualDays > 7 ? `\n⚠️ Bitte jetzt eine Backup-Datei herunterladen (empfohlen: 1× pro Woche).` : '');
+                box.className = `bg-white border ${manualDays > 7 ? 'border-amber-300 text-amber-950' : 'border-emerald-200'} rounded-lg p-2.5 text-[11px] font-semibold leading-relaxed whitespace-pre-line`;
+            }
+            const btn = document.getElementById('settingsHeaderBtn');
+            if (btn) {
+                btn.classList.toggle('ring-2', manualDays > 7);
+                btn.classList.toggle('ring-amber-400', manualDays > 7);
+                btn.title = `Cloud-Diagnose, API-Key & Backup – letzte Backup-Datei: ${describeAgo(lastManualExportAt)}`;
+            }
+        }
+        function maybeShowBackupReminder() {
+            if (daysSince(lastManualExportAt) <= 7) return;
+            const key = accountStorageName('backupReminderShown');
+            const today = formatDateISO(new Date());
+            if (localStorage.getItem(key) === today) return;
+            try { localStorage.setItem(key, today); } catch (e) {}
+            setTimeout(() => showToast(`💾 Letzte Backup-Datei: ${describeAgo(lastManualExportAt)} – bitte unter ⚙️ herunterladen.`), 2500);
+        }
+        function recordManualExport() {
+            lastManualExportAt = new Date().toISOString();
+            try { localStorage.setItem(accountStorageName('lastManualExport'), lastManualExportAt); } catch (e) {}
+            if (db && currentUser) {
+                db.collection('sekSync').doc(apiKeysDocId()).set({ ownerUid: currentUser.uid, lastManualExportAt }, { merge: true }).catch(() => {});
+            }
+            refreshBackupStatusUI();
+        }
+
+        // Backup-Datei mit ALLEN Schuljahren (aktuelles aus dem Speicher, die anderen aus der Cloud bzw. lokal)
+        async function exportFullBackup() {
+            await flushPendingSave();
+            const years = {};
+            years[currentSchoolYear] = currentStateSnapshot();
+            const allYears = [...document.getElementById('schoolYearSelect').options].map(o => o.value);
+            const baseId = "planer_" + btoa(unescape(encodeURIComponent(privateSyncKey))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
+            for (const sy of allYears) {
+                if (sy === currentSchoolYear) continue;
+                const docId = sy === '2026/27' ? baseId : `${baseId}_${sy.replace('/', '_')}`;
+                let data = null;
+                try {
+                    if (db && currentUser) {
+                        const snap = await db.collection('sekSync').doc(docId).get();
+                        if (snap.exists) data = snap.data();
+                    }
+                } catch (e) {}
+                if (!data) {
+                    const p = `sekPlaner_${currentUser ? currentUser.uid.slice(0, 8) : 'local'}_${sy.replace('/', '_')}`;
+                    try {
+                        const l = localStorage.getItem(`${p}_lessons`);
+                        if (l) data = { lessonsStore: JSON.parse(l), weeklyTemplate: JSON.parse(localStorage.getItem(`${p}_template`) || '[]'),
+                            calendarEvents: JSON.parse(localStorage.getItem(`${p}_events`) || '[]'), dayNotesStore: JSON.parse(localStorage.getItem(`${p}_dayNotes`) || '{}'),
+                            standaloneNotesStore: JSON.parse(localStorage.getItem(`${p}_standaloneNotes`) || '[]') };
+                    } catch (e) {}
+                }
+                if (data && data.lessonsStore && Object.keys(data.lessonsStore).length > 0) {
+                    years[sy] = { lessonsStore: data.lessonsStore, weeklyTemplate: data.weeklyTemplate || [], calendarEvents: data.calendarEvents || [],
+                                  dayNotesStore: data.dayNotesStore || {}, standaloneNotesStore: data.standaloneNotesStore || [] };
+                }
+            }
+            const cur = years[currentSchoolYear];
+            // Oberste Ebene = aktuelles Schuljahr (kompatibel mit älteren Versionen), plus alle Jahre unter «years»
+            const payload = { format: 'sekplaner-backup-v2', schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(),
+                              account: currentUser ? currentUser.email : '', ...cur, years };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Sek_Planer_${currentSchoolYear.replace('/', '-')}_Backup_${formatDateISO(new Date())}.json`;
+            a.download = `Sek_Planer_Backup_${formatDateISO(new Date())}.json`;
             a.click();
-            URL.revokeObjectURL(url);
-            showToast("Komplett-Backup heruntergeladen!");
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+            recordManualExport();
+            showToast(`Backup heruntergeladen (${Object.keys(years).length} Schuljahr${Object.keys(years).length > 1 ? 'e' : ''})!`);
         }
 
         async function importFullBackup(event) {
@@ -5284,7 +5850,12 @@ Text:\n${raw.slice(0, 12000)}`;
             event.target.value = '';
             if (!file) return;
             try {
-                const data = JSON.parse(await file.text());
+                let data = JSON.parse(await file.text());
+                // Neues Format mit allen Schuljahren: Daten des aktuell gewählten Jahres verwenden
+                if (data && data.years && typeof data.years === 'object') {
+                    if (data.years[currentSchoolYear]) data = data.years[currentSchoolYear];
+                    else { showToast(`Die Backup-Datei enthält kein Schuljahr ${currentSchoolYear}. Bitte oben das passende Schuljahr wählen.`); return; }
+                }
                 if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
                 if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
                 if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;
