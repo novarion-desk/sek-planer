@@ -926,8 +926,19 @@ HA: ...</pre>
                         </button>
                     </div>
 
-                    <label class="font-extrabold text-purple-950 mt-1">Optional: Claude API-Key als Ausweich-KI</label>
+                    <label class="font-extrabold text-purple-950 mt-1">Optional: Claude API-Key</label>
                     <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (optional)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+
+                    <label class="font-extrabold text-emerald-950 mt-1">Optional: ChatGPT (OpenAI) API-Key</label>
+                    <input type="password" id="settingsOpenAiKeyInput" placeholder="sk-... (optional)" class="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+
+                    <label class="font-extrabold text-indigo-950 mt-1">Welche KI zuerst verwenden?</label>
+                    <select id="settingsPreferredAi" class="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 font-bold text-slate-900">
+                        <option value="gemini">Gemini zuerst</option>
+                        <option value="claude">Claude zuerst</option>
+                        <option value="openai">ChatGPT zuerst</option>
+                    </select>
+                    <span class="text-[10.5px] text-indigo-800/90 leading-snug">Funktioniert die erste KI nicht (überlastet, kein Guthaben), springen automatisch die anderen hinterlegten KIs ein. Sprachmemos transkribiert immer Gemini.</span>
 
                     <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold whitespace-pre-line"></div>
 
@@ -938,7 +949,15 @@ HA: ...</pre>
                             <div><strong>2.</strong> Klicke auf <strong>«API-Schlüssel erstellen»</strong> (Create API key) und kopiere den Schlüssel (beginnt mit <span class="font-mono">AIza…</span>).</div>
                             <div><strong>3.</strong> Füge ihn oben ins Feld <strong>«Google Gemini API-Key»</strong> ein und klicke auf <strong>«KI testen»</strong>.</div>
                             <div><strong>4.</strong> Erscheint ✅, klicke unten auf <strong>«Einstellungen speichern»</strong>.</div>
-                            <div class="text-indigo-800/90">Der Schlüssel gehört zu deinem Konto: Er ist nach dem Anmelden auf all deinen Geräten verfügbar, andere Konten sehen ihn nicht. Optional kannst du zusätzlich einen Claude-Schlüssel (console.anthropic.com → API Keys) als Ausweich-KI eintragen.</div>
+                            <div class="pt-1 font-extrabold">Optional: Claude-Schlüssel als zweite KI</div>
+                            <div><strong>1.</strong> Öffne <strong>platform.claude.com</strong> (Claude Console) und melde dich an. Das ist ein separates Konto neben dem Claude-Abo – die API wird über vorausbezahltes Guthaben abgerechnet.</div>
+                            <div><strong>2.</strong> Unter <strong>Billing</strong> Guthaben aufladen, dann unter <strong>API Keys</strong> → <strong>«Create Key»</strong> und den Schlüssel kopieren (beginnt mit <span class="font-mono">sk-ant-…</span>).</div>
+                            <div><strong>3.</strong> Ins Feld «Claude API-Key» einfügen, oben wählen, welche KI zuerst verwendet wird, dann <strong>«KI testen»</strong> und <strong>«Einstellungen speichern»</strong>.</div>
+                            <div class="pt-1 font-extrabold">Optional: ChatGPT-Schlüssel</div>
+                            <div><strong>1.</strong> Öffne <strong>platform.openai.com</strong> und melde dich an. Auch hier gilt: Das ChatGPT-Abo enthält keine API – sie wird separat über Guthaben abgerechnet.</div>
+                            <div><strong>2.</strong> Unter <strong>Billing</strong> Guthaben aufladen, dann unter <strong>API keys</strong> → <strong>«Create new secret key»</strong> und den Schlüssel kopieren (beginnt mit <span class="font-mono">sk-…</span>).</div>
+                            <div><strong>3.</strong> Ins Feld «ChatGPT (OpenAI) API-Key» einfügen, dann <strong>«KI testen»</strong> und <strong>«Einstellungen speichern»</strong>.</div>
+                            <div class="text-indigo-800/90">Die Schlüssel gehören zu deinem Konto: Sie sind nach dem Anmelden auf all deinen Geräten verfügbar, andere Konten sehen sie nicht.</div>
                         </div>
                     </details>
                 </div>
@@ -1095,15 +1114,24 @@ HA: ...</pre>
 
         function sortGeminiModels(names) {
             const ver = (n) => parseFloat((n.match(/^gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1]);
-            // Neueste zuerst; «Flash» vor «Flash-Lite» (bessere Qualität, mit niedriger Denkstufe trotzdem schnell)
-            return [...new Set(names)].sort((a, b) => (a.includes('-lite') - b.includes('-lite')) || (ver(b) - ver(a)));
+            const byVer = (a, b) => ver(b) - ver(a);
+            const uniq = [...new Set(names)];
+            const flash = uniq.filter(n => !n.includes('-lite')).sort(byVer);
+            const lite = uniq.filter(n => n.includes('-lite')).sort(byVer);
+            // Abwechselnd Flash / Flash-Lite: Flash-Lite ist schneller und meist weniger ausgelastet
+            const out = [];
+            for (let i = 0; i < Math.max(flash.length, lite.length); i++) {
+                if (flash[i]) out.push(flash[i]);
+                if (lite[i]) out.push(lite[i]);
+            }
+            return out;
         }
 
         async function getGeminiModels(key) {
             const cacheName = accountStorageName('geminiModels');
             try {
                 const cached = JSON.parse(localStorage.getItem(cacheName) || 'null');
-                if (cached && Array.isArray(cached.models) && cached.models.length && Date.now() - cached.at < 24 * 3600 * 1000) return cached.models;
+                if (cached && cached.v === 2 && Array.isArray(cached.models) && cached.models.length && Date.now() - cached.at < 12 * 3600 * 1000) return cached.models;
             } catch (e) {}
             try {
                 const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', { headers: { 'x-goog-api-key': key } }, 8000);
@@ -1111,10 +1139,11 @@ HA: ...</pre>
                 const names = (data.models || [])
                     .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
                     .map(m => String(m.name || '').replace(/^models\//, ''))
-                    .filter(n => /^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(n));   // nur stabile Flash-Modelle (keine Preview/TTS/Live)
+                    .filter(n => /^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(n))   // nur stabile Flash-Modelle (keine Preview/TTS/Live)
+                    .filter(n => parseFloat((n.match(/^gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1]) >= 3);   // 2.x ist abgeschaltet
                 if (names.length > 0) {
                     const models = sortGeminiModels(names);
-                    try { localStorage.setItem(cacheName, JSON.stringify({ at: Date.now(), models })); } catch (e) {}
+                    try { localStorage.setItem(cacheName, JSON.stringify({ v: 2, at: Date.now(), models })); } catch (e) {}
                     return models;
                 }
             } catch (e) {}
@@ -1135,100 +1164,361 @@ HA: ...</pre>
 
         function extractGeminiText(data) {
             const parts = data?.candidates?.[0]?.content?.parts || [];
-            return parts.filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('').trim();
+            return parts.filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('');
         }
+
+        // Ein Modell per Streaming abfragen. claimWin() wird beim ersten Textstück aufgerufen.
+        async function geminiStreamAttempt(model, key, basePayload, ctrl, claimWin, onChunk, firstTokenMs) {
+            const payloads = [
+                { ...basePayload, generationConfig: { thinkingConfig: { thinkingLevel: "low" } } },   // schnell
+                basePayload                                                                          // falls Feld unbekannt
+            ];
+            for (let attempt = 0; attempt < payloads.length; attempt++) {
+                let firstTimer = setTimeout(() => ctrl.abort('first'), firstTokenMs);
+                const totalTimer = setTimeout(() => ctrl.abort('total'), 120000);
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                        body: JSON.stringify(payloads[attempt]),
+                        signal: ctrl.signal
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        const msg = data?.error?.message || `HTTP ${res.status}`;
+                        if (attempt === 0 && res.status === 400 && /thinking/i.test(msg)) continue;
+                        const e = new Error(msg);
+                        e.status = res.status;
+                        throw e;
+                    }
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let text = '';
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        let nl;
+                        while ((nl = buffer.indexOf('\n')) >= 0) {
+                            const line = buffer.slice(0, nl).trim();
+                            buffer = buffer.slice(nl + 1);
+                            if (!line.startsWith('data:')) continue;
+                            let obj;
+                            try { obj = JSON.parse(line.slice(5)); } catch (e) { continue; }
+                            if (obj.error) throw new Error(obj.error.message || 'Fehler im Antwort-Stream');
+                            const piece = extractGeminiText(obj);
+                            if (!piece) continue;
+                            if (!text) {
+                                clearTimeout(firstTimer);
+                                if (!claimWin()) { ctrl.abort('lost'); return ''; }
+                            }
+                            text += piece;
+                            if (onChunk) { try { onChunk(text); } catch (e) {} }
+                        }
+                    }
+                    if (!text.trim()) throw new Error('Leere Antwort');
+                    return text.trim();
+                } catch (e) {
+                    if (ctrl.signal.aborted) {
+                        const reason = ctrl.signal.reason;
+                        if (reason === 'first') throw new Error(`keine Antwort innert ${Math.round(firstTokenMs / 1000)} s (überlastet)`);
+                        if (reason === 'total') throw new Error('Zeitüberschreitung');
+                        const ab = new Error('abgebrochen');
+                        ab.aborted = true;
+                        throw ab;
+                    }
+                    throw e;
+                } finally {
+                    clearTimeout(firstTimer);
+                    clearTimeout(totalTimer);
+                }
+            }
+            throw new Error('Keine Antwort');
+        }
+
+        // Mehrere Modelle gestaffelt starten; das erste, das antwortet, gewinnt – die anderen werden abgebrochen.
+        function raceGeminiModels(models, key, basePayload, onChunk, errorDetails, { firstTokenMs = 12000, staggerMs = 3500 } = {}) {
+            return new Promise((resolve, reject) => {
+                let started = 0, finished = 0, winner = -1, settled = false, keyInvalid = false;
+                const ctrls = [];
+                const timers = [];
+                const done = (fn) => { if (settled) return; settled = true; timers.forEach(clearTimeout); fn(); };
+                const checkAllFailed = () => {
+                    if (!settled && winner === -1 && finished === started && (started >= models.length || keyInvalid)) {
+                        done(() => reject(new Error('alle Modelle fehlgeschlagen')));
+                    }
+                };
+                const startNext = () => {
+                    if (settled || winner !== -1 || keyInvalid || started >= models.length) return;
+                    const idx = started++;
+                    const model = models[idx];
+                    const ctrl = new AbortController();
+                    ctrls[idx] = ctrl;
+                    const claimWin = () => {
+                        if (winner !== -1 && winner !== idx) return false;
+                        winner = idx;
+                        timers.forEach(clearTimeout);
+                        ctrls.forEach((c, i) => { if (c && i !== idx) c.abort('lost'); });
+                        return true;
+                    };
+                    geminiStreamAttempt(model, key, basePayload, ctrl, claimWin, onChunk, firstTokenMs)
+                        .then(text => {
+                            finished++;
+                            if (winner === idx && text) done(() => resolve({ text, model }));
+                            else checkAllFailed();
+                        })
+                        .catch(err => {
+                            finished++;
+                            if (err.aborted && winner !== idx) { checkAllFailed(); return; }
+                            const msg = err.message || String(err);
+                            if (err.status === 404 || /no longer available|not found/i.test(msg)) forgetGeminiModel(model);
+                            if (err.status === 401 || err.status === 403 || /API key/i.test(msg)) {
+                                keyInvalid = true;
+                                if (!errorDetails.some(e => e.startsWith('[Gemini]'))) errorDetails.push(`[Gemini] ${msg}`);
+                            } else {
+                                errorDetails.push(`[${model}] ${msg}`);
+                            }
+                            if (winner === idx) winner = -1;   // Abbruch mitten im Text → nächstes Modell
+                            startNext();
+                            checkAllFailed();
+                        });
+                };
+                startNext();
+                for (let i = 1; i < Math.min(models.length, 3); i++) timers.push(setTimeout(startNext, staggerMs * i));
+            });
+        }
+
+        // options.extraParts: zusätzliche Gemini-Parts (z. B. Audio); options.geminiOnly: kein Claude-Fallback
+        // Claude per Streaming abfragen (Text erscheint Wort für Wort)
+        async function claudeStreamAttempt(model, cKey, systemPrompt, messages, onChunk) {
+            const ctrl = new AbortController();
+            const firstTimer = setTimeout(() => ctrl.abort('first'), 20000);
+            const totalTimer = setTimeout(() => ctrl.abort('total'), 120000);
+            try {
+                const res = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": cKey,
+                        "anthropic-version": "2023-06-01",
+                        "anthropic-dangerous-direct-browser-access": "true"
+                    },
+                    body: JSON.stringify({ model, max_tokens: 2500, system: systemPrompt, messages, stream: true }),
+                    signal: ctrl.signal
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    const e = new Error(data?.error?.message || `HTTP ${res.status}`);
+                    e.status = res.status;
+                    throw e;
+                }
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '', text = '';
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    let nl;
+                    while ((nl = buffer.indexOf('\n')) >= 0) {
+                        const line = buffer.slice(0, nl).trim();
+                        buffer = buffer.slice(nl + 1);
+                        if (!line.startsWith('data:')) continue;
+                        let obj;
+                        try { obj = JSON.parse(line.slice(5)); } catch (e) { continue; }
+                        if (obj.type === 'error') throw new Error(obj.error?.message || 'Fehler im Antwort-Stream');
+                        if (obj.type === 'content_block_delta' && obj.delta?.type === 'text_delta' && obj.delta.text) {
+                            if (!text) clearTimeout(firstTimer);
+                            text += obj.delta.text;
+                            if (onChunk) { try { onChunk(text); } catch (e) {} }
+                        }
+                    }
+                }
+                if (!text.trim()) throw new Error('Leere Antwort');
+                return text.trim();
+            } catch (e) {
+                if (ctrl.signal.aborted) throw new Error(ctrl.signal.reason === 'first' ? 'keine Antwort innert 20 s' : 'Zeitüberschreitung');
+                throw e;
+            } finally {
+                clearTimeout(firstTimer);
+                clearTimeout(totalTimer);
+            }
+        }
+
+        // ---------- ChatGPT (OpenAI) ----------
+        // Fallback-Liste (Stand Nov. 2026, developers.openai.com/api/docs/models); «chat-latest» zeigt immer aufs aktuelle ChatGPT-Modell
+        const OPENAI_FALLBACK_MODELS = ["gpt-6.1-terra", "gpt-6-astra", "gpt-5.6-terra", "chat-latest"];
+
+        async function getOpenAiModels(oKey) {
+            const cacheName = accountStorageName('openaiModels');
+            try {
+                const cached = JSON.parse(localStorage.getItem(cacheName) || 'null');
+                if (cached && Array.isArray(cached.models) && cached.models.length && Date.now() - cached.at < 12 * 3600 * 1000) return cached.models;
+            } catch (e) {}
+            try {
+                const res = await fetchWithTimeout('https://api.openai.com/v1/models', { headers: { 'Authorization': `Bearer ${oKey}` } }, 8000);
+                if (res.ok) {
+                    const data = await res.json();
+                    const ids = new Set((data.data || []).map(m => m.id));
+                    const models = OPENAI_FALLBACK_MODELS.filter(m => ids.has(m));
+                    if (models.length > 0) {
+                        try { localStorage.setItem(cacheName, JSON.stringify({ at: Date.now(), models })); } catch (e) {}
+                        return models;
+                    }
+                }
+            } catch (e) {}
+            return OPENAI_FALLBACK_MODELS;
+        }
+
+        const openAiNoReasoning = new Set();   // Modelle, die «reasoning_effort» nicht kennen
+        async function openAiStreamAttempt(model, oKey, systemPrompt, messages, onChunk) {
+            const bodies = [
+                { model, messages: [{ role: 'system', content: systemPrompt }, ...messages], stream: true, max_completion_tokens: 2500, reasoning_effort: 'low' },
+                { model, messages: [{ role: 'system', content: systemPrompt }, ...messages], stream: true, max_completion_tokens: 2500 }
+            ];
+            for (let attempt = openAiNoReasoning.has(model) ? 1 : 0; attempt < bodies.length; attempt++) {
+                const ctrl = new AbortController();
+                const firstTimer = setTimeout(() => ctrl.abort('first'), 20000);
+                const totalTimer = setTimeout(() => ctrl.abort('total'), 120000);
+                try {
+                    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${oKey}` },
+                        body: JSON.stringify(bodies[attempt]),
+                        signal: ctrl.signal
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        const msg = data?.error?.message || `HTTP ${res.status}`;
+                        if (attempt === 0 && res.status === 400 && /reasoning/i.test(msg)) { openAiNoReasoning.add(model); continue; }   // Modell ohne Denkstufe
+                        const e = new Error(msg);
+                        e.status = res.status;
+                        throw e;
+                    }
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '', text = '';
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        let nl;
+                        while ((nl = buffer.indexOf('\n')) >= 0) {
+                            const line = buffer.slice(0, nl).trim();
+                            buffer = buffer.slice(nl + 1);
+                            if (!line.startsWith('data:')) continue;
+                            const payload = line.slice(5).trim();
+                            if (payload === '[DONE]') continue;
+                            let obj;
+                            try { obj = JSON.parse(payload); } catch (e) { continue; }
+                            if (obj.error) throw new Error(obj.error.message || 'Fehler im Antwort-Stream');
+                            const piece = obj.choices?.[0]?.delta?.content;
+                            if (piece) {
+                                if (!text) clearTimeout(firstTimer);
+                                text += piece;
+                                if (onChunk) { try { onChunk(text); } catch (e) {} }
+                            }
+                        }
+                    }
+                    if (!text.trim()) throw new Error('Leere Antwort');
+                    return text.trim();
+                } catch (e) {
+                    if (ctrl.signal.aborted) throw new Error(ctrl.signal.reason === 'first' ? 'keine Antwort innert 20 s' : 'Zeitüberschreitung');
+                    throw e;
+                } finally {
+                    clearTimeout(firstTimer);
+                    clearTimeout(totalTimer);
+                }
+            }
+            throw new Error('Keine Antwort');
+        }
+
+        // Bevorzugte KI des Kontos: 'gemini', 'claude' oder 'openai' (die anderen dienen automatisch als Backup)
+        const AI_PROVIDERS = ['gemini', 'claude', 'openai'];
+        const AI_LABELS = { gemini: 'Gemini', claude: 'Claude', openai: 'ChatGPT' };
+        let preferredAi = 'gemini';
 
         // options.extraParts: zusätzliche Gemini-Parts (z. B. Audio); options.geminiOnly: kein Claude-Fallback
         async function callGeminiUnified(userPrompt, conversationHistory = null, options = {}) {
             const key = (geminiApiKey || "").trim().replace(/^["']|["']$/g, '');
             const cKey = (claudeApiKey || "").trim().replace(/^["']|["']$/g, '');
-            const { extraParts = null, geminiOnly = false, systemPrompt = TEACHER_SYSTEM_PROMPT } = options;
+            const oKey = (openaiApiKey || "").trim().replace(/^["']|["']$/g, '');
+            const { extraParts = null, geminiOnly = false, systemPrompt = TEACHER_SYSTEM_PROMPT, onChunk = null, forceProvider = null } = options;
 
-            if (!key && (!cKey || geminiOnly)) {
+            if (!key && (geminiOnly || (!cKey && !oKey))) {
                 throw new Error(geminiOnly
                     ? "Für diese Funktion wird ein Gemini-Schlüssel benötigt (Einstellungen → Zahnrad)."
-                    : "Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) deinen Gemini- oder Claude-Schlüssel eingeben.");
+                    : "Kein API-Key hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) einen Gemini-, Claude- oder ChatGPT-Schlüssel eingeben.");
             }
 
             const errorDetails = [];
 
-            if (key) {
+            const tryGemini = async () => {
+                if (!key) return null;
                 const contents = (conversationHistory && conversationHistory.length > 0)
                     ? conversationHistory.map(item => ({ role: item.role === 'model' ? 'model' : 'user', parts: [{ text: item.parts[0].text }] }))
                     : [{ role: "user", parts: [{ text: userPrompt }, ...(extraParts || [])] }];
-
                 const basePayload = { systemInstruction: { parts: [{ text: systemPrompt }] }, contents };
                 const savedWorkingModel = localStorage.getItem(accountStorageName('workingModel'));
                 const available = await getGeminiModels(key);
                 const modelsToTry = [...new Set([
                     ...(savedWorkingModel && available.includes(savedWorkingModel) ? [savedWorkingModel] : []),
                     ...available
-                ])].slice(0, 5);
+                ])].slice(0, 6);
+                try {
+                    const { text, model } = await raceGeminiModels(modelsToTry, key, basePayload, onChunk, errorDetails,
+                        extraParts ? { firstTokenMs: 40000, staggerMs: 15000 } : { firstTokenMs: 12000, staggerMs: 3500 });
+                    localStorage.setItem(accountStorageName('workingModel'), model);
+                    localStorage.setItem(accountStorageName('lastAiModel'), model);
+                    return text;
+                } catch (e) { return null; /* Details stehen in errorDetails */ }
+            };
 
-                for (const modelName of modelsToTry) {
-                    // Schnell: niedrige Denkstufe. Kennt ein Modell das Feld nicht, ohne erneut versuchen.
-                    for (const fast of [true, false]) {
-                        const payload = fast
-                            ? { ...basePayload, generationConfig: { thinkingConfig: { thinkingLevel: "low" } } }
-                            : basePayload;
-                        try {
-                            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-                            const res = await fetchWithTimeout(url, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-                                body: JSON.stringify(payload)
-                            }, extraParts ? 90000 : 45000);
-                            const data = await res.json().catch(() => ({}));
-                            const text = extractGeminiText(data);
-                            if (res.ok && text) {
-                                localStorage.setItem(accountStorageName('workingModel'), modelName);
-                                return text;
-                            }
-                            const msg = data?.error?.message || `HTTP ${res.status}`;
-                            if (fast && res.status === 400 && /thinking/i.test(msg)) continue;   // ohne Denkstufe nochmals
-                            if (res.status === 404 || /no longer available|not found/i.test(msg)) forgetGeminiModel(modelName);
-                            if (res.status === 401 || res.status === 403 || /API key/i.test(msg)) {
-                                errorDetails.push(`[Gemini] ${msg}`);
-                                break;
-                            }
-                            errorDetails.push(`[${modelName}] ${msg}`);
-                        } catch (e) {
-                            errorDetails.push(`[${modelName}] ${e.message}`);
-                        }
-                        break;
-                    }
-                    if (errorDetails.some(e => e.startsWith('[Gemini]'))) break;   // Schlüssel ungültig → andere Modelle sinnlos
-                }
-            }
-
-            if (cKey && !geminiOnly) {
+            const tryClaude = async () => {
+                if (!cKey || geminiOnly) return null;
                 const claudeMessages = conversationHistory && conversationHistory.length > 0
                     ? conversationHistory.map(m => ({ role: m.role === "model" ? "assistant" : "user", content: m.parts[0].text }))
                     : [{ role: "user", content: userPrompt }];
                 for (const claudeModel of CLAUDE_FALLBACK_MODELS) {
                     try {
-                        const cRes = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "x-api-key": cKey,
-                                "anthropic-version": "2023-06-01",
-                                "anthropic-dangerous-direct-browser-access": "true"
-                            },
-                            body: JSON.stringify({ model: claudeModel, max_tokens: 2500, system: systemPrompt, messages: claudeMessages })
-                        });
-                        const cData = await cRes.json().catch(() => ({}));
-                        const cText = (cData?.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-                        if (cRes.ok && cText) {
-                            localStorage.setItem(accountStorageName('workingModel'), `Claude (${claudeModel})`);
-                            return cText;
-                        }
-                        errorDetails.push(`[${claudeModel}] ${cData?.error?.message || `HTTP ${cRes.status}`}`);
-                        if (cRes.status === 401 || cRes.status === 403) break;
+                        const text = await claudeStreamAttempt(claudeModel, cKey, systemPrompt, claudeMessages, onChunk);
+                        localStorage.setItem(accountStorageName('lastAiModel'), claudeModel);
+                        return text;
                     } catch (e) {
                         errorDetails.push(`[${claudeModel}] ${e.message}`);
+                        if (e.status === 401 || e.status === 403) break;   // Schlüssel ungültig
                     }
                 }
+                return null;
+            };
+
+            const tryOpenAi = async () => {
+                if (!oKey || geminiOnly) return null;
+                const msgs = conversationHistory && conversationHistory.length > 0
+                    ? conversationHistory.map(m => ({ role: m.role === "model" ? "assistant" : "user", content: m.parts[0].text }))
+                    : [{ role: "user", content: userPrompt }];
+                const models = (await getOpenAiModels(oKey)).slice(0, 3);
+                for (const model of models) {
+                    try {
+                        const text = await openAiStreamAttempt(model, oKey, systemPrompt, msgs, onChunk);
+                        localStorage.setItem(accountStorageName('lastAiModel'), model);
+                        return text;
+                    } catch (e) {
+                        errorDetails.push(`[ChatGPT ${model}] ${e.message}`);
+                        if (e.status === 401 || e.status === 403 || e.status === 429 && /quota|billing/i.test(e.message)) break;   // Schlüssel/Guthaben
+                    }
+                }
+                return null;
+            };
+
+            // Reihenfolge: gewählte KI zuerst, die anderen als Backup (Audio kann nur Gemini)
+            const runners = { gemini: tryGemini, claude: tryClaude, openai: tryOpenAi };
+            const first = forceProvider || (extraParts ? 'gemini' : (AI_PROVIDERS.includes(preferredAi) ? preferredAi : 'gemini'));
+            const order = forceProvider ? [forceProvider] : [first, ...AI_PROVIDERS.filter(p => p !== first)];
+            for (const provider of order) {
+                const result = await runners[provider]();
+                if (result) return result;
             }
 
             throw new Error(errorDetails.length > 0 ? errorDetails.join("\n") : "Keine Antwort von der KI-Schnittstelle.");
@@ -1249,33 +1539,53 @@ HA: ...</pre>
         }
 
         async function testGeminiApiConnection() {
-            const gVal = document.getElementById('settingsGeminiKeyInput').value.trim();
-            const cVal = document.getElementById('settingsClaudeKeyInput').value.trim();
-            if (!gVal && !cVal) {
-                showToast("Bitte zuerst einen Gemini- oder Claude-Key eingeben.");
+            const vals = {
+                gemini: document.getElementById('settingsGeminiKeyInput').value.trim(),
+                claude: document.getElementById('settingsClaudeKeyInput').value.trim(),
+                openai: document.getElementById('settingsOpenAiKeyInput').value.trim()
+            };
+            if (!vals.gemini && !vals.claude && !vals.openai) {
+                showToast("Bitte zuerst einen Gemini-, Claude- oder ChatGPT-Key eingeben.");
                 return;
             }
-            geminiApiKey = gVal;
-            claudeApiKey = cVal;
+            geminiApiKey = vals.gemini;
+            claudeApiKey = vals.claude;
+            openaiApiKey = vals.openai;
+            const pref = document.getElementById('settingsPreferredAi').value;
+            preferredAi = AI_PROVIDERS.includes(pref) ? pref : 'gemini';
             saveAccountApiKeys();
             localStorage.removeItem(accountStorageName('geminiModels'));
+            localStorage.removeItem(accountStorageName('openaiModels'));
 
             const btn = document.getElementById('testApiBtn');
             const statusBox = document.getElementById('apiTestStatusBox');
             btn.innerText = "Prüfe...";
             btn.disabled = true;
             statusBox.classList.remove('hidden');
-            statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-slate-100 text-slate-700";
+            statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-slate-100 text-slate-700 whitespace-pre-line";
             statusBox.innerText = "Verbinde mit KI-Schnittstelle...";
 
+            // Jede hinterlegte KI einzeln (gleichzeitig) prüfen, damit man sieht, ob das Backup funktioniert
             try {
-                const reply = await callGeminiUnified("Antworte exakt mit einem Satz: Verbindung als Sek-A-Tutor erfolgreich!");
-                const activeModel = localStorage.getItem(accountStorageName('workingModel')) || "Claude";
-                statusBox.className = "rounded-lg p-2.5 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
-                statusBox.innerText = `✅ [${activeModel}] ${reply}`;
-            } catch (err) {
-                statusBox.className = "rounded-lg p-2.5 text-[11px] font-semibold bg-rose-50 text-rose-900 border border-rose-200 whitespace-pre-line";
-                statusBox.innerText = "❌ Diagnose:\n" + err.message;
+                const active = AI_PROVIDERS.filter(pv => vals[pv]);
+                statusBox.innerText = `Prüfe ${active.map(pv => AI_LABELS[pv]).join(', ')}…`;
+                const results = await Promise.all(active.map(async (provider) => {
+                    try {
+                        await callGeminiUnified("Antworte exakt mit: OK", null, { forceProvider: provider });
+                        return { provider, ok: true };
+                    } catch (err) {
+                        return { provider, ok: false, msg: String(err.message).split('\n')[0] };
+                    }
+                }));
+                const lines = results.map(r => r.ok ? `✅ ${AI_LABELS[r.provider]} funktioniert` : `❌ ${AI_LABELS[r.provider]}: ${r.msg}`);
+                const okOnes = results.filter(r => r.ok).map(r => r.provider);
+                const orderOk = [preferredAi, ...AI_PROVIDERS.filter(pv => pv !== preferredAi)].filter(pv => okOnes.includes(pv));
+                if (orderOk.length > 1) lines.push(`→ Reihenfolge: ${orderOk.map(pv => AI_LABELS[pv]).join(' → ')} (automatisches Backup)`);
+                else if (orderOk.length === 1) lines.push('→ Tipp: Mit einem zweiten Schlüssel hast du ein automatisches Backup.');
+                statusBox.className = okOnes.length > 0
+                    ? "rounded-lg p-2.5 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-pre-line"
+                    : "rounded-lg p-2.5 text-[11px] font-semibold bg-rose-50 text-rose-900 border border-rose-200 whitespace-pre-line";
+                statusBox.innerText = lines.join('\n');
             } finally {
                 btn.innerText = "KI testen";
                 btn.disabled = false;
@@ -1432,6 +1742,8 @@ HA: ...</pre>
             // Nur der Arbeitsspeicher wird geleert, damit das nächste Konto nichts davon sieht.
             geminiApiKey = '';
             claudeApiKey = '';
+            openaiApiKey = '';
+            preferredAi = 'gemini';
             localStorage.removeItem('sekPlaner_privateKey');
             privateSyncKey = '';
             lessonsStore = {};
@@ -1449,6 +1761,7 @@ HA: ...</pre>
         // KI-Schlüssel gehören zum Konto: lokal pro UID + in der Cloud (Dokument apikeys_<uid>)
         let geminiApiKey = '';
         let claudeApiKey = '';
+        let openaiApiKey = '';
 
         function accountStorageName(kind) {
             return `sekPlaner_${currentUser ? currentUser.uid : 'local'}_${kind}`;
@@ -1458,6 +1771,9 @@ HA: ...</pre>
         async function loadAccountApiKeys(user, isOwner) {
             geminiApiKey = localStorage.getItem(accountStorageName('geminiKey')) || '';
             claudeApiKey = localStorage.getItem(accountStorageName('claudeKey')) || '';
+            openaiApiKey = localStorage.getItem(accountStorageName('openaiKey')) || '';
+            const storedPref = localStorage.getItem(accountStorageName('preferredAi'));
+            preferredAi = AI_PROVIDERS.includes(storedPref) ? storedPref : 'gemini';
             // Einmalige Übernahme der bisher gerätweit gespeicherten Schlüssel – nur für den Hauptaccount
             const legacyG = localStorage.getItem('sekPlaner_geminiKey');
             const legacyC = localStorage.getItem('sekPlaner_claudeKey');
@@ -1474,7 +1790,9 @@ HA: ...</pre>
                         const d = snap.data() || {};
                         if (typeof d.geminiKey === 'string' && d.geminiKey) geminiApiKey = d.geminiKey;
                         if (typeof d.claudeKey === 'string' && d.claudeKey) claudeApiKey = d.claudeKey;
-                    } else if (geminiApiKey || claudeApiKey) {
+                        if (typeof d.openaiKey === 'string' && d.openaiKey) openaiApiKey = d.openaiKey;
+                        if (AI_PROVIDERS.includes(d.preferredAi)) preferredAi = d.preferredAi;
+                    } else if (geminiApiKey || claudeApiKey || openaiApiKey) {
                         migrated = true;   // lokal vorhandene Schlüssel in die Cloud übernehmen
                     }
                 } catch (e) { /* offline → lokale Kopie verwenden */ }
@@ -1482,6 +1800,8 @@ HA: ...</pre>
             try {
                 localStorage.setItem(accountStorageName('geminiKey'), geminiApiKey);
                 localStorage.setItem(accountStorageName('claudeKey'), claudeApiKey);
+                localStorage.setItem(accountStorageName('openaiKey'), openaiApiKey);
+                localStorage.setItem(accountStorageName('preferredAi'), preferredAi);
             } catch (e) {}
             if (migrated) saveAccountApiKeys();
         }
@@ -1491,13 +1811,18 @@ HA: ...</pre>
             try {
                 localStorage.setItem(accountStorageName('geminiKey'), geminiApiKey);
                 localStorage.setItem(accountStorageName('claudeKey'), claudeApiKey);
+                localStorage.setItem(accountStorageName('openaiKey'), openaiApiKey);
+                localStorage.setItem(accountStorageName('preferredAi'), preferredAi);
                 localStorage.removeItem(accountStorageName('workingModel'));
+                localStorage.removeItem(accountStorageName('openaiModels'));
             } catch (e) {}
             if (!db) return Promise.resolve();
             return db.collection('sekSync').doc(apiKeysDocId()).set({
                 ownerUid: currentUser.uid,
                 geminiKey: geminiApiKey,
                 claudeKey: claudeApiKey,
+                openaiKey: openaiApiKey,
+                preferredAi,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }).catch(err => showToast(`KI-Schlüssel nur lokal gespeichert (${err.code || err.message})`));
         }
@@ -2943,8 +3268,13 @@ Gewünschte Unterrichtsphase: ${phaseDescriptions[selectedAiPhase]}.
 Thema / Auftrag: "${topic}".
 Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Nutze **Fettschrift** für wichtige Begriffe/Sozialformen. Keine Einleitung, kein Schlusswort.`;
 
+            // Ergebnis-Box sofort zeigen und Text live (Wort für Wort) einblenden
+            resultEditor.innerHTML = `<span class="italic text-slate-400">⏳ KI schreibt…</span>`;
+            resultBox.classList.remove('hidden');
             try {
-                const reply = await callGeminiUnified(prompt);
+                const reply = await callGeminiUnified(prompt, null, {
+                    onChunk: (partial) => { resultEditor.innerHTML = markdownBoldToHtml(partial); }
+                });
                 resultEditor.innerHTML = markdownBoldToHtml(reply);
                 resultBox.classList.remove('hidden');
             } catch (err) {
@@ -4906,6 +5236,8 @@ Text:\n${raw.slice(0, 12000)}`;
         function openSettingsModal() {
             document.getElementById('settingsGeminiKeyInput').value = geminiApiKey;
             document.getElementById('settingsClaudeKeyInput').value = claudeApiKey;
+            document.getElementById('settingsOpenAiKeyInput').value = openaiApiKey;
+            document.getElementById('settingsPreferredAi').value = preferredAi;
             document.getElementById('privateSyncKeyInput').value = privateSyncKey;
             document.getElementById('apiTestStatusBox').classList.add('hidden');
             document.getElementById('cloudRecoveryResultsBox').classList.add('hidden');
@@ -4923,8 +5255,12 @@ Text:\n${raw.slice(0, 12000)}`;
         function saveSettingsModal() {
             const gKey = document.getElementById('settingsGeminiKeyInput').value.trim();
             const cKey = document.getElementById('settingsClaudeKeyInput').value.trim();
+            const oKey = document.getElementById('settingsOpenAiKeyInput').value.trim();
             geminiApiKey = gKey;
             claudeApiKey = cKey;
+            openaiApiKey = oKey;
+            const pref = document.getElementById('settingsPreferredAi').value;
+            preferredAi = AI_PROVIDERS.includes(pref) ? pref : 'gemini';
             saveAccountApiKeys();
             // Sync-Schlüssel wird aus dem Konto abgeleitet und hier nicht mehr geändert
             closeSettingsModal();
