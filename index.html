@@ -17,14 +17,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         .lesson-card-body { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
-        .custom-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+        .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
         @keyframes pulseRec { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(1.15); } }
         .recording-dot { animation: pulseRec 1.1s infinite; }
 
-        .rich-editor-zone { min-height: 82px; outline: none; }
+        .rich-editor-zone { min-height: 76px; outline: none; }
         .rich-editor-zone:empty::before { content: attr(data-placeholder); color: #94a3b8; font-style: italic; pointer-events: none; }
         .rich-editor-zone ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
         .rich-editor-zone ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
@@ -45,8 +45,8 @@
     <!-- ===================================================================== -->
     <!-- FIREBASE LOGIN & REGISTRIERUNG                                        -->
     <!-- ===================================================================== -->
-    <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4">
+    <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4 my-auto">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                     <i data-lucide="lock" class="w-5 h-5"></i>
@@ -197,8 +197,8 @@
                     <span>KI-Chat</span>
                 </button>
 
-                <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="API-Key testen, Backup & Zürich Sync">
-                    <span id="syncLed" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors" title="Cloud-Diagnose, API-Key & Backup">
+                    <span id="syncLed" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                     <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                 </button>
 
@@ -373,12 +373,13 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL 1: LEKTIONS-EDITOR                                              -->
+    <!-- MODAL 1: LEKTIONS-EDITOR (VOLL SCROLLBAR & RESPONSIVE)                -->
     <!-- ===================================================================== -->
-    <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-            <div id="modalHeaderBar" class="shrink-0 px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
-                <div class="flex items-center gap-2">
+    <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start md:items-center justify-center p-2 sm:p-4 overflow-y-auto hidden">
+        <div class="bg-white rounded-2xl max-w-5xl w-full h-[92dvh] max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden my-auto">
+            <!-- Fixierter Kopf -->
+            <div id="modalHeaderBar" class="shrink-0 px-4 sm:px-5 py-3 text-white flex items-center justify-between bg-indigo-600">
+                <div class="flex items-center flex-wrap gap-2">
                     <span id="modalSubjectClass" class="text-sm font-extrabold uppercase tracking-wide">DEUTSCH • S2Aa</span>
                     <span id="modalDateTime" class="text-xs opacity-90 font-medium">• Mo, 08:20 – 09:05</span>
                 </div>
@@ -387,7 +388,8 @@
                 </button>
             </div>
 
-            <div id="lessonModalScrollBody" class="flex-1 min-h-0 p-4 md:p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4 text-xs">
+            <!-- Scrollbarer Mittelteil -->
+            <div id="lessonModalScrollBody" class="flex-1 min-h-0 p-3.5 sm:p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4 text-xs">
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
                     <div class="sm:col-span-8 bg-sky-100/80 border border-sky-300 rounded-xl p-2.5 flex flex-col gap-1">
                         <label class="font-extrabold text-sky-950 flex items-center gap-1.5 text-[11px]">
@@ -422,7 +424,7 @@
                 </div>
 
                 <!-- UNTERRICHTSVERLAUF -->
-                <div class="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-xs flex flex-col">
+                <div class="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-xs flex flex-col shrink-0">
                     <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-1">
                             <button type="button" onmousedown="event.preventDefault(); execRichCmd('bold');" class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-300 rounded font-extrabold text-slate-900 text-xs" title="Fett (Ctrl+B)">B</button>
@@ -446,7 +448,7 @@
                             <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700">2. Hauptteil / Erarbeitung (H)</span>
                             <span class="text-[10px] font-semibold text-slate-400">ca. 25–30 Min</span>
                         </div>
-                        <div id="editPhaseHauptteil" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Erarbeitung, Üben, Sozialform, Differenzierung..." class="rich-editor-zone min-h-[150px] text-[13px] text-slate-800 leading-relaxed"></div>
+                        <div id="editPhaseHauptteil" contenteditable="true" oninput="updateParallelPreview()" data-placeholder="Erarbeitung, Üben, Sozialform, Differenzierung..." class="rich-editor-zone min-h-[140px] text-[13px] text-slate-800 leading-relaxed"></div>
                     </div>
 
                     <div class="p-3.5 focus-within:bg-indigo-50/15 transition-colors">
@@ -459,7 +461,7 @@
                 </div>
 
                 <!-- DIREKTER KI-TUTOR -->
-                <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3 flex flex-col gap-2">
+                <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3 flex flex-col gap-2 shrink-0">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-1.5 font-extrabold text-indigo-950">
                             <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
@@ -496,7 +498,7 @@
                 </div>
 
                 <!-- HAUSAUFGABEN -->
-                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 flex flex-col gap-2">
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 flex flex-col gap-2 shrink-0">
                     <label class="font-extrabold text-sky-950 flex items-center gap-1.5">
                         <i data-lucide="book-open-check" class="w-4 h-4 text-sky-600"></i>
                         <span>Hausaufgaben fürs nächste Mal (überträgt automatisch auf «📌 HA auf heute» der Ziel-Lektion)</span>
@@ -508,7 +510,7 @@
                 </div>
 
                 <!-- EINGEKLAPPTES PANEL: PARALLELE KLASSE -->
-                <details class="bg-purple-50/70 border border-purple-200 rounded-xl overflow-hidden group">
+                <details class="bg-purple-50/70 border border-purple-200 rounded-xl overflow-hidden group shrink-0">
                     <summary class="px-3.5 py-2.5 cursor-pointer font-extrabold text-purple-950 flex items-center justify-between select-none hover:bg-purple-100/60 transition-colors">
                         <span class="flex items-center gap-2">
                             <i data-lucide="copy-plus" class="w-4 h-4 text-purple-600"></i>
@@ -551,7 +553,7 @@
                 </details>
 
                 <!-- NOTIZEN & SPRACHMEMO -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0">
                     <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
                         <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
                             <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-600"></i>
@@ -581,7 +583,8 @@
                 </div>
             </div>
 
-            <div class="shrink-0 px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <!-- Fixierter Fuss -->
+            <div class="shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
                         <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
@@ -628,8 +631,8 @@
     <!-- ===================================================================== -->
     <!-- MODAL 2: UNIVERSELLER DATEI- & SEQUENZ-IMPORT                         -->
     <!-- ===================================================================== -->
-    <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-2 md:p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-[1460px] w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
+    <div id="universalImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start md:items-center justify-center p-2 md:p-4 overflow-y-auto hidden">
+        <div class="bg-white rounded-2xl max-w-[1460px] w-full h-[92dvh] max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs my-auto">
             <div class="shrink-0 px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-600"></i>
@@ -697,7 +700,6 @@ HA: ...</pre>
                         </details>
                     </div>
 
-                    <!-- STEUERUNG FÜR LEKTIONENABLAUF -->
                     <div id="importOptionsSequence" class="flex flex-col gap-3 pt-2.5 border-t border-slate-200/80">
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                             <div class="sm:col-span-3">
@@ -747,7 +749,6 @@ HA: ...</pre>
                         </div>
                     </div>
 
-                    <!-- STEUERUNG FÜR STUNDENPLAN -->
                     <div id="importOptionsSchedule" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-indigo-50/60 p-2.5 rounded-lg">
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="font-bold text-indigo-950">Standard-Aktion für alle Zeilen:</span>
@@ -761,7 +762,6 @@ HA: ...</pre>
                         </button>
                     </div>
 
-                    <!-- STEUERUNG FÜR FERIEN & SPEZIALTAGE -->
                     <div id="importOptionsHolidays" class="hidden flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-200/80 bg-amber-50/60 p-2.5 rounded-lg">
                         <span class="text-[11px] font-semibold text-amber-950">Konflikte mit bereits geplanten Lektionen oder bestehenden Terminen werden unten automatisch markiert und können einzeln entschieden werden.</span>
                         <button type="button" id="aiParseHolidaysBtn" onclick="analyzeHolidayFileWithAi()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shrink-0 flex items-center gap-1.5">
@@ -782,7 +782,6 @@ HA: ...</pre>
                     </div>
                 </div>
 
-                <!-- LIVE-KONTROLLTABELLE -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span id="previewTableTitleLabel" class="font-extrabold text-slate-900">Live-Kontrolltabelle (alle erkannten Einträge sind hier direkt anpassbar):</span>
@@ -813,8 +812,8 @@ HA: ...</pre>
     </div>
 
     <!-- MODAL 3: STUNDENPLAN-EDITOR -->
-    <div id="scheduleEditorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 md:p-5 hidden">
-        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs">
+    <div id="scheduleEditorModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start md:items-center justify-center p-3 md:p-5 overflow-y-auto hidden">
+        <div class="bg-white rounded-2xl max-w-4xl w-full h-[90dvh] max-h-[90dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs my-auto">
             <div class="shrink-0 px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i data-lucide="sliders-horizontal" class="w-5 h-5 text-indigo-600"></i>
@@ -869,54 +868,84 @@ HA: ...</pre>
         </div>
     </div>
 
-    <!-- MODAL 4: EINSTELLUNGEN -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 flex flex-col gap-4 text-xs">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <h3 class="text-sm font-extrabold text-slate-900">KI-Verbindung (Gemini &amp; Claude), Backup &amp; Zürich Sync</h3>
+    <!-- ===================================================================== -->
+    <!-- MODAL 4: EINSTELLUNGEN, CLOUD-DIAGNOSE & BACKUP                       -->
+    <!-- ===================================================================== -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start md:items-center justify-center p-3 md:p-4 overflow-y-auto hidden">
+        <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden text-xs my-auto">
+            <div class="shrink-0 px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-extrabold text-slate-900">Cloud-Sync Diagnose (Zürich), KI-Keys &amp; Backup</h3>
                 <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-700 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2">
-                <label class="font-extrabold text-indigo-950">1. Google Gemini API-Key (aistudio.google.com/apikey)</label>
-                <div class="flex gap-2">
-                    <input type="password" id="settingsGeminiKeyInput" placeholder="AQ.... oder AIzaSy..." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
-                    <button type="button" id="testApiBtn" onclick="testGeminiApiConnection()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
-                        KI testen
-                    </button>
+            <div class="flex-1 min-h-0 p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4">
+                <!-- CLOUD DIAGNOSE & WIEDERHERSTELLUNG -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                            <i data-lucide="database" class="w-4 h-4 text-indigo-600"></i>
+                            <span>Firebase Cloud-Status &amp; Wiederherstellung</span>
+                        </span>
+                        <span id="diagSyncBadge" class="px-2 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-100 text-amber-900">Prüfe...</span>
+                    </div>
+
+                    <div id="cloudDiagnosticBox" class="bg-white border border-slate-200 rounded-lg p-2.5 text-[11px] font-mono text-slate-700 whitespace-pre-line leading-relaxed"></div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="scanCloudBtn" onclick="runCloudRecoveryScan()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">
+                            🔍 Alle Cloud-Dokumente suchen &amp; wiederherstellen
+                        </button>
+                        <button type="button" onclick="forcePushLocalToCloud()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-lg font-bold">
+                            ⬆️ Aktuellen Stand jetzt in Cloud speichern
+                        </button>
+                    </div>
+
+                    <div id="cloudRecoveryResultsBox" class="hidden flex flex-col gap-1.5 pt-1"></div>
                 </div>
 
-                <label class="font-extrabold text-purple-950 mt-1">2. Optional: Claude API-Key als Ausweich-KI (console.anthropic.com)</label>
-                <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (optional)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
-
-                <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold whitespace-pre-line"></div>
-            </div>
-
-            <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3.5 flex flex-col gap-2 text-emerald-950">
-                <div class="font-extrabold flex items-center gap-1.5">
-                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
-                    <span>Datensicherung (Server Zürich &amp; JSON-Datei)</span>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Dokument-ID in Zürich (Sync-Schlüssel)</label>
+                    <input type="text" id="privateSyncKeyInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900">
                 </div>
-                <div class="flex gap-2 pt-1">
-                    <button type="button" onclick="exportFullBackup()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">
-                        Backup herunterladen (.json)
-                    </button>
-                    <label class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold cursor-pointer hover:bg-emerald-50">
-                        Backup einspielen
-                        <input type="file" accept=".json" onchange="importFullBackup(event)" class="hidden">
-                    </label>
+
+                <!-- KI KEYS -->
+                <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2">
+                    <label class="font-extrabold text-indigo-950">Google Gemini API-Key (aistudio.google.com/apikey)</label>
+                    <div class="flex gap-2">
+                        <input type="password" id="settingsGeminiKeyInput" placeholder="AIzaSy..." class="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+                        <button type="button" id="testApiBtn" onclick="testGeminiApiConnection()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shrink-0">
+                            KI testen
+                        </button>
+                    </div>
+
+                    <label class="font-extrabold text-purple-950 mt-1">Optional: Claude API-Key als Ausweich-KI</label>
+                    <input type="password" id="settingsClaudeKeyInput" placeholder="sk-ant-api03-... (optional)" class="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 font-mono text-slate-900">
+
+                    <div id="apiTestStatusBox" class="hidden rounded-lg p-2.5 text-[11px] font-semibold whitespace-pre-line"></div>
+                </div>
+
+                <!-- LOKALES JSON BACKUP -->
+                <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3.5 flex flex-col gap-2 text-emerald-950">
+                    <div class="font-extrabold flex items-center gap-1.5">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Lokale Backup-Datei (.json)</span>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" onclick="exportFullBackup()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">
+                            Backup herunterladen (.json)
+                        </button>
+                        <label class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold cursor-pointer hover:bg-emerald-50">
+                            Backup einspielen
+                            <input type="file" accept=".json" onchange="importFullBackup(event)" class="hidden">
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <label class="block font-bold text-slate-700 mb-1">Dokument-ID in Zürich (nur mit deinem Login lesbar)</label>
-                <input type="text" id="privateSyncKeyInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-slate-900">
-            </div>
-
-            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button type="button" onclick="closeSettingsModal()" class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg font-bold">Schliessen</button>
+            <div class="shrink-0 px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+                <button type="button" onclick="closeSettingsModal()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold">Schliessen</button>
                 <button type="button" onclick="saveSettingsModal()" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-bold">Einstellungen speichern</button>
             </div>
         </div>
@@ -1132,6 +1161,7 @@ HA: ...</pre>
         let auth = null;
         let currentUser = null;
         let firestoreUnsubscribe = null;
+        let lastSyncStatus = { state: "idle", message: "Noch nicht verbunden", docId: "" };
 
         try {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -1252,16 +1282,14 @@ HA: ...</pre>
         }
 
         // =========================================================================
-        // 3. STUNDENPLAN & SCHULJAHRES-DATEN (FEST HINTERLEGTER 26-LEKTIONEN-PLAN)
+        // 3. STUNDENPLAN & SCHULJAHRES-DATEN (26 LEKTIONEN STANDARD)
         // =========================================================================
         let privateSyncKey = localStorage.getItem('sekPlaner_privateKey') || '';
         let geminiApiKey = localStorage.getItem('sekPlaner_geminiKey') || '';
         let claudeApiKey = localStorage.getItem('sekPlaner_claudeKey') || '';
         let currentSchoolYear = localStorage.getItem('sekPlaner_schoolYear') || '2026/27';
 
-        // Alle 26 Lektionen gemäss Stundenplan_Bregger_2026_27_Sek_Planer_2.xlsx dauerhaft verankert
         const DEFAULT_WEEKLY_TEMPLATE = [
-            // Montag (7 Lektionen)
             { id: "mo-2", day: 0, start: "08:20", end: "09:05", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-3", day: 0, start: "09:10", end: "09:55", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-4", day: 0, start: "10:15", end: "11:00", subject: "D", className: "S2Ac", track: "", room: "C63" },
@@ -1269,23 +1297,19 @@ HA: ...</pre>
             { id: "mo-7", day: 0, start: "12:50", end: "13:35", subject: "Econ", className: "Wahlfach E", track: "", room: "C63" },
             { id: "mo-8", day: 0, start: "13:45", end: "14:30", subject: "E", className: "S2Aa", track: "", room: "C63" },
             { id: "mo-9", day: 0, start: "14:35", end: "15:20", subject: "RKE", className: "S2Aa", track: "", room: "C63" },
-            // Dienstag (4 Lektionen)
             { id: "di-2", day: 1, start: "08:20", end: "09:05", subject: "D", className: "S2Ac", track: "", room: "C63" },
             { id: "di-3", day: 1, start: "09:10", end: "09:55", subject: "Mu", className: "S2Ac", track: "", room: "C63" },
             { id: "di-4", day: 1, start: "10:15", end: "11:00", subject: "Econ", className: "Wahlfach E", track: "", room: "C63" },
             { id: "di-5", day: 1, start: "11:05", end: "11:50", subject: "E", className: "S2Aa", track: "", room: "C63" },
-            // Mittwoch (5 Lektionen)
             { id: "mi-1", day: 2, start: "07:30", end: "08:15", subject: "RZG", className: "S2Aa", track: "", room: "C63" },
             { id: "mi-2", day: 2, start: "08:20", end: "09:05", subject: "Mu", className: "S1BCa", track: "", room: "C63" },
             { id: "mi-3", day: 2, start: "09:10", end: "09:55", subject: "RKE", className: "S2Ac", track: "", room: "E49" },
             { id: "mi-4", day: 2, start: "10:15", end: "11:00", subject: "D", className: "S2Ac", track: "", room: "C63" },
             { id: "mi-5", day: 2, start: "11:05", end: "11:50", subject: "D", className: "S2Aa", track: "", room: "C63" },
-            // Donnerstag (4 Lektionen)
             { id: "do-2", day: 3, start: "08:20", end: "09:05", subject: "Mu", className: "S1Aa", track: "", room: "C63" },
             { id: "do-3", day: 3, start: "09:10", end: "09:55", subject: "D", className: "S2Ac", track: "", room: "C63" },
             { id: "do-4", day: 3, start: "10:15", end: "11:00", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "do-5", day: 3, start: "11:05", end: "11:50", subject: "E", className: "S2Aa", track: "", room: "C63" },
-            // Freitag (6 Lektionen)
             { id: "fr-3", day: 4, start: "09:10", end: "09:55", subject: "D", className: "S2Aa", track: "", room: "C63" },
             { id: "fr-4", day: 4, start: "10:15", end: "11:00", subject: "RZG", className: "S2Aa", track: "", room: "C63" },
             { id: "fr-5", day: 4, start: "11:05", end: "11:50", subject: "BO", className: "S2Aa", track: "", room: "C63" },
@@ -1357,11 +1381,9 @@ HA: ...</pre>
                     if (user) {
                         const emailLower = (user.email || "").trim().toLowerCase();
                         if (emailLower === OWNER_EMAIL) {
-                            // Hauptkonto patrick.krapf63@gmail.com nutzt immer den bestehenden Cloud-Backup-Schlüssel
                             privateSyncKey = OWNER_LEGACY_SYNC_KEY;
                             localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
                         } else if (!privateSyncKey || privateSyncKey === OWNER_LEGACY_SYNC_KEY) {
-                            // Jeder andere Account erhält eine eigene isolierte Sync-ID
                             privateSyncKey = `user-${user.uid.slice(0, 16)}`;
                             localStorage.setItem('sekPlaner_privateKey', privateSyncKey);
                         }
@@ -1382,6 +1404,46 @@ HA: ...</pre>
                 });
             }
         });
+
+        function updateSyncIndicator(state, message, docId = "") {
+            lastSyncStatus = { state, message, docId };
+            const led = document.getElementById('syncLed');
+            if (led) {
+                if (state === 'ok') led.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                else if (state === 'error') led.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
+                else led.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+            }
+            refreshCloudDiagnosticUI();
+        }
+
+        function refreshCloudDiagnosticUI() {
+            const box = document.getElementById('cloudDiagnosticBox');
+            const badge = document.getElementById('diagSyncBadge');
+            if (!box || !badge) return;
+
+            const lessonCount = Object.keys(lessonsStore).length;
+            const slotCount = weeklyTemplate.length;
+            const userEmail = currentUser ? currentUser.email : "Nicht angemeldet";
+            const userUid = currentUser ? currentUser.uid : "—";
+
+            if (lastSyncStatus.state === 'ok') {
+                badge.className = "px-2 py-0.5 rounded-full text-[10.5px] font-extrabold bg-emerald-100 text-emerald-900";
+                badge.innerText = "● Verbunden (Grün)";
+            } else if (lastSyncStatus.state === 'error') {
+                badge.className = "px-2 py-0.5 rounded-full text-[10.5px] font-extrabold bg-rose-100 text-rose-900";
+                badge.innerText = "● Blockiert / Fehler (Rot)";
+            } else {
+                badge.className = "px-2 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-100 text-amber-900";
+                badge.innerText = "● Verbindet...";
+            }
+
+            let helpHint = "";
+            if (lastSyncStatus.state === 'error' && String(lastSyncStatus.message).includes('permission')) {
+                helpHint = "\n⚠️ LÖSUNG FÜR 'permission-denied':\nÖffne console.firebase.google.com → Projekt 'zufallsgenerator-209f3' → Firestore Database → Regeln (Rules) und setze:\nallow read, write: if request.auth != null;";
+            }
+
+            box.innerText = `Konto: ${userEmail}\nUID: ${userUid}\nDokument-ID: ${lastSyncStatus.docId || '—'}\nGeladen: ${slotCount} Stundenplan-Lektionen, ${lessonCount} geplante Einträge\nStatus: ${lastSyncStatus.message}${helpHint}`;
+        }
 
         function getStoragePrefix() {
             const uidTag = currentUser ? currentUser.uid.slice(0, 8) : 'local';
@@ -1439,6 +1501,11 @@ HA: ...</pre>
             }
         }
 
+        function getActiveDocId() {
+            const baseId = "planer_" + btoa(privateSyncKey).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
+            return currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
+        }
+
         function saveAllState() {
             const p = getStoragePrefix();
             try {
@@ -1452,8 +1519,7 @@ HA: ...</pre>
             updateOpenNotesBadge();
 
             if (db && currentUser && privateSyncKey) {
-                const baseId = "planer_" + btoa(privateSyncKey).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
-                const docId = currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
+                const docId = getActiveDocId();
                 db.collection('sekSync').doc(docId).set({
                     ownerUid: currentUser.uid,
                     ownerEmail: currentUser.email || "",
@@ -1464,9 +1530,9 @@ HA: ...</pre>
                     standaloneNotesStore,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true }).then(() => {
-                    document.getElementById('syncLed').className = "w-2 h-2 rounded-full bg-emerald-500";
-                }).catch(() => {
-                    document.getElementById('syncLed').className = "w-2 h-2 rounded-full bg-amber-400";
+                    updateSyncIndicator('ok', 'Synchronisiert mit Server Zürich', docId);
+                }).catch((err) => {
+                    updateSyncIndicator('error', `Schreibfehler: ${err.code || err.message}`, docId);
                 });
             }
         }
@@ -1474,8 +1540,9 @@ HA: ...</pre>
         function connectPrivateFirestoreSync() {
             if (!db || !currentUser || !privateSyncKey) return;
             if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
-            const baseId = "planer_" + btoa(privateSyncKey).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28);
-            const docId = currentSchoolYear === '2026/27' ? baseId : `${baseId}_${currentSchoolYear.replace('/', '_')}`;
+            const docId = getActiveDocId();
+            updateSyncIndicator('connecting', 'Verbinde mit Server Zürich...', docId);
+
             firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
@@ -1485,7 +1552,6 @@ HA: ...</pre>
                     if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
                     if (Array.isArray(data.standaloneNotesStore)) standaloneNotesStore = data.standaloneNotesStore;
 
-                    // Lokal zwischenspeichern, damit Offline-Zugriff und Backup immer aktuell sind
                     const p = getStoragePrefix();
                     try {
                         localStorage.setItem(`${p}_lessons`, JSON.stringify(lessonsStore));
@@ -1495,17 +1561,107 @@ HA: ...</pre>
                         localStorage.setItem(`${p}_standaloneNotes`, JSON.stringify(standaloneNotesStore));
                     } catch (e) {}
 
+                    updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
                     renderCalendar();
                     updateOpenNotesBadge();
                     if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
                     if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
-                } else if (Object.keys(lessonsStore).length > 0 || weeklyTemplate.length > 0) {
-                    // Falls lokal schon Daten da sind, aber noch kein Cloud-Dokument existiert: sofort hochladen
+                } else {
+                    updateSyncIndicator('ok', 'Neues Cloud-Dokument wird angelegt...', docId);
                     saveAllState();
                 }
-            }, () => {
-                document.getElementById('syncLed').className = "w-2 h-2 rounded-full bg-rose-500";
+            }, (err) => {
+                updateSyncIndicator('error', `Lesefehler: ${err.code || err.message}`, docId);
             });
+        }
+
+        async function forcePushLocalToCloud() {
+            if (!db || !currentUser) return;
+            saveAllState();
+            showToast("Speichere aktuellen Stand in der Cloud...");
+        }
+
+        async function runCloudRecoveryScan() {
+            if (!db || !currentUser) return;
+            const btn = document.getElementById('scanCloudBtn');
+            const resBox = document.getElementById('cloudRecoveryResultsBox');
+            btn.innerText = "Suche läuft...";
+            btn.disabled = true;
+            resBox.classList.remove('hidden');
+            resBox.innerHTML = `<div class="text-slate-600 italic">Durchsuche Firestore-Sammlung 'sekSync'...</div>`;
+
+            try {
+                // 1. Direkt bekannte Kandidaten-IDs prüfen
+                const candidateIds = [
+                    "planer_emgtc2VrQS1rcmFwZi05NDgyNzE",
+                    "planer_emgtc2VrQS1rcmFwZi05NDgyNzE_2027_28",
+                    getActiveDocId()
+                ];
+                const foundDocs = new Map();
+
+                for (const cid of candidateIds) {
+                    try {
+                        const snap = await db.collection('sekSync').doc(cid).get();
+                        if (snap.exists) foundDocs.set(snap.id, snap.data());
+                    } catch (e) {}
+                }
+
+                // 2. Abfrage nach ownerUid oder ownerEmail
+                try {
+                    const qSnap = await db.collection('sekSync').where('ownerUid', '==', currentUser.uid).get();
+                    qSnap.forEach(d => foundDocs.set(d.id, d.data()));
+                } catch (e) {}
+
+                // 3. Gesamte Sammlung prüfen (falls Security Rules es erlauben)
+                try {
+                    const allSnap = await db.collection('sekSync').limit(25).get();
+                    allSnap.forEach(d => foundDocs.set(d.id, d.data()));
+                } catch (e) {}
+
+                if (foundDocs.size === 0) {
+                    resBox.innerHTML = `<div class="bg-rose-50 border border-rose-200 text-rose-900 rounded-lg p-2.5 font-semibold">Keine Cloud-Dokumente lesbar. Bitte prüfe die Firestore-Regeln in der Firebase Console (siehe oben).</div>`;
+                } else {
+                    window._recoveredCloudDocs = foundDocs;
+                    let html = `<div class="font-extrabold text-emerald-900">Gefundene Cloud-Dokumente (${foundDocs.size}):</div>`;
+                    foundDocs.forEach((data, docId) => {
+                        const lCount = data.lessonsStore ? Object.keys(data.lessonsStore).length : 0;
+                        const tCount = Array.isArray(data.weeklyTemplate) ? data.weeklyTemplate.length : 0;
+                        html += `
+                            <div class="bg-white border border-emerald-300 rounded-lg p-2.5 flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="font-mono font-bold text-slate-900">${escapeHtml(docId)}</div>
+                                    <div class="text-[10.5px] text-slate-600">${lCount} geplante Lektionen • ${tCount} Stundenplan-Slots</div>
+                                </div>
+                                <button type="button" onclick="restoreFromCloudDoc('${escapeHtml(docId)}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shrink-0">
+                                    Jetzt wiederherstellen
+                                </button>
+                            </div>
+                        `;
+                    });
+                    resBox.innerHTML = html;
+                }
+            } catch (err) {
+                resBox.innerHTML = `<div class="bg-rose-50 border border-rose-200 text-rose-900 rounded-lg p-2.5 font-semibold">Fehler bei Suche: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.innerText = "🔍 Alle Cloud-Dokumente suchen & wiederherstellen";
+                btn.disabled = false;
+            }
+        }
+
+        function restoreFromCloudDoc(docId) {
+            const data = window._recoveredCloudDocs?.get(docId);
+            if (!data) return;
+            if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
+            if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
+            if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;
+            if (data.dayNotesStore) dayNotesStore = { ...dayNotesStore, ...data.dayNotesStore };
+            if (Array.isArray(data.standaloneNotesStore)) standaloneNotesStore = data.standaloneNotesStore;
+
+            saveAllState();
+            renderCalendar();
+            updateOpenNotesBadge();
+            refreshCloudDiagnosticUI();
+            showToast(`Daten aus '${docId}' wiederhergestellt!`);
         }
 
         // =========================================================================
@@ -1939,7 +2095,7 @@ HA: ...</pre>
             const activeTrack = getEffectiveTrack(data, slot);
 
             const header = document.getElementById('modalHeaderBar');
-            header.className = `shrink-0 px-5 py-3 text-white flex items-center justify-between ${style.headerBg}`;
+            header.className = `shrink-0 px-4 sm:px-5 py-3 text-white flex items-center justify-between ${style.headerBg}`;
             document.getElementById('modalSubjectClass').innerText = `${style.label} • ${slot.className}${activeTrack ? ` • ${activeTrack}` : ''}`;
             document.getElementById('modalDateTime').innerText = `• ${dayDate.getDate()}.${dayDate.getMonth() + 1}.${dayDate.getFullYear()} (${slot.start} – ${slot.end})`;
 
@@ -1980,7 +2136,9 @@ HA: ...</pre>
             renderModalTodosList();
             updateParallelPreview();
 
-            document.getElementById('lessonModal').classList.remove('hidden');
+            const modalEl = document.getElementById('lessonModal');
+            modalEl.classList.remove('hidden');
+            modalEl.scrollTop = 0;
             updateBodyScrollLock();
             const scrollContainer = document.getElementById('lessonModalScrollBody');
             if (scrollContainer) scrollContainer.scrollTop = 0;
@@ -2506,7 +2664,9 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             populatePreferredSlotsDropdown(2);
 
             setImportCategory('sequence');
-            document.getElementById('universalImportModal').classList.remove('hidden');
+            const modalEl = document.getElementById('universalImportModal');
+            modalEl.classList.remove('hidden');
+            modalEl.scrollTop = 0;
             updateBodyScrollLock();
             refreshIcons();
         }
@@ -3636,7 +3796,9 @@ Text:\n${raw.slice(0, 12000)}`;
         function openScheduleEditorModal() {
             document.getElementById('scheduleSjLabel').innerText = `SJ ${currentSchoolYear}`;
             renderManualScheduleEditor();
-            document.getElementById('scheduleEditorModal').classList.remove('hidden');
+            const modalEl = document.getElementById('scheduleEditorModal');
+            modalEl.classList.remove('hidden');
+            modalEl.scrollTop = 0;
             updateBodyScrollLock();
             refreshIcons();
         }
@@ -4072,7 +4234,11 @@ Text:\n${raw.slice(0, 12000)}`;
             document.getElementById('settingsClaudeKeyInput').value = localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey;
             document.getElementById('privateSyncKeyInput').value = privateSyncKey;
             document.getElementById('apiTestStatusBox').classList.add('hidden');
-            document.getElementById('settingsModal').classList.remove('hidden');
+            document.getElementById('cloudRecoveryResultsBox').classList.add('hidden');
+            refreshCloudDiagnosticUI();
+            const modalEl = document.getElementById('settingsModal');
+            modalEl.classList.remove('hidden');
+            modalEl.scrollTop = 0;
             updateBodyScrollLock();
             refreshIcons();
         }
@@ -4089,7 +4255,7 @@ Text:\n${raw.slice(0, 12000)}`;
             localStorage.setItem('sekPlaner_geminiKey', gKey);
             localStorage.setItem('sekPlaner_claudeKey', cKey);
             localStorage.removeItem('sekPlaner_workingModel');
-            if (sKey.length >= 8) {
+            if (sKey.length >= 6) {
                 privateSyncKey = sKey;
                 localStorage.setItem('sekPlaner_privateKey', sKey);
                 connectPrivateFirestoreSync();
