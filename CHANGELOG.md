@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 13 – 17.11.2026
+- Als App installierbar (Android/Chrome «App installieren», iPhone «Zum Home-Bildschirm»): eigenes Symbol (Planer-Heft), öffnet im Vollbild ohne Adressleiste.
+- Minimaler Service Worker ohne Zwischenspeicher – neue Versionen kommen weiterhin sofort an.
+
 ## Version 12 – 17.11.2026
 - Neu: **Suche** (🔍 oben) über alle Lektionen des Schuljahres – mehrere Wörter kombiniert, Fächer werden erkannt (z. B. «englisch»), eingebautes Wörterbuch für Schulbegriffe Deutsch/Englisch (z. B. Leseverstehen ↔ Reading Comprehension, Prüfung ↔ Test). Treffer markiert, Klick öffnet die Lektion, Klassenfilter.
 - Neu: **«Mit KI suchen»** findet auch sinngemässe Treffer, mit kurzer Begründung.

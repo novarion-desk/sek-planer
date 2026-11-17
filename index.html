@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Sek Planer (ZH) – Unterrichtscockpit</title>
+    <!-- Als App installierbar (Startbildschirm, Vollbild) -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Sek Planer">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <!-- Alle Bausteine liegen fest im Repository (vendor/) – keine Abhängigkeit von fremden Servern -->
     <script src="vendor/lucide.min.js"></script>
     <script src="vendor/mammoth.browser.min.js"></script>
@@ -2044,6 +2053,11 @@ HA: ...</pre>
         let universalAllSlots2 = [];
         let generalChatHistory = [];
         let pendingAiHolidays = [];
+
+        // Installierbar machen (nur in der Hauptversion, nicht im Versions-Archiv)
+        if ('serviceWorker' in navigator && !/\/versions\//.test(location.pathname)) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             refreshIcons();
