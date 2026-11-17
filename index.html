@@ -46,6 +46,13 @@
             #weekGridContainer { min-width: 100% !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 6px !important; }
             .lesson-card-body { -webkit-line-clamp: unset !important; overflow: visible !important; }
             input[type="text"] { border: none !important; background: transparent !important; }
+            /* Druck des Jahreskalenders */
+            body.print-year #planWithSidebarWrapper, body.print-year #notesViewSection, body.print-year #printHeaderBanner { display: none !important; }
+            body.print-year #holidaysViewSection { display: block !important; max-width: none !important; padding: 0 !important; }
+            body.print-year #holidaysViewSection > div > *:not(#yearCalendarList):not(#yearPrintTitle) { display: none !important; }
+            body.print-year #holidaysViewSection > div { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            body.print-year #yearPrintTitle { display: block !important; }
+            body.print-year .year-week { break-inside: avoid; }
         }
     </style>
     <!-- Tailwind nach den eigenen Styles laden: gleiche Reihenfolge wie früher mit dem Tailwind-CDN -->
@@ -179,7 +186,7 @@
                     </button>
                     <button type="button" id="mainTabHolidays" onclick="switchMainTab('holidays')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
                         <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-rose-600"></i>
-                        <span>Ferien &amp; Spezialtage</span>
+                        <span>Jahreskalender</span>
                     </button>
                 </div>
 
@@ -307,9 +314,9 @@
         <section id="holidaysViewSection" class="hidden flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 flex flex-col gap-5">
             <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col gap-5 text-xs">
                 <div class="border-b border-slate-100 pb-3">
-                    <h2 class="text-base font-extrabold text-slate-900">Ferien, Feiertage &amp; Spezialtage (<span id="holidayTitleSjLabel">SJ 2026/27</span>)</h2>
+                    <h2 class="text-base font-extrabold text-slate-900">Jahreskalender (<span id="holidayTitleSjLabel">SJ 2026/27</span>)</h2>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Alle hier eingetragenen Daten erscheinen am konkreten Tag automatisch oben im gelben Tages-Notizfeld des Wochenplans. Klassen-spezifische Anlässe blockieren beim Sequenz-Import nur die betroffene Klasse.
+                        Alles, was das Schuljahr betrifft, untereinander: Ferien, Spezialtage, Anlässe aus Lektionen, Prüfungen und Tagesnotizen. Termine erscheinen am konkreten Tag automatisch oben im gelben Feld des Wochenplans. Klassen-spezifische Anlässe blockieren beim Sequenz-Import nur die betroffene Klasse.
                     </p>
                 </div>
 
@@ -361,24 +368,34 @@
                         <input type="text" id="newEventName" placeholder="z. B. Exkursion Naturmuseum" class="w-full bg-white border border-amber-200 rounded-lg px-3 py-1.5 font-bold">
                     </div>
                     <button type="button" onclick="addManualCalendarEvent()" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold">
-                        + Hinzufügen
+                        + Termin
                     </button>
                 </div>
 
-                <div class="border border-slate-200 rounded-xl overflow-hidden">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-100 text-[11px] font-extrabold text-slate-700 border-b border-slate-200">
-                            <tr>
-                                <th class="py-2 px-3">Datum</th>
-                                <th class="py-2 px-3">Bezeichnung</th>
-                                <th class="py-2 px-3">Klasse(n)</th>
-                                <th class="py-2 px-3">Kategorie</th>
-                                <th class="py-2 px-3 text-right">Aktion</th>
-                            </tr>
-                        </thead>
-                        <tbody id="allSpecialDaysTbody" class="divide-y divide-slate-100"></tbody>
-                    </table>
+                <!-- Anlässe in der Planung finden (KI) -->
+                <div id="yearAiBox" class="no-print bg-violet-50/80 border border-violet-200 rounded-xl p-3.5 flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 font-extrabold text-violet-950">
+                            <i data-lucide="search" class="w-4 h-4 text-violet-600"></i>
+                            <span>Anlässe in der Planung finden (z. B. Polizei, Podiumsdiskussion, Autorenlesung)</span>
+                        </div>
+                        <button type="button" id="yearAiBtn" onclick="findYearEventsWithAi()" class="px-4 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-bold">Mit KI durchsuchen</button>
+                    </div>
+                    <div id="yearAiPreview" class="hidden flex flex-col gap-1.5"></div>
                 </div>
+
+                <!-- Jahresliste -->
+                <div id="yearListToolbar" class="no-print flex flex-wrap items-center gap-2">
+                    <label class="font-bold text-slate-700">Klasse</label>
+                    <select id="yearClassFilter" onchange="renderSpecialDaysTable()" class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold">
+                        <option value="ALL">Alle Klassen</option>
+                    </select>
+                    <button type="button" id="yearPastToggle" onclick="toggleYearPast()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-bold text-slate-700">Vergangenes ausblenden</button>
+                    <button type="button" onclick="scrollYearToToday()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-bold text-slate-700">Heute</button>
+                    <button type="button" onclick="printYearCalendar()" class="ml-auto px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Drucken / PDF</button>
+                </div>
+                <div id="yearPrintTitle" class="hidden text-base font-extrabold text-slate-900"></div>
+                <div id="yearCalendarList" class="flex flex-col gap-3"></div>
             </div>
         </section>
     </div>
@@ -2548,6 +2565,7 @@ HA: ...</pre>
                 btnHol.className = "px-3 py-1 rounded-md bg-white text-slate-900 shadow-2xs flex items-center gap-1.5";
                 populateHolidayClassSelect();
                 renderSpecialDaysTable();
+                setTimeout(() => document.getElementById('yearTodayMarker')?.scrollIntoView({ block: 'center' }), 60);
             }
             refreshIcons();
         }
@@ -5905,21 +5923,231 @@ Text:\n${raw.slice(0, 12000)}`;
                 classes.map(c => `<option value="${escapeHtml(c)}">Nur ${escapeHtml(c)}</option>`).join('');
         }
 
+        // ---------- Jahreskalender: alles fürs Schuljahr untereinander ----------
+        function yearHidePast() { try { return localStorage.getItem(accountStorageName('yearHidePast')) === '1'; } catch (e) { return false; } }
+        function toggleYearPast() {
+            try { localStorage.setItem(accountStorageName('yearHidePast'), yearHidePast() ? '0' : '1'); } catch (e) {}
+            renderSpecialDaysTable();
+        }
+        function slotForLessonKey(key) {
+            const id = String(key).split('_').slice(1).join('_');
+            return weeklyTemplate.find(s => s.id === id) || null;
+        }
+        function collectYearEntries() {
+            const { start: syS, end: syE } = schoolYearRange(currentSchoolYear);
+            const entries = [];
+            calendarEvents.forEach(ev => {
+                const slot = ev.lessonKey ? slotForLessonKey(ev.lessonKey) : null;
+                entries.push({
+                    kind: ev.type === 'holiday' ? 'holiday' : (ev.lessonKey ? 'lessonEvent' : 'special'),
+                    start: ev.start, end: ev.end || ev.start, name: ev.name,
+                    cls: ev.targetClass || 'ALL', id: ev.id, lessonKey: ev.lessonKey || '',
+                    sub: slot ? `${getStyleForSlot(slot.subject, slot.className).label} ${slot.className} · ${slot.start}` : ''
+                });
+            });
+            Object.entries(lessonsStore).forEach(([key, l]) => {
+                if (!l || !l.isExam) return;
+                const iso = key.split('_')[0];
+                if (iso < syS || iso > syE) return;
+                const slot = slotForLessonKey(key);
+                const what = l.title || htmlToPlainText(l.hauptteil || '').split('\n')[0].trim().slice(0, 70);
+                entries.push({ kind: 'exam', start: iso, end: iso, name: `Prüfung${what ? `: ${what}` : ''}`, cls: slot ? slot.className : 'ALL',
+                               lessonKey: key, sub: slot ? `${getStyleForSlot(slot.subject, slot.className).label} ${slot.className} · ${slot.start}` : '' });
+            });
+            Object.entries(dayNotesStore).forEach(([iso, txt]) => {
+                if (!txt || !String(txt).trim() || iso < syS || iso > syE) return;
+                entries.push({ kind: 'note', start: iso, end: iso, name: String(txt).trim(), cls: 'ALL' });
+            });
+            const order = { holiday: 0, special: 1, note: 2, lessonEvent: 3, exam: 4 };
+            return entries.sort((a, b) => a.start.localeCompare(b.start) || (order[a.kind] - order[b.kind]) || (a.sub || '').localeCompare(b.sub || ''));
+        }
+
         function renderSpecialDaysTable() {
-            const tbody = document.getElementById('allSpecialDaysTbody');
-            const sorted = [...calendarEvents].sort((a, b) => String(a.start).localeCompare(String(b.start)));
-            tbody.innerHTML = sorted.map(ev => {
-                const clsLabel = !ev.targetClass || ev.targetClass === 'ALL' ? 'Alle Klassen' : ev.targetClass;
-                return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-2 px-3 font-bold text-slate-800 whitespace-nowrap">${escapeHtml(formatDateCH(ev.start))}${ev.end && ev.end !== ev.start ? ` – ${escapeHtml(formatDateCH(ev.end))}` : ''}</td>
-                        <td class="py-2 px-3 font-semibold text-slate-900">${escapeHtml(ev.name)}</td>
-                        <td class="py-2 px-3 font-bold text-indigo-900">${escapeHtml(clsLabel)}</td>
-                        <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold ${ev.type === 'holiday' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}">${ev.type === 'holiday' ? 'Ferien / Blockiert' : 'Spezialtag / Anlass'}</span></td>
-                        <td class="py-2 px-3 text-right"><button type="button" onclick="deleteCalendarEvent(${jsArg(ev.id)})" class="text-rose-600 hover:underline font-bold">Löschen</button></td>
-                    </tr>
-                `;
-            }).join('');
+            const list = document.getElementById('yearCalendarList');
+            if (!list) return;
+            const filterSel = document.getElementById('yearClassFilter');
+            const prev = filterSel.value || 'ALL';
+            const classes = getUniqueClasses();
+            filterSel.innerHTML = `<option value="ALL">Alle Klassen</option>` + classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            filterSel.value = classes.includes(prev) ? prev : 'ALL';
+            const cls = filterSel.value;
+            const hidePast = yearHidePast();
+            document.getElementById('yearPastToggle').innerText = hidePast ? 'Vergangenes einblenden' : 'Vergangenes ausblenden';
+            const todayISO = formatDateISO(new Date());
+
+            const entries = collectYearEntries().filter(e => cls === 'ALL' || e.cls === 'ALL' || String(e.cls).toUpperCase() === cls.toUpperCase())
+                .filter(e => !hidePast || e.end >= todayISO);
+            const icon = { holiday: '🏖️', special: '📌', note: '🗒️', lessonEvent: '🎓', exam: '📝' };
+            const badge = { holiday: 'bg-rose-100 text-rose-800', special: 'bg-amber-100 text-amber-900', note: 'bg-yellow-100 text-amber-900', lessonEvent: 'bg-violet-100 text-violet-900', exam: 'bg-rose-600 text-white' };
+            const kindLabel = { holiday: 'Ferien / schulfrei', special: 'Anlass', note: 'Tagesnotiz', lessonEvent: 'In Lektion', exam: 'Prüfung' };
+            const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+            const dayShort = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+            if (entries.length === 0) {
+                list.innerHTML = `<div class="text-slate-400 italic py-6 text-center">Keine Einträge${hidePast ? ' ab heute' : ''}${cls !== 'ALL' ? ` für ${escapeHtml(cls)}` : ''}.</div>`;
+                return;
+            }
+            const html = [];
+            let curMonth = '', curWeek = '', todayMarked = false;
+            entries.forEach(e => {
+                const d = new Date(`${e.start}T12:00:00`);
+                const mKey = e.start.slice(0, 7);
+                const monday = formatDateISO(getMonday(d));
+                if (!todayMarked && e.end >= todayISO) {
+                    // «Heute»-Linie vor dem ersten aktuellen/kommenden Eintrag – ausserhalb der Wochengruppe
+                    todayMarked = true;
+                    const newGroup = mKey !== curMonth || monday !== curWeek;
+                    if (newGroup && curWeek) { html.push('</div>'); curWeek = ''; }
+                    html.push(`<div id="yearTodayMarker" class="flex items-center gap-2 text-[10.5px] font-extrabold text-indigo-700 my-1"><span class="flex-1 border-t-2 border-indigo-400"></span>Heute, ${formatDateCH(todayISO)}<span class="flex-1 border-t-2 border-indigo-400"></span></div>`);
+                }
+                if (mKey !== curMonth) {
+                    if (curWeek) html.push('</div>');
+                    curMonth = mKey; curWeek = '';
+                    html.push(`<div class="text-sm font-extrabold text-slate-900 border-b-2 border-slate-200 pb-1 mt-2">${months[d.getMonth()]} ${d.getFullYear()}</div>`);
+                }
+                if (monday !== curWeek) {
+                    if (curWeek) html.push('</div>');
+                    curWeek = monday;
+                    const fri = new Date(`${monday}T12:00:00`); fri.setDate(fri.getDate() + 4);
+                    html.push(`<div class="year-week flex flex-col gap-1"><div class="text-[10.5px] font-extrabold text-slate-500 uppercase tracking-wide">KW ${getWeekNumber(new Date(`${monday}T12:00:00`))} · ${formatDateCH(monday).slice(0, 6)}–${formatDateCH(formatDateISO(fri)).slice(0, 6)}</div>`);
+                }
+                const past = e.end < todayISO;
+                const dateTxt = `${dayShort[d.getDay()]} ${formatDateCH(e.start)}${e.end !== e.start ? ` – ${dayShort[new Date(`${e.end}T12:00:00`).getDay()]} ${formatDateCH(e.end)}` : ''}`;
+                const clickable = e.lessonKey ? `onclick="openLessonFromYear(${jsArg(e.lessonKey)})" class="cursor-pointer hover:bg-indigo-50` : `class="`;
+                html.push(`<div ${clickable} flex items-start gap-2.5 bg-white border border-slate-200 rounded-lg px-3 py-2 ${past ? 'opacity-50' : ''}">
+                    <span class="text-base leading-none mt-0.5">${icon[e.kind]}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="font-bold text-slate-500 whitespace-nowrap">${escapeHtml(dateTxt)}</span>
+                            <span class="px-1.5 py-px rounded text-[10px] font-extrabold ${badge[e.kind]}">${kindLabel[e.kind]}</span>
+                            ${e.cls && e.cls !== 'ALL' ? `<span class="px-1.5 py-px rounded text-[10px] font-extrabold bg-indigo-100 text-indigo-900">${escapeHtml(e.cls)}</span>` : ''}
+                        </div>
+                        <div class="font-semibold text-slate-900 mt-0.5">${escapeHtml(e.name)}</div>
+                        ${e.sub ? `<div class="text-[10.5px] text-slate-500">${escapeHtml(e.sub)}</div>` : ''}
+                    </div>
+                    ${e.id ? `<button type="button" onclick="event.stopPropagation(); deleteCalendarEvent(${jsArg(e.id)})" class="no-print text-rose-600 hover:underline font-bold text-[10.5px] shrink-0">Löschen</button>` : ''}
+                </div>`);
+            });
+            if (curWeek) html.push('</div>');
+            if (!todayMarked) html.push(`<div id="yearTodayMarker" class="flex items-center gap-2 text-[10.5px] font-extrabold text-indigo-700"><span class="flex-1 border-t-2 border-indigo-400"></span>Heute, ${formatDateCH(todayISO)}<span class="flex-1 border-t-2 border-indigo-400"></span></div>`);
+            list.innerHTML = html.join('');
+            document.getElementById('yearPrintTitle').innerText = `Jahreskalender ${currentSchoolYear}${cls !== 'ALL' ? ` – ${cls}` : ''}${hidePast ? ` (ab ${formatDateCH(todayISO)})` : ''}`;
+        }
+
+        function scrollYearToToday() {
+            document.getElementById('yearTodayMarker')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+        function openLessonFromYear(key) {
+            const slot = slotForLessonKey(key);
+            if (!slot) { showToast('Die Lektion ist nicht mehr im Stundenplan.'); return; }
+            const iso = key.split('_')[0];
+            openLessonModal(key, slot, new Date(`${iso}T12:00:00`));
+        }
+        function printYearCalendar() {
+            document.body.classList.add('print-year');
+            const done = () => { document.body.classList.remove('print-year'); window.removeEventListener('afterprint', done); };
+            window.addEventListener('afterprint', done);
+            setTimeout(() => { window.print(); setTimeout(done, 1500); }, 50);
+        }
+
+        // ---------- KI: Anlässe in der Planung finden ----------
+        let pendingYearSuggestions = [];
+        async function findYearEventsWithAi() {
+            const btn = document.getElementById('yearAiBtn');
+            const box = document.getElementById('yearAiPreview');
+            const { start: syS, end: syE } = schoolYearRange(currentSchoolYear);
+            const lessons = Object.entries(lessonsStore)
+                .filter(([key, l]) => { const iso = key.split('_')[0]; return l && iso >= syS && iso <= syE && slotForLessonKey(key); })
+                .map(([key, l]) => {
+                    const slot = slotForLessonKey(key);
+                    const text = [l.title, htmlToPlainText(l.einstieg || ''), htmlToPlainText(l.hauptteil || ''), htmlToPlainText(l.schluss || ''), htmlToPlainText(l.notes || '')]
+                        .filter(Boolean).join(' | ').replace(/\s+/g, ' ').slice(0, 500);
+                    return { key, text, label: `${key.split('_')[0]} ${slot.subject} ${slot.className} ${slot.start}` };
+                })
+                .filter(x => x.text.trim().length > 0)
+                .sort((a, b) => a.key.localeCompare(b.key));
+            if (lessons.length === 0) { showToast('Keine geplanten Lektionen zum Durchsuchen.'); return; }
+            btn.disabled = true;
+            btn.innerText = 'Durchsuche…';
+            box.classList.remove('hidden');
+            box.innerHTML = `<div class="text-violet-900 italic">KI durchsucht ${lessons.length} Lektionen…</div>`;
+            const found = [];
+            try {
+                const chunks = [];
+                for (let i = 0; i < lessons.length; i += 60) chunks.push(lessons.slice(i, i + 60));
+                for (const chunk of chunks) {
+                    const listing = chunk.map(x => `[${x.key}] ${x.label}: ${x.text}`).join('\n');
+                    const prompt = `Du bekommst die Unterrichtsplanung einer Lehrperson (Sekundarschule, Kanton Zürich). Jede Zeile beginnt mit der ID in eckigen Klammern.
+Finde AUSSCHLIESSLICH besondere Anlässe und Ereignisse, die man im Jahreskalender sehen möchte: Besuche (z. B. Polizei, Berufsberatung), Exkursionen, Podiumsdiskussionen, Autorenlesungen, Vorträge von Gästen, Coaching-Gespräche, Elternabende, Abgabetermine, Tests/Prüfungen, Lehrperson abwesend/Stellvertretung.
+NICHT aufnehmen: normaler Unterricht, Übungen, Hausaufgaben, Lektüre, gewöhnliche Schülervorträge.
+Antworte NUR mit einem JSON-Array ohne Markdown: [{"id":"<ID genau wie angegeben>","name":"kurze Bezeichnung, max. 60 Zeichen"}]. Wenn nichts gefunden wird: [].
+
+${listing}`;
+                    const raw = await callGeminiUnified(prompt, null, { systemPrompt: 'Du extrahierst Termine präzise und antwortest nur mit JSON.' });
+                    const m = raw.match(/\[[\s\S]*\]/);
+                    const arr = JSON.parse(m ? m[0] : '[]');
+                    if (Array.isArray(arr)) arr.forEach(x => { if (x && chunk.some(c => c.key === x.id) && x.name) found.push({ key: x.id, name: String(x.name).slice(0, 80) }); });
+                }
+                const norm = (t) => String(t || '').toLowerCase().replace(/[^a-zäöü0-9]/g, '');
+                pendingYearSuggestions = found
+                    .map(x => {
+                        const slot = slotForLessonKey(x.key);
+                        return { ...x, iso: x.key.split('_')[0], cls: slot.className, sub: `${getStyleForSlot(slot.subject, slot.className).label} ${slot.className} · ${slot.start}` };
+                    })
+                    // gleicher Anlass, gleicher Tag, gleiche Klasse (z. B. Doppellektion) → nur einmal
+                    .filter((x, i, a) => a.findIndex(y => y.iso === x.iso && y.cls === x.cls && norm(y.name) === norm(x.name)) === i)
+                    .map(x => {
+                        const n = norm(x.name).slice(0, 12);
+                        // schon vorhanden: als Termin an diesem Tag (gleiche/alle Klassen) oder als Tagesnotiz
+                        const dup = calendarEvents.some(e => x.iso >= e.start && x.iso <= (e.end || e.start) && (e.targetClass === 'ALL' || e.targetClass === x.cls) && norm(e.name).includes(n))
+                            || norm(dayNotesStore[x.iso]).includes(n);
+                        return { ...x, selected: !dup, dup };
+                    })
+                    .sort((a, b) => a.key.localeCompare(b.key));
+                renderYearSuggestions();
+            } catch (err) {
+                box.innerHTML = `<div class="text-rose-700 font-semibold">KI-Suche fehlgeschlagen: ${escapeHtml(String(err.message).split('\n')[0])}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Mit KI durchsuchen';
+            }
+        }
+        function renderYearSuggestions() {
+            const box = document.getElementById('yearAiPreview');
+            if (pendingYearSuggestions.length === 0) {
+                box.innerHTML = `<div class="text-violet-900 font-semibold">Keine besonderen Anlässe gefunden.</div>`;
+                return;
+            }
+            box.innerHTML = `<div class="font-bold text-violet-950">Gefundene Anlässe – bitte auswählen:</div>` +
+                pendingYearSuggestions.map((x, i) => `
+                    <label class="flex items-start gap-2 bg-white border border-violet-200 rounded-lg px-2.5 py-1.5 cursor-pointer">
+                        <input type="checkbox" ${x.selected ? 'checked' : ''} onchange="pendingYearSuggestions[${i}].selected=this.checked" class="mt-0.5 rounded text-violet-600">
+                        <span><strong>${escapeHtml(formatDateCH(x.iso))}</strong> · ${escapeHtml(x.name)} <span class="text-slate-500">(${escapeHtml(x.sub)})</span>${x.dup ? ' <span class="text-amber-700 font-semibold">– steht schon im Kalender</span>' : ''}</span>
+                    </label>`).join('') +
+                `<div class="flex justify-end gap-2 mt-1">
+                    <button type="button" onclick="pendingYearSuggestions=[];document.getElementById('yearAiPreview').classList.add('hidden')" class="px-3 py-1 bg-slate-100 rounded font-bold text-slate-600">Verwerfen</button>
+                    <button type="button" onclick="applyYearSuggestions()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold">In Jahreskalender übernehmen</button>
+                </div>`;
+        }
+        async function applyYearSuggestions() {
+            const chosen = pendingYearSuggestions.filter(x => x.selected);
+            if (chosen.length === 0) { showToast('Nichts ausgewählt.'); return; }
+            if (importBusy) return;
+            importBusy = true;
+            try {
+                if (!(await backupBeforeImport())) return;
+            } finally {
+                importBusy = false;
+            }
+            chosen.forEach((x, i) => {
+                calendarEvents.push({ id: `ev-lesson-${Date.now()}-${i}`, type: 'special', targetClass: x.cls || 'ALL', name: x.name, start: x.iso, end: x.iso, lessonKey: x.key });
+            });
+            pendingYearSuggestions = [];
+            document.getElementById('yearAiPreview').classList.add('hidden');
+            saveAllState();
+            renderSpecialDaysTable();
+            renderCalendar();
+            showToast(`${chosen.length} Anlässe in den Jahreskalender übernommen!`);
         }
 
         function addManualCalendarEvent() {

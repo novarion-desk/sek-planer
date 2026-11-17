@@ -1,5 +1,11 @@
 # Änderungen
 
+## Version 11 – 17.11.2026
+- «Ferien & Spezialtage» ist jetzt der **Jahreskalender**: alles fürs Schuljahr untereinander (Ferien, Spezialtage, Anlässe aus Lektionen, Prüfungen, Tagesnotizen), gegliedert nach Monat und Woche, mit «Heute»-Linie.
+- Filter nach Klasse; Vergangenes grau, per Knopf ausblendbar; Drucken / PDF der Liste.
+- KI-Suche «Anlässe in der Planung finden» (z. B. Polizei, Podiumsdiskussion): Vorschläge mit Häkchen, schon Vorhandenes wird erkannt; vor dem Übernehmen automatisches Backup. Übernommene Anlässe erscheinen auch oben im Tag des Wochenplans.
+- Klick auf einen Lektions-Eintrag öffnet die Lektion.
+
 ## Version 10 – 17.11.2026
 - Chalk-Import gliedert die Inhalte automatisch in Einstieg / Hauptteil / Schluss / HA (auch englische Abläufe: Warm-up, Wrap-up …); «Woche N: Lektion …» bzw. «Lesson N – …» wird zum Lektionstitel; PDF-Zeilenumbrüche werden zusammengefügt.
 - Chalk-Import: Offdays → schulfrei, Projektwoche/Weiterbildung → Spezialtag (oben im Tag angezeigt). Es wird nichts verschoben.
