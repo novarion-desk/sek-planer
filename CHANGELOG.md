@@ -1,5 +1,15 @@
 # Änderungen
 
+## Version 10 – 17.11.2026
+- Chalk-Import gliedert die Inhalte automatisch in Einstieg / Hauptteil / Schluss / HA (auch englische Abläufe: Warm-up, Wrap-up …); «Woche N: Lektion …» bzw. «Lesson N – …» wird zum Lektionstitel; PDF-Zeilenumbrüche werden zusammengefügt.
+- Chalk-Import: Offdays → schulfrei, Projektwoche/Weiterbildung → Spezialtag (oben im Tag angezeigt). Es wird nichts verschoben.
+- Chalk-Import: Abweichende Zeiten im Stundenplan werden an Chalk angepasst (z. B. Musik 2Aa Fr 15:35); Inhalte bleiben in derselben Lektion.
+- Mittagsband 11:50–13:45 in Wochen- und Tagesansicht; Lektionen über Mittag (Econ, Basketball) sind markiert.
+- Neue Konten starten ohne Stundenplan (mit Hinweis). Das Konto des Besitzers bleibt unverändert.
+- Sprachmemos: sofortige Transkription mit Gemini, ChatGPT als Ersatz; fehlgeschlagene Transkriptionen werden automatisch nachgeholt (beim Öffnen und sobald wieder online).
+- Sprachmemos: Nach der Transkription bleibt die Audiodatei nur auf dem Aufnahmegerät, synchronisiert wird nur der Text (schont das 1-MB-Limit).
+- Korrektur: Einzeilige Texte mit Anführungszeichen wurden in den Karten doppelt maskiert angezeigt.
+
 ## Version 9 – 17.11.2026
 - Handy: Die App öffnet direkt in der Tagesansicht mit dem heutigen Tag (am Wochenende: Montag der nächsten Woche). Tablet/Computer unverändert.
 - Vor jedem Import (Chalk, Datei/Sequenz, Stundenplan, Ferien, KI-Termine, Backup-Datei) wird automatisch eine Cloud-Sicherung «vor Import» angelegt. Klappt das nicht (offline), wird zuerst eine Backup-Datei heruntergeladen – ohne Sicherung wird nichts importiert.

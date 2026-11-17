@@ -1116,7 +1116,8 @@ HA: ...</pre>
 
         function plainOrHtmlToEditorHtml(val) {
             if (!val) return "";
-            if (/<[a-z][\s\S]*>/i.test(val)) return sanitizeRich(val);
+            // Bereits gespeichertes HTML (auch einzeilig nur mit &quot; usw.) nicht nochmals maskieren
+            if (/<[a-z][\s\S]*>/i.test(val) || /&(amp|lt|gt|quot|#39);/.test(val)) return sanitizeRich(val);
             return markdownBoldToHtml(val);
         }
 
@@ -1551,17 +1552,69 @@ HA: ...</pre>
         }
 
         // Sprachmemo mit Gemini transkribieren (funktioniert in jedem Browser, auch Schweizerdeutsch → Hochdeutsch)
+        function hasTranscriptionKey() {
+            return Boolean((geminiApiKey || '').trim() || (openaiApiKey || '').trim());
+        }
+
+        // ChatGPT (OpenAI) als Ersatz – eigener Transkriptions-Endpunkt
+        async function openAiTranscribe(mime, base64) {
+            const oKey = (openaiApiKey || '').trim().replace(/^["']|["']$/g, '');
+            if (!oKey) throw new Error('Kein ChatGPT-Schlüssel');
+            const bin = atob(base64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const ext = /mp4|m4a|aac/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : /mpeg|mp3/.test(mime) ? 'mp3' : /wav/.test(mime) ? 'wav' : 'webm';
+            let models = ['gpt-4o-transcribe', 'gpt-4o-mini-transcribe', 'whisper-1'];
+            try {
+                const res = await fetchWithTimeout('https://api.openai.com/v1/models', { headers: { 'Authorization': `Bearer ${oKey}` } }, 8000);
+                if (res.ok) {
+                    const ids = ((await res.json()).data || []).map(m => m.id);
+                    const found = ids.filter(id => /transcribe/.test(id) && !/diariz|realtime|\d{4}-\d{2}/.test(id)).sort().reverse();
+                    models = [...new Set([...found, ...models.filter(m => ids.includes(m))])];
+                    if (models.length === 0) models = ['whisper-1'];
+                }
+            } catch (e) {}
+            let lastErr = null;
+            for (const model of models.slice(0, 3)) {
+                const fd = new FormData();
+                fd.append('file', new Blob([bytes], { type: mime }), `memo.${ext}`);
+                fd.append('model', model);
+                fd.append('language', 'de');
+                fd.append('prompt', 'Sprachnotiz einer Lehrperson (Schweiz). Bitte in korrektem Hochdeutsch.');
+                try {
+                    const res = await fetchWithTimeout('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { 'Authorization': `Bearer ${oKey}` }, body: fd }, 90000);
+                    if (res.ok) return String((await res.json()).text || '').trim();
+                    lastErr = new Error(`ChatGPT ${res.status}`);
+                    if (res.status === 401 || res.status === 429) break;
+                } catch (e) { lastErr = e; }
+            }
+            throw lastErr || new Error('ChatGPT-Transkription fehlgeschlagen');
+        }
+
         async function transcribeAudioWithAi(audioDataUrl) {
             const m = String(audioDataUrl || '').match(/^data:([^;,]+)(?:;[^,]*)?;base64,(.+)$/);
             if (!m) throw new Error("Audiodaten nicht lesbar.");
             const mime = m[1] === 'audio/x-m4a' ? 'audio/mp4' : m[1];
             const prompt = "Transkribiere diese Sprachaufnahme einer Lehrperson vollständig und wortgetreu. Schweizerdeutsch gibst du in korrektem Hochdeutsch wieder. Gib nur den transkribierten Text aus – ohne Einleitung, ohne Anführungszeichen, ohne Zeitstempel. Ist nichts Verständliches zu hören, antworte mit einem leeren Text.";
-            const text = await callGeminiUnified(prompt, null, {
-                extraParts: [{ inlineData: { mimeType: mime, data: m[2] } }],
-                geminiOnly: true,
-                systemPrompt: "Du bist ein präzises Transkriptionswerkzeug."
-            });
-            return text.replace(/^["„»]|["“«]$/g, '').trim();
+            let geminiErr = null;
+            if ((geminiApiKey || '').trim()) {
+                try {
+                    const text = await callGeminiUnified(prompt, null, {
+                        extraParts: [{ inlineData: { mimeType: mime, data: m[2] } }],
+                        geminiOnly: true,
+                        systemPrompt: "Du bist ein präzises Transkriptionswerkzeug."
+                    });
+                    return text.replace(/^["„»]|["“«]$/g, '').trim();
+                } catch (e) {
+                    geminiErr = e;
+                    if (!(openaiApiKey || '').trim()) throw e;
+                }
+            }
+            try {
+                return await openAiTranscribe(mime, m[2]);
+            } catch (e) {
+                throw geminiErr ? new Error(`Gemini: ${String(geminiErr.message).split('\n')[0]} · ${e.message}`) : e;
+            }
         }
 
         async function testGeminiApiConnection() {
@@ -1922,7 +1975,12 @@ HA: ...</pre>
             "2028/29": []
         };
 
-        let weeklyTemplate = JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
+        // Nur das Konto des Besitzers startet mit dem hinterlegten Stundenplan – neue Konten starten leer
+        function defaultTemplateForAccount() {
+            const isOwner = currentUser && (currentUser.email || "").toLowerCase() === OWNER_EMAIL;
+            return isOwner ? JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE)) : [];
+        }
+        let weeklyTemplate = [];
         let calendarEvents = [...(DEFAULT_EVENTS_BY_YEAR[currentSchoolYear] || [])];
         let dayNotesStore = {};
         let lessonsStore = {};
@@ -2067,6 +2125,7 @@ HA: ...</pre>
         }
 
         function loadSchoolYearData(year) {
+            hydrateClipAudioSoon();   // läuft nach dem Laden (Audio vom Gerät ergänzen, Transkriptionen nachholen)
             const p = getStoragePrefix();
             const isOwner = currentUser && (currentUser.email || "").toLowerCase() === OWNER_EMAIL;
             const legacyPrefix = `sekPlaner_${year.replace('/', '_')}`;
@@ -2081,13 +2140,13 @@ HA: ...</pre>
                 const parsedTemplate = t ? JSON.parse(t) : null;
                 weeklyTemplate = (Array.isArray(parsedTemplate) && parsedTemplate.length > 0)
                     ? parsedTemplate
-                    : JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
+                    : defaultTemplateForAccount();
                 calendarEvents = e ? JSON.parse(e) : JSON.parse(JSON.stringify(DEFAULT_EVENTS_BY_YEAR[year] || []));
                 dayNotesStore = d ? JSON.parse(d) : {};
                 standaloneNotesStore = sn ? JSON.parse(sn) : [];
             } catch (err) {
                 lessonsStore = {};
-                weeklyTemplate = JSON.parse(JSON.stringify(DEFAULT_WEEKLY_TEMPLATE));
+                weeklyTemplate = defaultTemplateForAccount();
                 calendarEvents = JSON.parse(JSON.stringify(DEFAULT_EVENTS_BY_YEAR[year] || []));
                 dayNotesStore = {};
                 standaloneNotesStore = [];
@@ -2114,7 +2173,12 @@ HA: ...</pre>
         const CLOUD_DOC_LIMIT_BYTES = 950 * 1024;   // Firestore-Limit: 1 MiB pro Dokument
 
         // Laufzeit-Markierungen (z. B. «wird transkribiert») nie speichern
-        function dropVolatileFields(k, v) { return k === 'transcribing' ? undefined : v; }
+        // Audio eines bereits transkribierten Memos bleibt nur auf dem Gerät (IndexedDB) – synchronisiert wird nur der Text
+        function dropVolatileFields(k, v) {
+            if (k === 'transcribing') return undefined;
+            if (k === 'audioDataUrl' && this && typeof this.transcript === 'string' && this.transcript.trim()) return undefined;
+            return v;
+        }
 
         function persistLocal() {
             const p = getStoragePrefix();
@@ -2184,6 +2248,7 @@ HA: ...</pre>
         }
 
         function refreshViewsAfterSync() {
+            hydrateClipAudioSoon();
             renderCalendar();
             updateOpenNotesBadge();
             if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
@@ -2195,7 +2260,7 @@ HA: ...</pre>
             if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
             if (Array.isArray(v)) return `[${v.map(stableStringify).join(',')}]`;
             if (typeof v.toMillis === 'function') return JSON.stringify(v.toMillis());
-            return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(',')}}`;
+            return `{${Object.keys(v).filter(k => k !== 'transcribing' && k !== 'audioDataUrl').sort().map(k => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(',')}}`;
         }
         function hashOf(v) {
             if (v === undefined) return undefined;
@@ -2680,6 +2745,14 @@ HA: ...</pre>
 
             const todayISO = formatDateISO(new Date());
 
+            if (weeklyTemplate.length === 0) {
+                const hint = document.createElement('div');
+                hint.className = "md:col-span-5 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-xs text-indigo-950 flex flex-wrap items-center justify-between gap-2";
+                hint.innerHTML = `<span><strong>Noch kein Stundenplan erfasst.</strong> Trage deine Lektionen unter «Stundenplan» ein oder importiere sie über «Datei / Sequenz».</span>
+                    <button type="button" onclick="openScheduleEditorModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">Stundenplan erfassen</button>`;
+                container.appendChild(hint);
+            }
+
             for (let d = 0; d < 5; d++) {
                 if (viewMode === 'day' && d !== selectedDayIdx) continue;
 
@@ -2717,7 +2790,19 @@ HA: ...</pre>
                     .filter(s => s.day === d)
                     .sort((a, b) => a.start.localeCompare(b.start));
 
+                // Mittag 11:50–13:45: Band vor der ersten Lektion ab 11:50 (sonst am Ende des Vormittags)
+                const LUNCH_START = '11:50', LUNCH_END = '13:45';
+                const lunchBand = () => {
+                    const band = document.createElement('div');
+                    band.className = "lunch-band flex items-center gap-2 text-[10.5px] font-extrabold text-orange-800 no-print";
+                    band.innerHTML = `<span class="flex-1 border-t-2 border-dashed border-orange-300"></span><span class="px-2 py-0.5 rounded-full bg-orange-100 border border-orange-200">🍽️ Mittag ${LUNCH_START}–${LUNCH_END}</span><span class="flex-1 border-t-2 border-dashed border-orange-300"></span>`;
+                    return band;
+                };
+                let lunchShown = false;
+
                 daySlots.forEach(slot => {
+                    if (!lunchShown && slot.start >= LUNCH_START) { col.appendChild(lunchBand()); lunchShown = true; }
+                    const overLunch = slot.start >= LUNCH_START && slot.start < LUNCH_END;
                     const key = `${iso}_${slot.id}`;
                     const data = lessonsStore[key] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     const style = getStyleForSlot(slot.subject, slot.className);
@@ -2736,7 +2821,7 @@ HA: ...</pre>
                                 <div class="text-[11px] font-extrabold tracking-wide uppercase leading-tight">
                                     ${escapeHtml(style.label)} • ${escapeHtml(slot.className)}${activeTrack ? ` • <span class="underline decoration-white/70">${escapeHtml(activeTrack)}</span>` : ''}
                                 </div>
-                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}</div>
+                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}${overLunch ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/25 font-extrabold">🍽️ über Mittag</span>` : ''}</div>
                             </div>
                             <div class="flex items-center gap-1 shrink-0 no-print">
                                 <button type="button" onclick="event.stopPropagation(); openQuickNoteModal(${jsArg(key)}, ${jsArg(`${style.label} ${slot.className}`)})" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">
@@ -2766,6 +2851,7 @@ HA: ...</pre>
                     `;
                     col.appendChild(card);
                 });
+                if (!lunchShown && daySlots.length > 0) col.appendChild(lunchBand());
 
                 container.appendChild(col);
             }
@@ -4745,6 +4831,66 @@ Text:\n${raw.slice(0, 12000)}`;
             return { subject: hit ? hit[1] : parts.join(' '), className: className || 'Wahlfach' };
         }
 
+        // Chalk-Text in Einstieg / Hauptteil / Schluss / HA aufteilen (z. B. «• Einstieg (ca. 10 Min.): …»).
+        // Text ohne erkennbare Überschrift landet im Hauptteil.
+        function parseChalkContentStructure(title, content) {
+            const sections = { einstieg: [], hauptteil: [], schluss: [], homework: [] };
+            let current = 'hauptteil';
+            let lessonTitle = /^untitled lesson$/i.test(title || '') ? '' : (title || '').trim();
+            const heads = [
+                [/^einstieg\b/i, 'einstieg'],
+                [/^(inhalt|hauptteil|erarbeitung)\b/i, 'hauptteil'],
+                [/^(evaluation|fazit|schluss|abschluss|sicherung)\b/i, 'schluss'],
+                [/^(hausaufgaben?|ha)\b/i, 'homework'],
+                [/^warm[\s-]?up\b/i, 'einstieg'],
+                [/^(language input|guided practice|speaking task|main task|practice|differentiation)\b/i, 'hauptteil'],
+                [/^(wrap[\s-]?up|cool[\s-]?down|reflection)\b/i, 'schluss']
+            ];
+            // Zeilenumbrüche aus dem PDF-Satz zusammenfügen (nur nach langen, «vollen» Zeilen)
+            const unwrapped = [];
+            String(content || '').split('\n').forEach(raw => {
+                const line = raw.trim();
+                const prev = unwrapped[unwrapped.length - 1];
+                const looksLikeHeader = /^(einstieg|inhalt|hauptteil|erarbeitung|evaluation|fazit|schluss|abschluss|sicherung|hausaufgabe|ha\b|material|woche\s+\d+|lesson\s+\d+|learning goal|warm[\s-]?up|language input|guided practice|speaking task|main task|practice|differentiation|wrap[\s-]?up|cool[\s-]?down|reflection)/i.test(line);
+                if (prev && line && prev.length >= 90 && !looksLikeHeader && !/^[•◦▪\-–*]/.test(line) && !/[.!?:"“”»)]$/.test(prev)) {
+                    unwrapped[unwrapped.length - 1] = /[A-Za-zÄÖÜäöü]-$/.test(prev) ? prev + line : `${prev} ${line}`;
+                } else unwrapped.push(line);
+            });
+            unwrapped.forEach(raw => {
+                const line = raw.trim();
+                if (!line) return;
+                const bare = line.replace(/^[•◦▪\-–*]+\s*/, '');
+                // «Woche 3: Lektion 2 – Titel (Mittwoch, 11.11.) | Besprechung Kap. 4–7» → Lektionstitel
+                const tm = bare.match(/^Woche\s+\d+\s*:\s*(.+)$/i) || bare.match(/^(Lesson\s+\d+\s*[–—-]\s*.{2,80})$/);
+                if (tm && !lessonTitle) {
+                    lessonTitle = tm[1].replace(/\s*\((Montag|Dienstag|Mittwoch|Donnerstag|Freitag)[^)]*\)\s*/i, ' ').replace(/\s+/g, ' ').trim();
+                    return;
+                }
+                // Überschrift nur, wenn sie mit «:» endet (ggf. nach Klammer/Zusatz), z. B. «Einstieg (ca. 10 Min.):»
+                // auch Englisch-Format: «Warm-up (5') – …»
+                const hm = bare.match(/^([A-Za-zÄÖÜäöü&\/ ]{2,40}?)\s*(\([^)]*\))?\s*(für [^:]{0,90})?:\s*(.*)$/)
+                    || bare.match(/^([A-Za-z\- ]{3,30}?)\s*(\([^)]*\))\s*()[–—-]\s*(.*)$/);
+                if (hm) {
+                    const hit = heads.find(([re]) => re.test(hm[1].trim()));
+                    if (hit) {
+                        current = hit[1];
+                        const extra = [hm[2] && current !== 'homework' ? hm[2] : '', hm[4]].filter(Boolean).join(' ').trim();
+                        if (extra) sections[current].push(extra);
+                        return;
+                    }
+                }
+                sections[current].push(current === 'homework' ? bare : line);
+            });
+            const join = (a) => a.join('\n').trim();
+            return {
+                title: lessonTitle,
+                einstieg: join(sections.einstieg),
+                hauptteil: join(sections.hauptteil),
+                schluss: join(sections.schluss),
+                homework: sections.homework.join(' · ').replace(/:\s·\s/g, ': ').trim()
+            };
+        }
+
         function findTemplateSlotForChalk(iso, start, info) {
             const dayIdx = (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
             if (dayIdx > 4) return { slot: null, timeMismatch: false };
@@ -4804,8 +4950,10 @@ Text:\n${raw.slice(0, 12000)}`;
                 const existing = key ? lessonsStore[key] : null;
                 const outOfYear = l.iso < syStart || l.iso > syEnd;
                 const isEmpty = !l.content.trim() && (!l.title || /^untitled lesson$/i.test(l.title));
-                const firstLine = (l.content.split('\n')[0] || '').trim();
-                const alreadyThere = Boolean(existing && firstLine && htmlToPlainText(existing.hauptteil || '').includes(firstLine));
+                const ps = parseChalkContentStructure(l.title, l.content);
+                const firstLine = ([ps.hauptteil, ps.einstieg, ps.schluss].find(Boolean) || '').split('\n')[0].trim() || ps.title;
+                const haystack = existing ? [existing.title || '', ...['einstieg', 'hauptteil', 'schluss'].map(f => htmlToPlainText(existing[f] || ''))].join('\n') : '';
+                const alreadyThere = Boolean(existing && firstLine && haystack.includes(firstLine));
                 let mode = l.userMode;
                 if (!mode) mode = alreadyThere ? 'skip' : (hasLessonContent(existing) ? 'append' : 'replace');
                 const selected = l.userSelected !== undefined ? l.userSelected : (!outOfYear && !isEmpty && !alreadyThere);
@@ -4912,6 +5060,23 @@ Text:\n${raw.slice(0, 12000)}`;
                 });
             }
 
+            // 1b) Abweichende Zeiten im Stundenplan an Chalk anpassen (z. B. Musik 2Aa Fr 15:35).
+            //     Inhalte bleiben in derselben Lektion – es wird nichts verschoben.
+            let timesFixed = 0;
+            const chalkTimes = {};
+            universalPreviewItems.filter(it => it.slot && it.timeMismatch && !it.outOfYear).forEach(it => {
+                const t = `${it.lesson.start}|${it.lesson.end || ''}`;
+                (chalkTimes[it.slot.id] = chalkTimes[it.slot.id] || { slot: it.slot, times: new Set() }).times.add(t);
+            });
+            Object.values(chalkTimes).forEach(({ slot, times }) => {
+                if (times.size !== 1) return;   // widersprüchliche Zeiten → nicht anfassen
+                const [start, end] = [...times][0].split('|');
+                if (weeklyTemplate.some(s => s !== slot && Number(s.day) === Number(slot.day) && s.start === start)) return;
+                slot.start = start;
+                if (end) slot.end = end;
+                timesFixed++;
+            });
+
             // 2) Lektionen schreiben
             let written = 0;
             chosen.forEach(it => {
@@ -4920,16 +5085,38 @@ Text:\n${raw.slice(0, 12000)}`;
                 const title = /^untitled lesson$/i.test(it.lesson.title || '') ? '' : (it.lesson.title || '');
                 const content = (it.lesson.content || '').trim();
                 if (!content && !title) return;
-                const parsed = parseLessonBlockStructure(`Lektion 1: ${title || '-'}\n${content}`);
-                parsed.title = title;
-                if (!content) parsed.hauptteil = '';
+                const parsed = parseChalkContentStructure(title, content);
                 if (writeParsedLessonToTarget({ active: true, targetKey: key, mode: it.mode === 'append' ? 'append' : 'replace' }, parsed, '', '', '')) written++;
             });
 
-            // 3) Tagesnotizen (gelbe Balken in Chalk)
-            let notesAdded = 0;
-            Object.entries(chalkImport.days).forEach(([iso, notes]) => {
+            // 3) Tagesnotizen (gelbe Balken in Chalk). Offday → schulfrei, Projektwoche/Weiterbildung → Spezialtag.
+            //    Es wird nichts verschoben.
+            let notesAdded = 0, eventsAdded = 0;
+            const { start: syS, end: syE } = schoolYearRange(currentSchoolYear);
+            const specialRuns = [];
+            Object.keys(chalkImport.days).sort().forEach(iso => {
+                const notes = chalkImport.days[iso] || [];
+                if (iso < syS || iso > syE) return;
+                notes.forEach(n => {
+                    const type = /^offday\b/i.test(n) ? 'holiday' : (/prowo|projektwoche|weiterbildung|sporttag|skilager|klassenlager/i.test(n) ? 'special' : null);
+                    if (!type) return;
+                    const name = /^prowo$/i.test(n.trim()) ? 'Projektwoche (Prowo)' : n.trim();
+                    const last = specialRuns[specialRuns.length - 1];
+                    const prev = last ? new Date(`${last.end}T12:00:00`) : null;
+                    if (prev) { prev.setDate(prev.getDate() + 1); while (prev.getDay() === 0 || prev.getDay() === 6) prev.setDate(prev.getDate() + 1); }
+                    if (last && last.name === name && last.type === type && prev && formatDateISO(prev) === iso) last.end = iso;
+                    else specialRuns.push({ name, type, start: iso, end: iso });
+                });
+            });
+            specialRuns.forEach((r, i) => {
+                if (calendarEvents.some(e => e.name === r.name && e.start <= r.end && (e.end || e.start) >= r.start)) return;
+                calendarEvents.push({ id: `ev-chalk-${Date.now()}-${i}`, type: r.type, targetClass: 'ALL', name: r.name, start: r.start, end: r.end });
+                eventsAdded++;
+            });
+            const isEventNote = (n) => /^offday\b/i.test(n) || /prowo|projektwoche|weiterbildung|sporttag|skilager|klassenlager/i.test(n);
+            Object.entries(chalkImport.days).forEach(([iso, notesAll]) => {
                 const { start, end } = schoolYearRange(currentSchoolYear);
+                const notes = (notesAll || []).filter(n => !isEventNote(n));
                 if (iso < start || iso > end || !notes.length) return;
                 const text = notes.join(' · ');
                 const existingNote = dayNotesStore[iso] || '';
@@ -4941,7 +5128,8 @@ Text:\n${raw.slice(0, 12000)}`;
             closeUniversalImportModal();
             renderCalendar();
             saveAllState();
-            showToast(`Chalk-Import: ${written} Lektionen, ${notesAdded} Tagesnotizen${slotsAdded ? `, ${slotsAdded} neue Stundenplan-Slots` : ''} übernommen!`);
+            if (eventsAdded) renderSpecialDaysTable?.();
+            showToast(`Chalk-Import: ${written} Lektionen, ${notesAdded} Tagesnotizen${eventsAdded ? `, ${eventsAdded} Spezialtage/freie Tage` : ''}${slotsAdded ? `, ${slotsAdded} neue Stundenplan-Slots` : ''}${timesFixed ? `, ${timesFixed} Zeiten korrigiert` : ''} übernommen!`);
             chalkImport = { files: [], days: {}, lessons: [] };
         }
 
@@ -5439,6 +5627,85 @@ Text:\n${raw.slice(0, 12000)}`;
             }
         }
 
+        // ---------- Audio nur lokal (IndexedDB, pro Gerät) ----------
+        let audioDbPromise = null;
+        function audioDb() {
+            if (!audioDbPromise) {
+                audioDbPromise = new Promise((resolve) => {
+                    try {
+                        const req = indexedDB.open('sekPlanerAudio', 1);
+                        req.onupgradeneeded = () => req.result.createObjectStore('clips');
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => resolve(null);
+                    } catch (e) { resolve(null); }
+                });
+            }
+            return audioDbPromise;
+        }
+        function audioKey(clip) { return `${currentUser ? currentUser.uid : 'local'}_${clip.id}`; }
+        async function idbAudio(mode, key, value) {
+            const dbi = await audioDb();
+            if (!dbi) return null;
+            return new Promise((resolve) => {
+                try {
+                    const tx = dbi.transaction('clips', mode === 'get' ? 'readonly' : 'readwrite');
+                    const st = tx.objectStore('clips');
+                    const req = mode === 'get' ? st.get(key) : mode === 'put' ? st.put(value, key) : st.delete(key);
+                    req.onsuccess = () => resolve(mode === 'get' ? (req.result || null) : true);
+                    req.onerror = () => resolve(null);
+                } catch (e) { resolve(null); }
+            });
+        }
+        function allStoredClips() {
+            const out = [];
+            Object.entries(lessonsStore).forEach(([key, l]) => {
+                if (l && Array.isArray(l.audioClips)) l.audioClips.forEach(c => { if (c) out.push({ key, clip: c, arr: l.audioClips }); });
+            });
+            return out;
+        }
+        let hydrateTimer = null;
+        function hydrateClipAudioSoon() {
+            clearTimeout(hydrateTimer);
+            hydrateTimer = setTimeout(hydrateClipAudio, 300);
+        }
+        async function hydrateClipAudio() {
+            let changed = false;
+            for (const { clip } of allStoredClips()) {
+                if (clip.audioDataUrl) {
+                    // Audio dieses Geräts sichern, bevor es aus dem Sync verschwindet
+                    if (!(await idbAudio('get', audioKey(clip)))) await idbAudio('put', audioKey(clip), clip.audioDataUrl);
+                } else {
+                    const a = await idbAudio('get', audioKey(clip));
+                    if (a) { clip.audioDataUrl = a; changed = true; }
+                }
+            }
+            if (changed) {
+                if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
+                if (typeof renderAudioClipsList === 'function' && !document.getElementById('lessonModal')?.classList.contains('hidden')) renderAudioClipsList();
+            }
+            retryPendingTranscriptions();
+        }
+
+        // Memos ohne Text automatisch nachholen (beim Öffnen der App und sobald wieder online)
+        const transcriptionTriedThisSession = new Set();
+        let retryRunning = false;
+        async function retryPendingTranscriptions() {
+            if (retryRunning || !hasTranscriptionKey() || navigator.onLine === false) return;
+            if (db && currentUser && !cloudReady) return;
+            retryRunning = true;
+            try {
+                const pending = allStoredClips().filter(({ clip }) => clip.audioDataUrl && !(clip.transcript || '').trim()
+                    && !clip.noSpeech && !clip.transcribing && !transcriptionTriedThisSession.has(audioKey(clip)));
+                for (const { clip, arr } of pending.slice(0, 5)) {
+                    transcriptionTriedThisSession.add(audioKey(clip));
+                    await runClipTranscription(clip, arr, true);
+                }
+            } finally {
+                retryRunning = false;
+            }
+        }
+        window.addEventListener('online', () => { transcriptionTriedThisSession.clear(); retryPendingTranscriptions(); });
+
         let mediaRecorder = null;
         let audioChunks = [];
         let speechRecognizer = null;
@@ -5511,6 +5778,7 @@ Text:\n${raw.slice(0, 12000)}`;
                             transcript: finalTranscriptText
                         };
                         targetClips.push(clip);
+                        idbAudio('put', audioKey(clip), clip.audioDataUrl);
                         if (tempAudioClips === targetClips) renderAudioClipsList();
                         // Lektion wurde schon gespeichert (gleiches Array im Store) → Clip nachträglich sichern
                         if (Object.values(lessonsStore).some(l => l && l.audioClips === targetClips)) {
@@ -5519,7 +5787,8 @@ Text:\n${raw.slice(0, 12000)}`;
                             showToast("Sprachmemo gespeichert.");
                         }
                         // Zuverlässige Transkription per KI (ersetzt die Live-Erkennung des Browsers)
-                        if ((geminiApiKey || '').trim()) runClipTranscription(clip, targetClips);
+                        if (hasTranscriptionKey()) runClipTranscription(clip, targetClips);
+                        else showToast("Sprachmemo gespeichert. Für die automatische Transkription einen Gemini- oder ChatGPT-Schlüssel hinterlegen (Zahnrad).");
                     };
                     reader.readAsDataURL(blob);
                     stream.getTracks().forEach(t => t.stop());
@@ -5544,11 +5813,16 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         // Transkribiert einen Clip per KI und aktualisiert Modal, Übersicht und Speicher
-        async function runClipTranscription(clip, ownerArray) {
+        async function runClipTranscription(clip, ownerArray, quiet = false) {
             if (!clip || clip.transcribing) return;
-            if (!(geminiApiKey || '').trim()) {
-                showToast("Für die Transkription bitte zuerst einen Gemini-Schlüssel hinterlegen (Zahnrad).");
+            if (!hasTranscriptionKey()) {
+                if (!quiet) showToast("Für die Transkription bitte zuerst einen Gemini- oder ChatGPT-Schlüssel hinterlegen (Zahnrad).");
                 return;
+            }
+            if (!clip.audioDataUrl) {
+                const a = await idbAudio('get', audioKey(clip));
+                if (a) clip.audioDataUrl = a;
+                else { if (!quiet) showToast("Die Audiodatei liegt auf einem anderen Gerät – dort transkribieren."); return; }
             }
             clip.transcribing = true;
             const refresh = () => {
@@ -5558,10 +5832,10 @@ Text:\n${raw.slice(0, 12000)}`;
             refresh();
             try {
                 const text = await transcribeAudioWithAi(clip.audioDataUrl);
-                if (text) clip.transcript = text;
-                else if (!clip.transcript) showToast("Auf der Aufnahme war kein Text erkennbar.");
+                if (text) { clip.transcript = text; delete clip.noSpeech; if (quiet) showToast("Sprachmemo nachträglich transkribiert."); }
+                else if (!clip.transcript) { clip.noSpeech = true; showToast("Auf der Aufnahme war kein Text erkennbar."); }
             } catch (err) {
-                showToast("Transkription fehlgeschlagen: " + String(err.message).split('\n')[0]);
+                showToast("Transkription fehlgeschlagen" + (quiet ? " – wird später erneut versucht" : "") + ": " + String(err.message).split('\n')[0]);
             } finally {
                 delete clip.transcribing;
                 refresh();
@@ -5581,6 +5855,7 @@ Text:\n${raw.slice(0, 12000)}`;
         function deleteStoredClip(lessonKey, clipIdx) {
             const arr = lessonsStore[lessonKey]?.audioClips;
             if (!arr || !arr[clipIdx]) return;
+            idbAudio('delete', audioKey(arr[clipIdx]));
             arr.splice(clipIdx, 1);
             saveAllState();
             renderNotesOverview();
@@ -5606,7 +5881,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10.5px] font-bold text-slate-600">Memo (${escapeHtml(clip.createdAt)})</span>
-                        <audio controls src="${safeAudioSrc(clip.audioDataUrl)}" class="h-6 max-w-[155px]"></audio>
+                        ${safeAudioSrc(clip.audioDataUrl) ? `<audio controls src="${safeAudioSrc(clip.audioDataUrl)}" class="h-6 max-w-[155px]"></audio>` : `<span class="text-[10px] text-slate-400 italic">Audio nur auf dem Aufnahmegerät</span>`}
                         <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 text-[10.5px] font-bold">✕</button>
                     </div>
                     <textarea rows="2" oninput="updateAudioClipTranscript(${idx}, this.value)" ${clip.transcribing ? 'disabled' : ''} placeholder="${clip.transcribing ? '⏳ Wird mit KI transkribiert…' : 'Transkribierter Text (hier bearbeitbar)...'}" class="w-full text-[11px] text-slate-800 bg-slate-50 border border-slate-200 rounded p-1.5 focus:bg-white focus:outline-none">${clip.transcribing ? '' : escapeHtml(clip.transcript || '')}</textarea>
