@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 13.1 – 17.11.2026
+- Handy: schmale, fixe Kopfzeile mit Datum, ‹ ›, «Heute», Suche und Menü ☰ (Woche/Tag, Datei/Sequenz, Stundenplan, Stellvertretung, KI-Chat, Schuljahr, Einstellungen, Abmelden). Reiter Wochenplan / Notizen / Jahreskalender unten als Leiste. Computer und Tablet unverändert.
+
 ## Version 13 – 17.11.2026
 - Als App installierbar (Android/Chrome «App installieren», iPhone «Zum Home-Bildschirm»): eigenes Symbol (Planer-Heft), öffnet im Vollbild ohne Adressleiste.
 - Minimaler Service Worker ohne Zwischenspeicher – neue Versionen kommen weiterhin sofort an.
