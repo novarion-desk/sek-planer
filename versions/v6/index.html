@@ -2235,6 +2235,18 @@ HA: ...</pre>
                 if (doc.metadata.fromCache && !cloudReady) return;   // erst auf echten Server-Stand warten
 
                 const data = doc.data();
+                if (data && data.layout === 'split-v1') {   // nachträglich ergänzt: Daten wurden von Version 14+ umgestellt
+                    cloudReady = false;
+                    if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
+                    if (!document.getElementById('oldVersionBlock')) {
+                        const o = document.createElement('div');
+                        o.id = 'oldVersionBlock';
+                        o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.92);color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font:600 16px system-ui;text-align:center';
+                        o.innerHTML = 'Diese ältere Version kann deine Daten nicht mehr lesen, weil sie ab Version 14 anders gespeichert werden.<br><br><a href="../../" style="color:#a5b4fc;text-decoration:underline">Zur aktuellen Version wechseln</a>';
+                        document.body.appendChild(o);
+                    }
+                    return;
+                }
                 const firstLoad = !cloudReady;
                 const cloudLessons = (data.lessonsStore && typeof data.lessonsStore === 'object') ? data.lessonsStore : {};
                 const cloudDayNotes = (data.dayNotesStore && typeof data.dayNotesStore === 'object') ? data.dayNotesStore : {};

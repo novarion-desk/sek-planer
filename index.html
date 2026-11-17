@@ -634,6 +634,10 @@
                     <button type="button" onclick="clearCurrentLesson()" class="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg">
                         Leeren
                     </button>
+                    <button type="button" onclick="openVersionsModal()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors" title="Frühere Stände dieser Lektion ansehen und wiederherstellen">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        <span>Frühere Versionen</span>
+                    </button>
                     <button type="button" id="restoreLessonBtn" onclick="restoreClearedLesson()" class="hidden px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-colors">
                         <span>↩️ Wiederherstellen</span>
                     </button>
@@ -648,6 +652,20 @@
     </div>
 
     <!-- MODAL 1B: SCHNELL-NOTIZ -->
+ <!-- FRÜHERE VERSIONEN EINER LEKTION -->
+    <div id="versionsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-2xs z-[60] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden" onclick="if(event.target===this)closeVersionsModal()">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
+            <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-600"></i> Frühere Versionen</h3>
+                    <div id="versionsSubtitle" class="text-slate-500 mt-0.5"></div>
+                </div>
+                <button type="button" onclick="closeVersionsModal()" class="text-slate-400 hover:text-slate-700 font-extrabold text-base">✕</button>
+            </div>
+            <div id="versionsList" class="p-3 overflow-y-auto flex flex-col gap-1.5"></div>
+        </div>
+    </div>
+
  <!-- SUCHE IN LEKTIONEN -->
     <div id="searchModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-start justify-center p-2 sm:p-6 hidden" onclick="if(event.target===this)closeSearchModal()">
         <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
@@ -1077,7 +1095,7 @@ HA: ...</pre>
             }
         }
 
-        const MODAL_IDS = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal', 'searchModal'];
+        const MODAL_IDS = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal', 'searchModal', 'versionsModal'];
         let lockedScrollY = 0;
 
         // iOS-sicherer Scroll-Lock: body fixieren statt nur overflow:hidden
@@ -1108,8 +1126,8 @@ HA: ...</pre>
             if (e.key !== 'Escape') return;
             const closers = { quickNoteModal: () => closeQuickNoteModal(), lessonModal: () => closeLessonModal(),
                 universalImportModal: () => closeUniversalImportModal(), scheduleEditorModal: () => closeScheduleEditorModal(),
-                settingsModal: () => closeSettingsModal(), searchModal: () => closeSearchModal() };
-            for (const id of ['quickNoteModal', 'settingsModal', 'scheduleEditorModal', 'universalImportModal', 'lessonModal', 'searchModal']) {
+                settingsModal: () => closeSettingsModal(), searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal() };
+            for (const id of ['versionsModal', 'quickNoteModal', 'settingsModal', 'scheduleEditorModal', 'universalImportModal', 'lessonModal', 'searchModal']) {
                 const el = document.getElementById(id);
                 if (el && !el.classList.contains('hidden')) { closers[id](); break; }
             }
@@ -2268,39 +2286,143 @@ HA: ...</pre>
             }
         }
 
+        // ---------- Aufgeteilte Speicherung (ab Version 14) ----------
+        // Hauptdokument: Stundenplan, Termine, Tagesnotizen, Notizen
+        // Lektionen: ein Dokument pro Monat  → <docId>__L_<JJJJ-MM>
+        // Versionsverlauf: ein Dokument pro Lektion → <docId>__H_<Lektionsschlüssel>
+        const MAIN_SYNC_FIELDS = ['ownerUid', 'ownerEmail', 'layout', 'weeklyTemplate', 'calendarEvents', 'dayNotesStore', 'standaloneNotesStore', 'updatedAt'];
+        const LESSON_DOC_META = ['ownerUid', 'kind', 'parentDoc', 'month', 'updatedAt'];
+        const HISTORY_MAX = 20;
+        let syncedLessons = {};        // letzter Stand pro Lektion, wie er in der Cloud liegt
+        let syncedMainHash = null;     // Hash der Hauptfelder, wie sie in der Cloud liegen
+        let syncedMainState = null;
+        let migrationPending = false;  // altes Format (alles in einem Dokument) muss noch umgestellt werden
+        let nextChangeReason = '';     // Grund für den nächsten Versionseintrag (z. B. «Import»)
+        let historyQueue = [];
+
+        function lessonMonthDocId(docId, month) { return `${docId}__L_${month}`; }
+        function lessonHistoryDocId(docId, key) { return `${docId}__H_${key}`; }
+        function stripForCloud(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v, dropVolatileFields)); }
+        function mainFieldsNow() {
+            return stripForCloud({ weeklyTemplate, calendarEvents, dayNotesStore, standaloneNotesStore });
+        }
+        function markChangeReason(reason) { nextChangeReason = reason; }
+        function deviceLabel() { return /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? 'Handy/Tablet' : 'Computer'; }
+
         function pushToCloud() {
             if (!db || !currentUser || !privateSyncKey || !cloudReady) return Promise.resolve();
+            if (pushInFlight) {   // nacheinander schreiben, nie parallel
+                return pushInFlight.then(() => { pushInFlight = null; return pushToCloud(); });
+            }
             const docId = getActiveDocId();
-            const payload = {
-                ownerUid: currentUser.uid,
-                ownerEmail: currentUser.email || "",
-                lessonsStore,
-                weeklyTemplate,
-                calendarEvents,
-                dayNotesStore,
-                standaloneNotesStore
-            };
-            const json = JSON.stringify(payload, dropVolatileFields);
-            const bytes = new Blob([json]).size;
-            const pushedState = JSON.parse(json);   // Stand genau so, wie er hochgeladen wird
-            if (bytes > CLOUD_DOC_LIMIT_BYTES) {
-                updateSyncIndicator('error', `Cloud-Dokument zu gross (${Math.round(bytes / 1024)} KB, Limit 1024 KB). Bitte alte Sprachmemos löschen – Änderungen sind nur lokal gespeichert!`, docId);
-                showToast("⚠️ Cloud-Limit erreicht – Änderungen nur lokal gespeichert!");
+            const FP = firebase.firestore.FieldPath;
+            const FV = firebase.firestore.FieldValue;
+            const reason = nextChangeReason || 'Änderung';
+            nextChangeReason = '';
+
+            // 1) Geänderte Lektionen bestimmen (gegenüber dem Cloud-Stand)
+            const byMonth = {};
+            const pushedLessons = {};
+            const history = [];
+            const keys = new Set([...Object.keys(lessonsStore), ...Object.keys(syncedLessons)]);
+            keys.forEach(key => {
+                const cur = stripForCloud(lessonsStore[key]);
+                const old = syncedLessons[key];
+                if (hashOf(cur) === hashOf(old)) return;
+                const month = key.slice(0, 7);
+                (byMonth[month] = byMonth[month] || []).push(key);
+                pushedLessons[key] = cur;
+                if (old !== undefined && hasLessonContent(old)) history.push({ key, data: old });
+            });
+
+            // 2) Hauptdokument nur schreiben, wenn sich dort etwas geändert hat
+            const mainState = mainFieldsNow();
+            const mainHash = hashOf(mainState);
+            const mainChanged = mainHash !== syncedMainHash || migrationPending;
+            if (!mainChanged && Object.keys(byMonth).length === 0) {
+                updateSyncIndicator('ok', 'Synchronisiert mit Server Zürich', docId);
                 return Promise.resolve();
             }
-            const cloudPayload = { ...pushedState, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-            const p = db.collection('sekSync').doc(docId).set(cloudPayload, { mergeFields: SYNC_FIELDS })
+
+            const batch = db.batch();
+            const tooBig = [];
+            let biggestKb = 0;
+            Object.entries(byMonth).forEach(([month, monthKeys]) => {
+                // Grössenkontrolle für den ganzen Monat
+                const monthAll = {};
+                Object.keys(lessonsStore).filter(k => k.startsWith(month)).forEach(k => { monthAll[k] = lessonsStore[k]; });
+                const bytes = new Blob([JSON.stringify(monthAll, dropVolatileFields)]).size;
+                biggestKb = Math.max(biggestKb, Math.round(bytes / 1024));
+                if (bytes > CLOUD_DOC_LIMIT_BYTES) { tooBig.push(month); monthKeys.forEach(k => delete pushedLessons[k]); return; }
+                const data = { ownerUid: currentUser.uid, kind: 'lessons', parentDoc: docId, month, updatedAt: FV.serverTimestamp(), lessons: {} };
+                const fields = [...LESSON_DOC_META];
+                monthKeys.forEach(k => {
+                    data.lessons[k] = pushedLessons[k] === undefined ? FV.delete() : pushedLessons[k];
+                    fields.push(new FP('lessons', k));
+                });
+                batch.set(db.collection('sekSync').doc(lessonMonthDocId(docId, month)), data, { mergeFields: fields });
+            });
+            if (mainChanged) {
+                const mainPayload = { ownerUid: currentUser.uid, ownerEmail: currentUser.email || '', layout: 'split-v1', ...mainState, updatedAt: FV.serverTimestamp() };
+                const mainFields = [...MAIN_SYNC_FIELDS];
+                if (migrationPending) { mainPayload.lessonsStore = FV.delete(); mainFields.push('lessonsStore'); }
+                const mainBytes = new Blob([JSON.stringify(mainPayload)]).size;
+                if (mainBytes > CLOUD_DOC_LIMIT_BYTES) {
+                    updateSyncIndicator('error', `Hauptdokument zu gross (${Math.round(mainBytes / 1024)} KB) – Änderungen nur lokal gespeichert!`, docId);
+                    return Promise.resolve();
+                }
+                batch.set(db.collection('sekSync').doc(docId), mainPayload, { mergeFields: mainFields });
+            }
+            const wasMigration = migrationPending;
+
+            const p = batch.commit()
                 .then(() => {
-                    if (getActiveDocId() === docId) storeBaseline(pushedState);
-                    const warn = bytes > 700 * 1024 ? ` – Achtung: ${Math.round(bytes / 1024)} KB von 1024 KB belegt` : '';
-                    updateSyncIndicator('ok', `Synchronisiert mit Server Zürich${warn}`, docId);
+                    if (getActiveDocId() !== docId) return;
+                    Object.entries(pushedLessons).forEach(([k, v]) => { if (v === undefined) delete syncedLessons[k]; else syncedLessons[k] = v; });
+                    if (mainChanged) { syncedMainHash = mainHash; syncedMainState = mainState; }
+                    if (wasMigration) { migrationPending = false; showToast('Speicher auf Monats-Dokumente umgestellt – kein 1-MB-Limit mehr für die Planung.'); }
+                    storeBaseline();
+                    if (tooBig.length) {
+                        updateSyncIndicator('error', `Monat ${tooBig.join(', ')} zu gross für die Cloud – bitte Sprachmemos/Anhänge kürzen. Diese Änderungen sind nur lokal gespeichert!`, docId);
+                    } else {
+                        updateSyncIndicator('ok', `Synchronisiert mit Server Zürich${biggestKb > 600 ? ` – Achtung: ein Monat belegt ${biggestKb} KB von 1024 KB` : ''}`, docId);
+                    }
+                    if (history.length) { historyQueue.push(...history.map(h => ({ ...h, reason, docId }))); flushHistoryQueue(); }
                 })
                 .catch((err) => {
+                    if (wasMigration) migrationPending = true;
                     updateSyncIndicator('error', `Schreibfehler: ${err.code || err.message}`, docId);
                 })
                 .finally(() => { if (pushInFlight === p) pushInFlight = null; });
             pushInFlight = p;
             return p;
+        }
+
+        // Versionsverlauf: alten Stand einer Lektion in ihrem Verlaufs-Dokument ablegen (max. 20)
+        let historyFlushing = false;
+        async function flushHistoryQueue() {
+            if (historyFlushing || !db || !currentUser) return;
+            historyFlushing = true;
+            try {
+                while (historyQueue.length) {
+                    const { key, data, reason, docId } = historyQueue.shift();
+                    const ref = db.collection('sekSync').doc(lessonHistoryDocId(docId, key));
+                    try {
+                        const snap = await ref.get();
+                        let entries = snap.exists && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+                        if (entries[0] && hashOf(entries[0].data) === hashOf(data)) continue;   // gleicher Stand schon gesichert
+                        entries.unshift({ at: new Date().toISOString(), reason, device: deviceLabel(), data });
+                        entries = entries.slice(0, HISTORY_MAX);
+                        while (entries.length > 1 && new Blob([JSON.stringify(entries)]).size > 700 * 1024) entries.pop();
+                        await ref.set({ ownerUid: currentUser.uid, kind: 'history', parentDoc: docId, lessonKey: key, entries,
+                                        updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    } catch (e) {
+                        console.warn('Versionsverlauf konnte nicht gespeichert werden:', e);
+                    }
+                }
+            } finally {
+                historyFlushing = false;
+            }
         }
 
         function refreshViewsAfterSync() {
@@ -2329,8 +2451,10 @@ HA: ...</pre>
         function loadBaseline() {
             try { return JSON.parse(localStorage.getItem(baselineStorageKey()) || 'null'); } catch (e) { return null; }
         }
-        function storeBaseline(state = null) {
-            const st = state || { lessonsStore, dayNotesStore, weeklyTemplate, calendarEvents, standaloneNotesStore };
+        function storeBaseline() {
+            const main = syncedMainState || {};
+            const st = { lessonsStore: syncedLessons, dayNotesStore: main.dayNotesStore, weeklyTemplate: main.weeklyTemplate,
+                         calendarEvents: main.calendarEvents, standaloneNotesStore: main.standaloneNotesStore };
             const mapHashes = (obj) => Object.fromEntries(Object.entries(obj || {}).map(([k, v]) => [k, hashOf(v)]));
             const base = {
                 lessons: mapHashes(st.lessonsStore),
@@ -2372,67 +2496,157 @@ HA: ...</pre>
             if (!db || !currentUser || !privateSyncKey) return;
             if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
             cloudReady = false;
+            migrationPending = false;
+            syncedLessons = {};
+            syncedMainHash = null;
+            syncedMainState = null;
             const docId = getActiveDocId();
             updateSyncIndicator('connecting', 'Verbinde mit Server Zürich...', docId);
 
-            firestoreUnsubscribe = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
-                // Eigenes Echo bzw. noch nicht hochgeladene lokale Änderung → nicht überschreiben
-                if (doc.metadata.hasPendingWrites || pushTimer) return;
+            let mainFirst = null;      // erster Server-Stand des Hauptdokuments ({ exists, data })
+            let lessonsFirst = null;   // erster Server-Stand aller Monats-Dokumente ({ month: lessons })
+            const monthCache = {};
 
-                if (!doc.exists) {
-                    if (doc.metadata.fromCache) return;   // offline ≠ leer! Nichts anlegen.
-                    cloudReady = true;
-                    updateSyncIndicator('ok', 'Neues Cloud-Dokument wird angelegt...', docId);
-                    pushToCloud();
-                    return;
-                }
-                if (doc.metadata.fromCache && !cloudReady) return;   // erst auf echten Server-Stand warten
+            const finishFirstLoad = () => {
+                if (cloudReady || !mainFirst || !lessonsFirst) return;
+                const data = mainFirst.exists ? mainFirst.data : null;
+                // Altes Format: alle Lektionen im Hauptdokument
+                const legacyLessons = data && data.layout !== 'split-v1' && data.lessonsStore && typeof data.lessonsStore === 'object' ? data.lessonsStore : null;
+                const monthLessons = {};
+                Object.values(lessonsFirst).forEach(m => Object.assign(monthLessons, m));
+                const cloudLessons = legacyLessons ? { ...legacyLessons, ...monthLessons } : monthLessons;
 
-                const data = doc.data();
-                const firstLoad = !cloudReady;
-                const cloudLessons = (data.lessonsStore && typeof data.lessonsStore === 'object') ? data.lessonsStore : {};
-                const cloudDayNotes = (data.dayNotesStore && typeof data.dayNotesStore === 'object') ? data.dayNotesStore : {};
-                const cloudTemplate = (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) ? data.weeklyTemplate : undefined;
-                const cloudEvents = Array.isArray(data.calendarEvents) ? data.calendarEvents : undefined;
-                const cloudStandalone = Array.isArray(data.standaloneNotesStore) ? data.standaloneNotesStore : [];
-                let needsPush = false;
+                const base = loadBaseline();
+                const ml = mergeMap3(lessonsStore, cloudLessons, base?.lessons);
+                lessonsStore = ml.merged;
+                syncedLessons = JSON.parse(JSON.stringify(monthLessons));   // was tatsächlich in Monats-Dokumenten liegt
+                let needsPush = ml.localWins || Boolean(legacyLessons && Object.keys(legacyLessons).length);
 
-                if (firstLoad) {
-                    // Beim ersten Laden: lokale Änderungen seit dem letzten Abgleich behalten,
-                    // alles andere vom Server übernehmen (leere/alte lokale Stände gewinnen nie)
-                    const base = loadBaseline();
-                    const ml = mergeMap3(lessonsStore, cloudLessons, base?.lessons);
+                if (data) {
+                    const cloudDayNotes = (data.dayNotesStore && typeof data.dayNotesStore === 'object') ? data.dayNotesStore : {};
+                    const cloudTemplate = (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) ? data.weeklyTemplate : undefined;
+                    const cloudEvents = Array.isArray(data.calendarEvents) ? data.calendarEvents : undefined;
+                    const cloudStandalone = Array.isArray(data.standaloneNotesStore) ? data.standaloneNotesStore : [];
                     const md = mergeMap3(dayNotesStore, cloudDayNotes, base?.dayNotes);
                     const mt = mergeValue3(weeklyTemplate, cloudTemplate, base?.template);
                     const me = mergeValue3(calendarEvents, cloudEvents, base?.events);
                     const ms = mergeValue3(standaloneNotesStore, cloudStandalone, base?.standalone);
-                    lessonsStore = ml.merged;
                     dayNotesStore = md.merged;
                     weeklyTemplate = mt.value;
                     calendarEvents = me.value;
                     standaloneNotesStore = ms.value;
-                    needsPush = ml.localWins || md.localWins || mt.localWins || me.localWins || ms.localWins;
+                    syncedMainState = stripForCloud({ weeklyTemplate: cloudTemplate || [], calendarEvents: cloudEvents || [], dayNotesStore: cloudDayNotes, standaloneNotesStore: cloudStandalone });
+                    syncedMainHash = data.layout === 'split-v1' ? hashOf(syncedMainState) : null;
+                    needsPush = needsPush || md.localWins || mt.localWins || me.localWins || ms.localWins || data.layout !== 'split-v1';
                 } else {
-                    lessonsStore = cloudLessons;   // ersetzen statt mergen → Löschungen kommen an
-                    dayNotesStore = cloudDayNotes;
-                    if (cloudTemplate) weeklyTemplate = cloudTemplate;
-                    if (cloudEvents) calendarEvents = cloudEvents;
-                    standaloneNotesStore = cloudStandalone;
+                    needsPush = true;   // neues Konto/Schuljahr: Dokumente anlegen
                 }
+                migrationPending = Boolean(legacyLessons);
 
                 cloudReady = true;
                 persistLocal();
-                if (needsPush) saveAllState(); else storeBaseline();
-                if (firstLoad) {
+                const afterReady = async () => {
+                    if (migrationPending && legacyLessons && Object.keys(legacyLessons).length) {
+                        updateSyncIndicator('connecting', 'Stelle Speicher auf Monats-Dokumente um (Backup wird erstellt)…', docId);
+                        try { await createCloudBackup('before-migration'); } catch (e) { console.warn(e); }
+                    }
+                    if (needsPush) await pushToCloud(); else storeBaseline();
                     maybeCreateDailyCloudBackup();
                     refreshBackupStatusUI();
                     maybeShowBackupReminder();
+                };
+                afterReady();
+                updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
+                refreshViewsAfterSync();
+            };
+
+            // Hauptdokument (Stundenplan, Termine, Tagesnotizen, Notizen)
+            const unsubMain = db.collection('sekSync').doc(docId).onSnapshot((doc) => {
+                if (!cloudReady) {
+                    if (doc.metadata.fromCache) return;   // offline ≠ leer: auf echten Server-Stand warten
+                    mainFirst = { exists: doc.exists, data: doc.exists ? doc.data() : null };
+                    finishFirstLoad();
+                    return;
                 }
+                if (doc.metadata.hasPendingWrites || pushTimer || !doc.exists) return;
+                const data = doc.data();
+                // Sicherheitsnetz: eine alte App-Version hat wieder Lektionen ins Hauptdokument geschrieben
+                if (data.layout === 'split-v1' && data.lessonsStore && typeof data.lessonsStore === 'object') {
+                    let adopted = 0;
+                    Object.entries(data.lessonsStore).forEach(([k, v]) => {
+                        if (hashOf(v) !== hashOf(stripForCloud(lessonsStore[k]))) { lessonsStore[k] = v; adopted++; }
+                    });
+                    migrationPending = true;   // Feld beim nächsten Speichern wieder entfernen
+                    if (adopted) showToast(`${adopted} Änderung(en) aus einer älteren App-Version übernommen.`);
+                    saveAllState();
+                }
+                const cloudState = stripForCloud({
+                    weeklyTemplate: (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) ? data.weeklyTemplate : weeklyTemplate,
+                    calendarEvents: Array.isArray(data.calendarEvents) ? data.calendarEvents : calendarEvents,
+                    dayNotesStore: (data.dayNotesStore && typeof data.dayNotesStore === 'object') ? data.dayNotesStore : {},
+                    standaloneNotesStore: Array.isArray(data.standaloneNotesStore) ? data.standaloneNotesStore : []
+                });
+                if (hashOf(cloudState) === syncedMainHash) return;
+                const localDirty = hashOf(mainFieldsNow()) !== syncedMainHash;
+                syncedMainState = cloudState;
+                syncedMainHash = hashOf(cloudState);
+                if (!localDirty) {
+                    weeklyTemplate = cloudState.weeklyTemplate;
+                    calendarEvents = cloudState.calendarEvents;
+                    dayNotesStore = cloudState.dayNotesStore;
+                    standaloneNotesStore = cloudState.standaloneNotesStore;
+                } else {
+                    saveAllState();   // eigene, noch nicht hochgeladene Änderung gewinnt
+                }
+                persistLocal();
+                storeBaseline();
                 updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
                 refreshViewsAfterSync();
             }, (err) => {
                 updateSyncIndicator('error', `Lesefehler: ${err.code || err.message}`, docId);
             });
+
+            // Lektionen: alle Monats-Dokumente dieses Schuljahres
+            const unsubLessons = db.collection('sekSync')
+                .where('ownerUid', '==', currentUser.uid)
+                .where('parentDoc', '==', docId)
+                .where('kind', '==', 'lessons')
+                .onSnapshot((qs) => {
+                    if (!cloudReady) {
+                        if (qs.metadata.fromCache) return;
+                        qs.docs.forEach(d => { const m = d.data(); monthCache[d.id] = (m.lessons && typeof m.lessons === 'object') ? m.lessons : {}; });
+                        lessonsFirst = {};
+                        Object.entries(monthCache).forEach(([id, l]) => { lessonsFirst[id] = l; });
+                        finishFirstLoad();
+                        return;
+                    }
+                    let changed = 0;
+                    qs.docChanges().forEach(ch => {
+                        const remote = ch.type === 'removed' ? {} : ((ch.doc.data().lessons && typeof ch.doc.data().lessons === 'object') ? ch.doc.data().lessons : {});
+                        const prev = monthCache[ch.doc.id] || {};
+                        monthCache[ch.doc.id] = remote;
+                        const month = (ch.doc.data() && ch.doc.data().month) || ch.doc.id.split('__L_')[1];
+                        const keys = new Set([...Object.keys(remote), ...Object.keys(prev), ...Object.keys(syncedLessons).filter(k => k.startsWith(month))]);
+                        keys.forEach(k => {
+                            const r = remote[k];
+                            if (hashOf(r) === hashOf(syncedLessons[k])) return;   // keine Änderung von aussen
+                            const localDirty = hashOf(stripForCloud(lessonsStore[k])) !== hashOf(syncedLessons[k]);
+                            if (r === undefined) delete syncedLessons[k]; else syncedLessons[k] = r;
+                            if (localDirty) return;   // eigene, noch nicht hochgeladene Änderung gewinnt
+                            if (r === undefined) delete lessonsStore[k]; else lessonsStore[k] = JSON.parse(JSON.stringify(r));
+                            changed++;
+                        });
+                    });
+                    if (!changed) return;
+                    persistLocal();
+                    storeBaseline();
+                    updateSyncIndicator('ok', `Aktiv synchronisiert (${Object.keys(lessonsStore).length} Lektionen)`, docId);
+                    refreshViewsAfterSync();
+                }, (err) => {
+                    updateSyncIndicator('error', `Lesefehler (Lektionen): ${err.code || err.message}`, docId);
+                });
+
+            firestoreUnsubscribe = () => { unsubMain(); unsubLessons(); };
         }
 
         // Nur auf einem Gerät ohne bisherigen Abgleich vor dem ersten Laden blockieren
@@ -2485,7 +2699,7 @@ HA: ...</pre>
                 // 2. Abfrage nach ownerUid oder ownerEmail
                 try {
                     const qSnap = await db.collection('sekSync').where('ownerUid', '==', currentUser.uid).get();
-                    qSnap.forEach(d => { if (!/^(apikeys_|backup_|backupindex_)/.test(d.id)) foundDocs.set(d.id, d.data()); });
+                    qSnap.forEach(d => { if (!/^(apikeys_|backup_|backupindex_)/.test(d.id) && !d.id.includes('__')) foundDocs.set(d.id, d.data()); });
                 } catch (e) {}
 
 
@@ -3328,6 +3542,7 @@ HA: ...</pre>
         }
 
         function saveLessonModal() {
+            markChangeReason('Bearbeitet');
             if (!commitLessonModal()) return;
             closeLessonModal(true);
             renderCalendar();
@@ -3448,6 +3663,7 @@ HA: ...</pre>
         }
 
         function bumpLessonsForward() {
+            markChangeReason('Verschoben');
             if (!activeSlotMeta) return;
             commitLessonModal();   // ungespeicherte Änderungen nicht verlieren
             const { slot, dayDate } = activeSlotMeta;
@@ -5103,6 +5319,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function applyChalkImport() {
+            markChangeReason('Chalk-Import');
             buildChalkPreviewItems();
             const chosen = universalPreviewItems.filter(it => it.selected && it.mode !== 'skip' && !it.outOfYear);
             const addMissing = document.getElementById('chalkAddMissingSlots').checked;
@@ -5305,6 +5522,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function applyUniversalImportSelectionNow() {
+            markChangeReason('Import');
             if (currentImportCategory === 'chalk') { applyChalkImport(); return; }
             if (currentImportCategory === 'schedule') {
                 const activeRows = universalPreviewItems.filter(it => it.action === 'add' || it.action === 'replace');
@@ -5919,6 +6137,7 @@ Text:\n${raw.slice(0, 12000)}`;
         }
 
         function deleteStoredClip(lessonKey, clipIdx) {
+            markChangeReason('Sprachmemo gelöscht');
             const arr = lessonsStore[lessonKey]?.audioClips;
             if (!arr || !arr[clipIdx]) return;
             idbAudio('delete', audioKey(arr[clipIdx]));
@@ -6165,6 +6384,114 @@ Text:\n${raw.slice(0, 12000)}`;
             const done = () => { document.body.classList.remove('print-year'); window.removeEventListener('afterprint', done); };
             window.addEventListener('afterprint', done);
             setTimeout(() => { window.print(); setTimeout(done, 1500); }, 50);
+        }
+
+        // ---------- Frühere Versionen einer Lektion ----------
+        function backupLabelText(label) {
+            return ({ daily: 'Tagessicherung', 'before-import': 'vor Import', 'before-restore': 'vor Wiederherstellung',
+                      'before-migration': 'vor Umstellung auf Monats-Dokumente' })[label] || label;
+        }
+        let versionsCtx = null;   // { key, slot, dayDate, entries: [{ source, at, reason, device, data, backupId }] }
+        async function openVersionsModal() {
+            if (!activeLessonKey || !activeSlotMeta) return;
+            const key = activeLessonKey;
+            versionsCtx = { key, slot: activeSlotMeta.slot, dayDate: activeSlotMeta.dayDate, entries: [], backups: [] };
+            const st = getStyleForSlot(activeSlotMeta.slot.subject, activeSlotMeta.slot.className);
+            document.getElementById('versionsSubtitle').innerText = `${st.label} ${activeSlotMeta.slot.className} · ${formatDateCH(key.split('_')[0])} ${activeSlotMeta.slot.start}`;
+            document.getElementById('versionsModal').classList.remove('hidden');
+            updateBodyScrollLock();
+            refreshIcons();
+            const list = document.getElementById('versionsList');
+            list.innerHTML = `<div class="text-slate-500 italic py-4 text-center">Lade Versionen…</div>`;
+            await flushPendingSave();   // eigene, noch nicht gespeicherte Änderung zuerst sichern
+            await new Promise(r => setTimeout(r, 300));
+            try {
+                if (db && currentUser) {
+                    const snap = await db.collection('sekSync').doc(lessonHistoryDocId(getActiveDocId(), key)).get();
+                    if (snap.exists && Array.isArray(snap.data().entries)) versionsCtx.entries = snap.data().entries.map(e => ({ ...e, source: 'history' }));
+                    const idx = await db.collection('sekSync').doc(backupIndexDocId(getActiveDocId())).get();
+                    versionsCtx.backups = idx.exists ? (idx.data().entries || []) : [];
+                }
+            } catch (e) {
+                list.innerHTML = `<div class="text-rose-700 font-semibold py-4">Versionen nicht lesbar: ${escapeHtml(e.code || e.message)}</div>`;
+                return;
+            }
+            renderVersionsList();
+        }
+        function closeVersionsModal() {
+            document.getElementById('versionsModal').classList.add('hidden');
+            updateBodyScrollLock();
+        }
+        function lessonPreviewHtml(l) {
+            if (!l || !hasLessonContent(l)) return `<div class="italic text-slate-400">(leer)</div>`;
+            const row = (lab, v) => v ? `<div><span class="font-extrabold text-indigo-700">${lab}:</span> ${escapeHtml(htmlToPlainText(v)).replace(/\n/g, '<br>')}</div>` : '';
+            return `${l.title ? `<div class="font-extrabold text-slate-900">${escapeHtml(l.title)}</div>` : ''}${row('E', l.einstieg)}${row('H', l.hauptteil)}${row('S', l.schluss)}${row('HA', l.homework)}${l.isExam ? '<div class="font-bold text-rose-700">📝 Prüfung</div>' : ''}`;
+        }
+        function renderVersionsList() {
+            const list = document.getElementById('versionsList');
+            const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : `${d.toLocaleDateString('de-CH')} ${d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`; };
+            const cur = lessonsStore[versionsCtx.key];
+            let html = `<div class="font-bold text-slate-500 uppercase text-[10.5px] tracking-wide">Aktueller Stand</div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-slate-700 leading-snug">${lessonPreviewHtml(cur)}</div>
+                <div class="font-bold text-slate-500 uppercase text-[10.5px] tracking-wide mt-2">Frühere Stände (vor jeder Änderung automatisch gesichert)</div>`;
+            if (versionsCtx.entries.length === 0) html += `<div class="text-slate-400 italic px-1">Noch keine früheren Stände gesichert. Ab jetzt wird vor jeder Änderung automatisch eine Version abgelegt.</div>`;
+            versionsCtx.entries.forEach((e, i) => {
+                html += `<details class="bg-white border border-slate-200 rounded-lg px-3 py-2">
+                    <summary class="cursor-pointer font-bold text-slate-800">${escapeHtml(fmt(e.at))} <span class="font-semibold text-slate-500">· vor «${escapeHtml(e.reason || 'Änderung')}» · ${escapeHtml(e.device || '')}</span>
+                        <div class="font-normal text-slate-500 truncate">${escapeHtml(lessonTopicLabel(e.data, 80))}</div></summary>
+                    <div class="mt-2 text-slate-700 leading-snug">${lessonPreviewHtml(e.data)}</div>
+                    <div class="flex justify-end mt-2"><button type="button" onclick="restoreLessonVersion('history', ${i})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Diesen Stand wiederherstellen</button></div>
+                </details>`;
+            });
+            if (versionsCtx.backups.length) {
+                html += `<div class="font-bold text-slate-500 uppercase text-[10.5px] tracking-wide mt-2">Aus den Cloud-Sicherungen (Tagesstände)</div>`;
+                versionsCtx.backups.forEach((b, i) => {
+                    html += `<div id="vb_${i}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+                        <span class="font-bold text-slate-700">${escapeHtml(formatDateCH(b.date))} ${escapeHtml(b.time || '')} <span class="font-semibold text-slate-500">· ${escapeHtml(backupLabelText(b.label))}</span></span>
+                        <button type="button" onclick="loadBackupLessonVersion(${i})" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg font-bold text-slate-700">Ansehen</button>
+                    </div>`;
+                });
+            }
+            list.innerHTML = html;
+        }
+        async function loadBackupLessonVersion(i) {
+            const b = versionsCtx.backups[i];
+            const box = document.getElementById(`vb_${i}`);
+            box.innerHTML = `<span class="italic text-slate-500">Lade Sicherung…</span>`;
+            try {
+                const snap = await db.collection('sekSync').doc(b.id).get();
+                const d = snap.data();
+                const state = JSON.parse(await base64GunzipToString(d.enc, d.data));
+                const l = (state.lessonsStore || {})[versionsCtx.key];
+                b.lesson = l;
+                box.outerHTML = `<details open class="bg-white border border-slate-200 rounded-lg px-3 py-2">
+                    <summary class="cursor-pointer font-bold text-slate-800">${escapeHtml(formatDateCH(b.date))} ${escapeHtml(b.time || '')} <span class="font-semibold text-slate-500">· Cloud-Sicherung</span></summary>
+                    <div class="mt-2 text-slate-700 leading-snug">${lessonPreviewHtml(l)}</div>
+                    ${l && hasLessonContent(l) ? `<div class="flex justify-end mt-2"><button type="button" onclick="restoreLessonVersion('backup', ${i})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Diesen Stand wiederherstellen</button></div>` : ''}
+                </details>`;
+            } catch (e) {
+                box.innerHTML = `<span class="text-rose-700 font-semibold">Sicherung nicht lesbar: ${escapeHtml(e.code || e.message)}</span>`;
+            }
+        }
+        function restoreLessonVersion(source, i) {
+            const data = source === 'history' ? versionsCtx.entries[i]?.data : versionsCtx.backups[i]?.lesson;
+            if (!data) return;
+            const { key, slot, dayDate } = versionsCtx;
+            const cur = lessonsStore[key];
+            const restored = JSON.parse(JSON.stringify(data));
+            // Sprachmemos des aktuellen Stands nicht verlieren
+            if (cur && Array.isArray(cur.audioClips) && cur.audioClips.length) {
+                const ids = new Set((restored.audioClips || []).map(c => c.id));
+                restored.audioClips = [...(restored.audioClips || []), ...cur.audioClips.filter(c => !ids.has(c.id))];
+            }
+            closeVersionsModal();
+            closeLessonModal(true);
+            markChangeReason('Version wiederhergestellt');
+            lessonsStore[key] = restored;
+            saveAllState();
+            renderCalendar();
+            openLessonModal(key, slot, dayDate);
+            showToast('Früherer Stand wiederhergestellt – der bisherige Stand ist als Version gesichert.');
         }
 
         // ---------- Suche in Lektionen (Wörterbuch + KI) ----------
@@ -6593,7 +6920,10 @@ ${listing}`;
             for (const old of tooOld) {
                 try { await db.collection('sekSync').doc(old.id).delete(); } catch (e) {}
             }
-            try { localStorage.setItem(accountStorageName(`lastCloudBackup_${docId}`), now.toISOString()); } catch (e) {}
+            try {
+                localStorage.setItem(accountStorageName(`lastAnyCloudBackup_${docId}`), now.toISOString());
+                if (label === 'daily') localStorage.setItem(accountStorageName(`lastCloudBackup_${docId}`), now.toISOString());
+            } catch (e) {}
             return true;
         }
 
@@ -6631,7 +6961,7 @@ ${listing}`;
                 }
                 list.innerHTML = entries.map(e => `
                     <div class="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5">
-                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : e.label === 'before-import' ? 'vor Import' : escapeHtml(e.label)}</span>` : ''}</span>
+                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : e.label === 'before-import' ? 'vor Import' : e.label === 'before-migration' ? 'vor Umstellung auf Monats-Dokumente' : escapeHtml(e.label)}</span>` : ''}</span>
                         <button type="button" onclick="restoreCloudBackup(${jsArg(e.id)})" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10.5px] shrink-0">Wiederherstellen</button>
                     </div>`).join('');
             } catch (err) {
@@ -6641,6 +6971,7 @@ ${listing}`;
 
         async function restoreCloudBackup(id) {
             if (!confirm('Diesen Stand wiederherstellen?\n\nDer aktuelle Stand wird vorher automatisch als Sicherung abgelegt – du kannst also jederzeit zurück.')) return;
+            markChangeReason('Backup wiederhergestellt');
             try {
                 const snap = await db.collection('sekSync').doc(id).get();
                 if (!snap.exists) { showToast('Sicherung nicht gefunden.'); return; }
@@ -6678,7 +7009,7 @@ ${listing}`;
         }
         function refreshBackupStatusUI() {
             const box = document.getElementById('backupStatusBox');
-            const lastCloud = currentUser && privateSyncKey ? localStorage.getItem(accountStorageName(`lastCloudBackup_${getActiveDocId()}`)) : '';
+            const lastCloud = currentUser && privateSyncKey ? (localStorage.getItem(accountStorageName(`lastAnyCloudBackup_${getActiveDocId()}`)) || localStorage.getItem(accountStorageName(`lastCloudBackup_${getActiveDocId()}`))) : '';
             const manualDays = daysSince(lastManualExportAt);
             if (box) {
                 box.innerText = `☁️ Letzte automatische Cloud-Sicherung: ${describeAgo(lastCloud)}\n` +
@@ -6725,6 +7056,13 @@ ${listing}`;
                     if (db && currentUser) {
                         const snap = await db.collection('sekSync').doc(docId).get();
                         if (snap.exists) data = snap.data();
+                        if (data && data.layout === 'split-v1') {   // Lektionen liegen in Monats-Dokumenten
+                            const qs = await db.collection('sekSync').where('ownerUid', '==', currentUser.uid)
+                                .where('parentDoc', '==', docId).where('kind', '==', 'lessons').get();
+                            const all = {};
+                            qs.forEach(d => Object.assign(all, d.data().lessons || {}));
+                            data = { ...data, lessonsStore: all };
+                        }
                     }
                 } catch (e) {}
                 if (!data) {
@@ -6775,6 +7113,7 @@ ${listing}`;
                 } finally {
                     importBusy = false;
                 }
+                markChangeReason('Backup-Datei importiert');
                 if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
                 if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
                 if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;

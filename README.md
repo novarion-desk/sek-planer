@@ -15,6 +15,7 @@ Live-App: https://novarion-desk.github.io/sek-planer/
 
 Jede Version ist sofort direkt aufrufbar (gleiche Daten, gleiches Konto):
 
+- Version 14: https://novarion-desk.github.io/sek-planer/versions/v14/
 - Version 13: https://novarion-desk.github.io/sek-planer/versions/v13/
 - Version 12: https://novarion-desk.github.io/sek-planer/versions/v12/
 - Version 11: https://novarion-desk.github.io/sek-planer/versions/v11/
@@ -25,6 +26,7 @@ Jede Version ist sofort direkt aufrufbar (gleiche Daten, gleiches Konto):
 - Version 6: https://novarion-desk.github.io/sek-planer/versions/v6/
 
 Funktioniert die aktuelle Version nicht, einfach den Link der vorherigen Version öffnen und weiterarbeiten.
+**Ab Version 14** sind die Daten anders gespeichert: Versionen 6–13 können sie nicht mehr lesen und sperren sich. Rückfall dann über ⚙️ → Sicherung «vor Umstellung auf Monats-Dokumente».
 Danach Claude sagen, dass die alte Version wieder zur Hauptversion werden soll.
 
 ## Daten & Sicherungen
