@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 9 – 17.11.2026
+- Handy: Die App öffnet direkt in der Tagesansicht mit dem heutigen Tag (am Wochenende: Montag der nächsten Woche). Tablet/Computer unverändert.
+- Vor jedem Import (Chalk, Datei/Sequenz, Stundenplan, Ferien, KI-Termine, Backup-Datei) wird automatisch eine Cloud-Sicherung «vor Import» angelegt. Klappt das nicht (offline), wird zuerst eine Backup-Datei heruntergeladen – ohne Sicherung wird nichts importiert.
+
 ## Version 8 – 17.11.2026
 - Tagesansicht: Tage per Wischen nach links/rechts wechseln (Handy/Tablet), mit kurzer Animation.
 - Horizontales Wischen löst nicht mehr «Seite zurück» des Browsers aus.

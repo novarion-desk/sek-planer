@@ -1967,6 +1967,7 @@ HA: ...</pre>
                         loadSchoolYearData(currentSchoolYear);
                         connectPrivateFirestoreSync();
                         renderCalendar();
+                        applyPhoneDefaultView();
                         updateOpenNotesBadge();
                         refreshIcons();
                     } else {
@@ -2600,6 +2601,22 @@ HA: ...</pre>
                 }
             }, { passive: true });
         })();
+
+        // Handy: beim Öffnen direkt die Tagesansicht mit heute (Wochenende → Montag der nächsten Woche)
+        let phoneDefaultApplied = false;
+        function applyPhoneDefaultView() {
+            if (phoneDefaultApplied) return;
+            phoneDefaultApplied = true;
+            if (!window.matchMedia('(max-width: 767px)').matches) return;
+            const wd = (new Date().getDay() + 6) % 7;   // Mo=0 … So=6
+            if (wd > 4 && formatDateISO(currentMonday) === formatDateISO(getMonday(new Date()))) {
+                currentMonday.setDate(currentMonday.getDate() + 7);
+                selectedDayIdx = 0;
+            } else if (wd <= 4) {
+                selectedDayIdx = wd;
+            }
+            setViewMode('day');
+        }
 
         function setViewMode(mode) {
             viewMode = mode;
@@ -3502,7 +3519,14 @@ Text: "${text}"`;
                 });
         }
 
-        function confirmAiHolidays() {
+        async function confirmAiHolidays() {
+            if (importBusy || pendingAiHolidays.length === 0) return;
+            importBusy = true;
+            try {
+                if (!(await backupBeforeImport())) return;
+            } finally {
+                importBusy = false;
+            }
             pendingAiHolidays.forEach((p, i) => {
                 calendarEvents.push({
                     id: `ev-ai-${Date.now()}-${i}`,
@@ -4987,7 +5011,46 @@ Text:\n${raw.slice(0, 12000)}`;
             return true;
         }
 
-        function applyUniversalImportSelection() {
+        // Vor JEDEM Import: zuerst Sicherung. Klappt die Cloud-Sicherung nicht, wird eine Backup-Datei
+        // heruntergeladen – ohne Sicherung wird nichts importiert.
+        let importBusy = false;
+        async function backupBeforeImport() {
+            if (db && currentUser && privateSyncKey && navigator.onLine !== false) {
+                showToast('Sicherung vor dem Import wird erstellt…');
+                try {
+                    if (await createCloudBackup('before-import')) {
+                        refreshBackupStatusUI();
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('Sicherung vor Import fehlgeschlagen:', e);
+                }
+            }
+            if (!confirm('Die automatische Cloud-Sicherung vor dem Import hat nicht geklappt (offline oder nicht angemeldet).\n\nOK = zuerst Backup-Datei herunterladen, dann importieren\nAbbrechen = Import abbrechen (nichts wird verändert)')) {
+                showToast('Import abgebrochen – nichts verändert.');
+                return false;
+            }
+            try {
+                await exportFullBackup();
+                return true;
+            } catch (e) {
+                showToast('Backup-Datei konnte nicht erstellt werden – Import abgebrochen.');
+                return false;
+            }
+        }
+
+        async function applyUniversalImportSelection() {
+            if (importBusy) return;
+            importBusy = true;
+            try {
+                if (!(await backupBeforeImport())) return;
+                applyUniversalImportSelectionNow();
+            } finally {
+                importBusy = false;
+            }
+        }
+
+        function applyUniversalImportSelectionNow() {
             if (currentImportCategory === 'chalk') { applyChalkImport(); return; }
             if (currentImportCategory === 'schedule') {
                 const activeRows = universalPreviewItems.filter(it => it.action === 'add' || it.action === 'replace');
@@ -5766,7 +5829,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 }
                 list.innerHTML = entries.map(e => `
                     <div class="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5">
-                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : escapeHtml(e.label)}</span>` : ''}</span>
+                        <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : e.label === 'before-import' ? 'vor Import' : escapeHtml(e.label)}</span>` : ''}</span>
                         <button type="button" onclick="restoreCloudBackup(${jsArg(e.id)})" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10.5px] shrink-0">Wiederherstellen</button>
                     </div>`).join('');
             } catch (err) {
@@ -5901,6 +5964,14 @@ Text:\n${raw.slice(0, 12000)}`;
                 if (data && data.years && typeof data.years === 'object') {
                     if (data.years[currentSchoolYear]) data = data.years[currentSchoolYear];
                     else { showToast(`Die Backup-Datei enthält kein Schuljahr ${currentSchoolYear}. Bitte oben das passende Schuljahr wählen.`); return; }
+                }
+                if (!data || typeof data !== 'object') throw new Error('format');
+                if (importBusy) return;
+                importBusy = true;
+                try {
+                    if (!(await backupBeforeImport())) return;
+                } finally {
+                    importBusy = false;
                 }
                 if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
                 if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;

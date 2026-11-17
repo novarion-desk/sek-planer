@@ -15,6 +15,7 @@ Live-App: https://novarion-desk.github.io/sek-planer/
 
 Jede Version ist sofort direkt aufrufbar (gleiche Daten, gleiches Konto):
 
+- Version 9: https://novarion-desk.github.io/sek-planer/versions/v9/
 - Version 8: https://novarion-desk.github.io/sek-planer/versions/v8/
 - Version 7: https://novarion-desk.github.io/sek-planer/versions/v7/
 - Version 6: https://novarion-desk.github.io/sek-planer/versions/v6/
@@ -26,5 +27,5 @@ Danach Claude sagen, dass die alte Version wieder zur Hauptversion werden soll.
 
 - **Cloud:** Firebase Firestore (Region europe-west6, Zürich) – Sync über alle Geräte.
 - **Lokal:** Kopie im Browser jedes Geräts (getrennt pro Konto).
-- **Automatisch:** Tägliche Cloud-Sicherung, die letzten 30 Tage – in der App unter ⚙️ → «Sicherungen & Backup» mit einem Klick wiederherstellbar. Vor jeder Wiederherstellung wird der aktuelle Stand zusätzlich gesichert.
+- **Automatisch:** Tägliche Cloud-Sicherung, die letzten 30 Tage – in der App unter ⚙️ → «Sicherungen & Backup» mit einem Klick wiederherstellbar. Vor jeder Wiederherstellung und vor jedem Import wird der aktuelle Stand zusätzlich gesichert.
 - **Manuell:** ⚙️ → «Backup herunterladen (.json)» – enthält alle Schuljahre. Empfohlen 1× pro Woche (die App erinnert nach 7 Tagen).
