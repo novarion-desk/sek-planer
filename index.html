@@ -647,7 +647,7 @@
                     </button>
                     <button type="button" id="impTypeBtn_schedule" onclick="setImportCategory('schedule')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">2. Stundenplan</span>
-                        <span class="text-[10.5px] text-slate-600">Escola PDF/Excel einlesen &amp; pro Lektion wählen: Hinzufügen, Ersetzen oder Nicht übernehmen</span>
+                        <span class="text-[10.5px] text-slate-600">Excel / Escola-PDF einlesen &amp; pro Lektion wählen: Hinzufügen, Ersetzen oder Nicht übernehmen</span>
                     </button>
                     <button type="button" id="impTypeBtn_holidays" onclick="setImportCategory('holidays')" class="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left flex flex-col gap-1 transition-all">
                         <span class="font-extrabold text-slate-900 text-xs">3. Ferien &amp; Spezialtage</span>
@@ -658,7 +658,6 @@
                 <!-- DRAG & DROP ZONE + FORMAT-ANLEITUNG -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-                        <!-- Drag & Drop Feld (klickbar + ziehbar) -->
                         <div id="dropZoneBox"
                              onclick="document.getElementById('universalFileInput').click()"
                              ondragenter="event.preventDefault(); event.stopPropagation(); this.classList.add('border-indigo-600', 'bg-indigo-50');"
@@ -678,7 +677,6 @@
                             <input type="file" id="universalFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onclick="event.stopPropagation()" onchange="handleUniversalFileUpload(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
                         </div>
 
-                        <!-- Aufklappbare Format-Anleitung -->
                         <details class="lg:col-span-5 bg-indigo-50/70 border border-indigo-200 rounded-xl p-2.5 text-[11px]">
                             <summary class="cursor-pointer font-extrabold text-indigo-950 flex items-center justify-between select-none">
                                 <span>ℹ️ Format-Anleitung für optimalen Import (klicken)</span>
@@ -787,7 +785,7 @@ HA: ...</pre>
                 <!-- LIVE-KONTROLLTABELLE -->
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-extrabold text-slate-900">Live-Kontrolltabelle (alle erkannten Einträge sind hier direkt anpassbar):</span>
+                        <span id="previewTableTitleLabel" class="font-extrabold text-slate-900">Live-Kontrolltabelle (alle erkannten Einträge sind hier direkt anpassbar):</span>
                         <div class="flex items-center gap-2 text-[11px]">
                             <button type="button" onclick="toggleAllUniversalItems(true)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Alle anwählen</button>
                             <button type="button" onclick="toggleAllUniversalItems(false)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold text-slate-700">Keine</button>
@@ -937,7 +935,7 @@ HA: ...</pre>
             }
         }
 
-        // Globaler Schutz, damit Drag & Drop von Dateien niemals den Browser-Tab überschreibt
+        // Globaler Schutz gegen ungewolltes Öffnen von Dateien im Browser-Tab
         window.addEventListener('dragover', (e) => { e.preventDefault(); }, false);
         window.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -1327,7 +1325,6 @@ HA: ...</pre>
         let universalAllSlots2 = [];
         let generalChatHistory = [];
         let pendingAiHolidays = [];
-        let lastUploadedExcelRows = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             refreshIcons();
@@ -2396,7 +2393,7 @@ Text: "${text}"`;
         }
 
         // =========================================================================
-        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT (DRAG&DROP, EXCEL/PDF-PARSER)
+        // 8. UNIVERSELLER DATEI- & SEQUENZ-IMPORT
         // =========================================================================
         function copyNotebookPrompt() {
             const promptText = `Erstelle aus diesen Unterlagen einen Lektionenablauf für die Sekundarstufe I (Kanton Zürich, Niveau A, 45 Minuten pro Lektion).
@@ -2533,7 +2530,6 @@ HA: [Hausaufgabe auf nächste Stunde]`;
         }
 
         function handleRawTextareaManualInput() {
-            lastUploadedExcelRows = null;
             const val = document.getElementById('universalRawTextarea').value;
             if (currentImportCategory === 'sequence') {
                 applyDetectedStartDateIfAvailable(val);
@@ -2561,7 +2557,6 @@ HA: [Hausaufgabe auf nächste Stunde]`;
             const textarea = document.getElementById('universalRawTextarea');
             const dropLabel = document.getElementById('dropZoneLabel');
             if (dropLabel) dropLabel.innerText = `Geladen: ${file.name}`;
-            lastUploadedExcelRows = null;
             showToast(`Lese ${file.name} ein...`);
 
             try {
@@ -2582,7 +2577,6 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                 } else if ((lowerName.endsWith('.xls') || lowerName.endsWith('.xlsx')) && window.XLSX) {
                     const wb = XLSX.read(await file.arrayBuffer());
                     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                    lastUploadedExcelRows = rows;
                     textarea.value = rows.filter(r => r && r.length > 0).map(r => r.join(' | ')).join('\n');
                 } else {
                     textarea.value = await file.text();
@@ -2595,7 +2589,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
 
                 rebuildUniversalPreview();
 
-                // Wenn Stundenplan-Tab aktiv und es ein PDF ist (ohne strukturierte Excel-Spalten): automatisch KI starten, falls Key vorhanden
+                // Wenn Stundenplan-Tab aktiv und es ein PDF ist: direkt KI starten, falls Key vorhanden
                 if (currentImportCategory === 'schedule' && lowerName.endsWith('.pdf')) {
                     const hasKey = Boolean((localStorage.getItem('sekPlaner_geminiKey') || geminiApiKey || localStorage.getItem('sekPlaner_claudeKey') || claudeApiKey || "").trim());
                     if (hasKey) {
@@ -2628,7 +2622,7 @@ HA: [Hausaufgabe auf nächste Stunde]`;
                 if (cells.length >= 5) {
                     const dayIdx = dayMap[(cells[0] || "").toLowerCase()];
                     if (dayIdx !== undefined) {
-                        // Erwartetes Schema aus unserer Excel-Vorlage: Wochentag | Lektion | Start | End | Fach | Klasse | Zimmer | Klassenlehrperson | Gefäss
+                        // Schema: Wochentag | Lektion | Start | End | Fach | Klasse | Zimmer | Klassenlehrperson | Gefäss
                         const hasLessonNumCol = /^\d+$/.test(cells[1] || "");
                         const start = hasLessonNumCol ? (cells[2] || "08:20") : (cells[1] || "08:20");
                         const end = hasLessonNumCol ? (cells[3] || "09:05") : (cells[2] || "09:05");
@@ -2941,7 +2935,6 @@ Text:\n${raw.slice(0, 12000)}`;
             return [...pureSlots];
         }
 
-        // Baut die Stundenplan-Vorschautabelle auf mit Pro-Zeile-Aktion (Hinzufügen / Ersetzen / Nicht übernehmen)
         function buildScheduleActionItems(parsedSlots) {
             universalPreviewItems = parsedSlots.map(p => {
                 const existingAtSlot = weeklyTemplate.find(ex => Number(ex.day) === Number(p.day) && ex.start === p.start);
@@ -3082,7 +3075,7 @@ Text:\n${raw.slice(0, 12000)}`;
                 renderSequencePreviewTable();
 
             } else if (currentImportCategory === 'schedule') {
-                // 1. Zuerst prüfen, ob es eine strukturierte Excel-/Tabellenliste mit Wochentagen & Zeiten ist
+                // 1. Strukturierte Excel-/Tabellenzeilen (z.B. Montag | 2 | 08:20 | 09:05 | D | S2Aa | C63) direkt auslesen
                 const structured = parseStructuredScheduleRows(rawText);
                 if (structured.length > 0) {
                     buildScheduleActionItems(structured);
@@ -3353,7 +3346,6 @@ Text:\n${raw.slice(0, 12000)}`;
             it.parsed.schluss = reparsed.schluss;
         }
 
-        // Stundenplan-Tabelle mit editierbaren Feldern und Einzel-Auswahl: Hinzufügen / Ersetzen / Nicht übernehmen
         function renderSchedulePreviewTable() {
             const thead = document.getElementById('universalPreviewThead');
             const tbody = document.getElementById('universalPreviewTbody');
