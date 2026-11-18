@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 18.2 – 18.11.2026
+- Import-Fenster «Datei / Sequenz»: zwei Bereiche nebeneinander (Handy untereinander) – links Datei (Drag & Drop oder «Dateien auswählen»), rechts grosses Feld «Text einfügen» mit Beispiel-Format und «Leeren». Inhalt einer hochgeladenen Datei erscheint im selben Feld. Gilt für Sequenz, Stundenplan und Chalk.
+
 ## Version 18.1 – 18.11.2026
 - Neue Kopfzeile (Computer): Wochenplan · Notizen & Memos · Jahreskalender gross in der Mitte, Werkzeuge (Datei/Sequenz, Stundenplan, Stellvertretung, KI-Chat, Einstellungen) rechts. Zweite Zeile nur im Wochenplan: «Heute», ‹ ›, Woche, und Woche/Tag/Fach in der Mitte.
 - «Diese Woche» heisst jetzt «Heute»: Woche → aktuelle Woche + aktuelle Lektion, Tag → heutiger Tag (am Wochenende nächster Montag), Fach → aktuelle Woche.
