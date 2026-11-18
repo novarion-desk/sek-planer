@@ -201,6 +201,7 @@
             <div id="mobileDateLabel" class="flex-1 min-w-0 text-center font-extrabold text-sm text-slate-900 truncate">–</div>
             <button type="button" onclick="mobileNav(1)" class="p-2 rounded-lg bg-slate-100 text-slate-700 shrink-0" aria-label="Weiter"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
             <button type="button" onclick="mobileGoToday()" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold shrink-0">Heute</button>
+            <button type="button" id="undoBtnMobile" onclick="undoLast()" disabled class="p-2 rounded-lg border border-slate-200 text-indigo-600 shrink-0 disabled:opacity-35" aria-label="Rückgängig"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
             <button type="button" onclick="openSearchModal()" class="p-2 rounded-lg border border-slate-200 text-slate-600 shrink-0" aria-label="Suchen"><i data-lucide="search" class="w-4 h-4"></i></button>
             <button type="button" onclick="toggleMobileMenu(event)" class="relative p-2 rounded-lg border border-slate-200 text-slate-600 shrink-0" aria-label="Menü">
                 <i data-lucide="menu" class="w-4 h-4"></i>
@@ -212,6 +213,7 @@
                     <button type="button" id="mobViewDay" onclick="userSetView('day');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Tag</button>
                     <button type="button" id="mobViewSubject" onclick="userSetView('subject');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Fach</button>
                 </div>
+                <button type="button" onclick="closeMobileMenu();openJournalModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="history" class="w-4 h-4 text-indigo-600"></i> Änderungsverlauf</button>
                 <button type="button" onclick="closeMobileMenu();openUniversalImportModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-600"></i> Datei / Sequenz</button>
                 <button type="button" onclick="closeMobileMenu();openScheduleEditorModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-500"></i> Stundenplan</button>
                 <button type="button" onclick="closeMobileMenu();printSubstitutePlan()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="printer" class="w-4 h-4 text-slate-500"></i> Stellvertretung drucken</button>
@@ -246,14 +248,14 @@
             <!-- Zeile 1: links Planer + Schuljahr + Suche · Mitte Hauptbereiche · rechts Werkzeuge -->
             <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:px-6 py-2">
                 <div class="flex items-center gap-2 min-w-0">
-                    <div class="flex items-center gap-2 mr-1">
+                    <div class="hidden xl:flex items-center gap-2 mr-1">
                         <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                             <i data-lucide="calendar-days" class="w-4 h-4"></i>
                         </div>
-                        <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden xl:inline whitespace-nowrap">Sek Planer</span>
+                        <span class="font-extrabold text-sm tracking-tight text-slate-900 hidden min-[1600px]:inline whitespace-nowrap">Sek Planer</span>
                     </div>
                     <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1 text-xs font-extrabold text-indigo-950">
-                        <span class="text-[10.5px] text-indigo-700 font-bold">SJ:</span>
+                        <span class="hidden xl:inline text-[10.5px] text-indigo-700 font-bold">SJ:</span>
                         <select id="schoolYearSelect" onchange="switchSchoolYear(this.value)" class="bg-transparent font-extrabold text-indigo-950 focus:outline-none cursor-pointer">
                             <option value="2026/27">2026/27</option>
                             <option value="2027/28">2027/28</option>
@@ -263,6 +265,13 @@
                     <button type="button" onclick="openSearchModal()" title="Lektionen durchsuchen" class="whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-2xs">
                         <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500"></i>
                         <span class="hidden xl:inline">Suchen</span>
+                    </button>
+                    <button type="button" id="undoBtn" onclick="undoLast()" disabled title="Rückgängig" class="whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="undo-2" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span class="hidden min-[1400px]:inline">Rückgängig</span>
+                    </button>
+                    <button type="button" onclick="openJournalModal()" title="Änderungsverlauf – jede Aktion einzeln rückgängig machen" class="whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition-colors shadow-2xs">
+                        <i data-lucide="history" class="w-3.5 h-3.5 text-slate-500"></i>
                     </button>
                 </div>
 
@@ -474,8 +483,9 @@
                     <div>
                         <label class="block font-bold text-amber-950 mb-1">Typ</label>
                         <select id="newEventType" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
-                            <option value="special">Spezialtag / Anlass (Unterricht findet statt)</option>
-                            <option value="holiday">Ferien / Schulfrei / Exkursion (blockiert Slots)</option>
+                            <option value="special">📌 Hinweis – Unterricht normal</option>
+                            <option value="specialday">🎯 Spezialtag – anderer Unterricht</option>
+                            <option value="holiday">🏖️ Schulfrei – kein Unterricht</option>
                         </select>
                     </div>
                     <div>
@@ -491,6 +501,14 @@
                     <div>
                         <label class="block font-bold text-amber-950 mb-1">Bis Datum</label>
                         <input type="date" id="newEventEnd" class="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-amber-950 mb-1">Uhrzeit (optional)</label>
+                        <div class="flex items-center gap-1">
+                            <input type="time" id="newEventTimeFrom" aria-label="Uhrzeit von" class="bg-white border border-amber-200 rounded-lg px-2 py-1.5 font-bold">
+                            <span class="text-amber-800">–</span>
+                            <input type="time" id="newEventTimeTo" aria-label="Uhrzeit bis" class="bg-white border border-amber-200 rounded-lg px-2 py-1.5 font-bold">
+                        </div>
                     </div>
                     <div class="flex-1 min-w-[160px]">
                         <label class="block font-bold text-amber-950 mb-1">Bezeichnung</label>
@@ -743,9 +761,9 @@
             <!-- Fixierter Fuss -->
             <div class="shrink-0 px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="bumpLessonsForward()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
-                        <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
-                        <span id="bumpBtnLabel">+1 Lektion schieben</span>
+                    <button type="button" onclick="openMoveLessonModal()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors" title="Inhalt in eine andere Lektion verschieben oder kopieren">
+                        <i data-lucide="move-right" class="w-3.5 h-3.5"></i>
+                        <span id="bumpBtnLabel">Verschieben…</span>
                     </button>
                     <button type="button" onclick="clearCurrentLesson()" class="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg">
                         Leeren
@@ -768,6 +786,46 @@
     </div>
 
     <!-- MODAL 1B: SCHNELL-NOTIZ -->
+ <!-- LEKTION VERSCHIEBEN / KOPIEREN -->
+    <div id="moveLessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-2xs z-[60] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
+            <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="move-right" class="w-4 h-4 text-amber-600"></i> Lektion verschieben</h3>
+                    <div id="moveSubtitle" class="text-slate-500 mt-0.5 truncate"></div>
+                </div>
+                <button type="button" onclick="closeMoveLessonModal()" class="text-slate-400 hover:text-slate-700 font-extrabold text-base" aria-label="Schliessen">✕</button>
+            </div>
+            <div class="px-4 pt-3 pb-2 flex flex-col gap-2 border-b border-slate-100">
+                <div id="moveModeBtns" class="grid grid-cols-3 gap-1.5"></div>
+                <div id="moveTools" class="flex flex-wrap items-center gap-3"></div>
+            </div>
+            <div id="moveList" class="px-3 py-2 overflow-y-auto flex flex-col gap-1 min-h-[160px]"></div>
+            <div class="px-4 py-3 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex flex-wrap items-center justify-between gap-2">
+                <div id="moveSummary" class="text-slate-600 font-semibold min-w-0"></div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" onclick="closeMoveLessonModal()" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-700">Abbrechen</button>
+                    <button type="button" id="moveConfirmBtn" onclick="executeMoveLesson()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-extrabold">Verschieben</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+ <!-- ÄNDERUNGSVERLAUF (RÜCKGÄNGIG PRO AKTION) -->
+    <div id="journalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-2xs z-[60] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
+            <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-600"></i> Änderungsverlauf</h3>
+                    <div class="text-slate-500 mt-0.5">Letzte 30 Tage · jede Aktion einzeln rückgängig machbar · auf allen Geräten</div>
+                </div>
+                <button type="button" onclick="closeJournalModal()" class="text-slate-400 hover:text-slate-700 font-extrabold text-base" aria-label="Schliessen">✕</button>
+            </div>
+            <div id="journalConflict" class="hidden"></div>
+            <div id="journalList" class="p-3 overflow-y-auto flex flex-col gap-1.5"></div>
+        </div>
+    </div>
+
  <!-- FRÜHERE VERSIONEN EINER LEKTION -->
     <div id="versionsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-2xs z-[60] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
         <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
@@ -783,6 +841,53 @@
     </div>
 
  <!-- SUCHE IN LEKTIONEN -->
+    <div id="eventEditModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-[55] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 text-xs flex flex-col">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 id="evEditTitle" class="text-base font-extrabold text-slate-900">Eintrag</h3>
+                <button type="button" onclick="closeEventEditor()" class="text-slate-400 hover:text-slate-700 font-extrabold text-base" aria-label="Schliessen">✕</button>
+            </div>
+            <div class="p-4 flex flex-col gap-3">
+                <div>
+                    <label for="evEditName" class="block font-bold text-slate-700 mb-1">Bezeichnung</label>
+                    <input type="text" id="evEditName" placeholder="z. B. Offday, Projektwoche, Polizeibesuch" onkeydown="if(event.key==='Enter'){event.preventDefault();saveEventEditor();}" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-900">
+                </div>
+                <div>
+                    <label for="evEditType" class="block font-bold text-slate-700 mb-1">Art</label>
+                    <select id="evEditType" onchange="updateEventTypeHint()" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 font-bold">
+                        <option value="special">📌 Hinweis – Unterricht normal</option>
+                        <option value="specialday">🎯 Spezialtag – anderer Unterricht</option>
+                        <option value="holiday">🏖️ Schulfrei – kein Unterricht</option>
+                    </select>
+                    <p id="evEditTypeHint" class="text-[11px] text-slate-500 mt-1"></p>
+                </div>
+                <div>
+                    <label for="evEditClass" class="block font-bold text-slate-700 mb-1">Klasse</label>
+                    <select id="evEditClass" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 font-bold"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label for="evEditStart" class="block font-bold text-slate-700 mb-1">Von</label><input type="date" id="evEditStart" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 font-bold"></div>
+                    <div><label for="evEditEnd" class="block font-bold text-slate-700 mb-1">Bis</label><input type="date" id="evEditEnd" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 font-bold"></div>
+                </div>
+                <div>
+                    <div class="font-bold text-slate-700 mb-1">Uhrzeit <span class="font-semibold text-slate-400">(optional – leer = ganzer Tag)</span></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="time" id="evEditFrom" aria-label="Uhrzeit von" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 font-bold">
+                        <input type="time" id="evEditTo" aria-label="Uhrzeit bis" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 font-bold">
+                    </div>
+                </div>
+                <p id="evEditLessonHint" class="hidden text-[11px] text-violet-800 bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-1.5">Dieser Eintrag gehört zu einer bestimmten Lektion.</p>
+            </div>
+            <div class="p-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button type="button" id="evEditDelete" onclick="deleteEventFromEditor()" class="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-lg font-bold">Löschen</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" onclick="closeEventEditor()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-slate-700">Abbrechen</button>
+                    <button type="button" onclick="saveEventEditor()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="substituteModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
         <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
             <div class="p-4 border-b border-slate-100 flex flex-col gap-3">
@@ -1262,7 +1367,7 @@ HA: ...</pre>
             }
         }
 
-        const MODAL_IDS = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal', 'searchModal', 'versionsModal', 'substituteModal'];
+        const MODAL_IDS = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal', 'searchModal', 'versionsModal', 'substituteModal', 'eventEditModal', 'moveLessonModal', 'journalModal'];
         let lockedScrollY = 0;
 
         // Klick neben ein Fenster (auf den abgedunkelten Hintergrund) schliesst es.
@@ -1279,7 +1384,8 @@ HA: ...</pre>
             const closers = {
                 quickNoteModal: () => closeQuickNoteModal(), universalImportModal: () => closeUniversalImportModal(),
                 scheduleEditorModal: () => closeScheduleEditorModal(), settingsModal: () => closeSettingsModal(),
-                searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal(), substituteModal: () => closeSubstituteModal()
+                searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal(), substituteModal: () => closeSubstituteModal(), eventEditModal: () => closeEventEditor(),
+                moveLessonModal: () => closeMoveLessonModal(), journalModal: () => closeJournalModal()
             };
             if (id === 'lessonModal') {
                 if (activeLessonKey && getLessonFormState() !== lessonModalInitialState) saveLessonModal();
@@ -1329,8 +1435,9 @@ HA: ...</pre>
             if (e.key !== 'Escape') return;
             const closers = { quickNoteModal: () => closeQuickNoteModal(), lessonModal: () => closeLessonModal(),
                 universalImportModal: () => closeUniversalImportModal(), scheduleEditorModal: () => closeScheduleEditorModal(),
-                settingsModal: () => closeSettingsModal(), searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal() };
-            for (const id of ['versionsModal', 'quickNoteModal', 'settingsModal', 'scheduleEditorModal', 'universalImportModal', 'lessonModal', 'searchModal']) {
+                settingsModal: () => closeSettingsModal(), searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal(),
+                moveLessonModal: () => closeMoveLessonModal(), journalModal: () => closeJournalModal() };
+            for (const id of ['moveLessonModal', 'journalModal', 'versionsModal', 'quickNoteModal', 'settingsModal', 'scheduleEditorModal', 'universalImportModal', 'lessonModal', 'searchModal']) {
                 const el = document.getElementById(id);
                 if (el && !el.classList.contains('hidden')) { closers[id](); break; }
             }
@@ -2103,6 +2210,8 @@ HA: ...</pre>
             standaloneNotesStore = [];
             calendarEvents = [];
             generalChatHistory = [];
+            journal = [];
+            journalBase = null;
             try { localStorage.removeItem('sekPlaner_wasSignedIn'); } catch (e) {}
             await auth.signOut();
         }
@@ -2283,11 +2392,11 @@ HA: ...</pre>
                        [4,'08:00','08:45','E','3c','A4'],[4,'08:50','09:35','D','2a','A1'],[4,'10:00','10:45','Geschichte','2a','A1'],[4,'10:50','11:35','Mu','1b','B2']];
             const template = S.map((x, i) => ({ id: `demo-${i}`, day: x[0], start: x[1], end: x[2], subject: x[3], className: x[4], track: '', room: x[5] }));
             const T = {
-                D: [['Satzglieder bestimmen', 'Grammatik', 'Rätsel an der Wandtafel', '<ul><li>Arbeitsblatt Satzglieder in Partnerarbeit</li><li>Besprechung im Plenum</li></ul>', 'Kurzer Rückblick: Welche Satzglieder kennt ihr?'],
-                    ['Kurzgeschichte lesen', 'Literatur', 'Vorwissen sammeln: Was macht eine Kurzgeschichte aus?', '<ul><li>Text still lesen</li><li>Fragen zum Text in Gruppen</li></ul>', 'Lieblingsstelle vorlesen'],
-                    ['Argumentieren', 'Erörterung', 'Streitfrage des Tages', '<ul><li>Pro- und Contra-Argumente sammeln</li><li>Einleitung schreiben</li></ul>', 'Zwei Einleitungen vergleichen']],
-                E: [['Past Simple vs. Present Perfect', 'Unit 4', 'Bildimpuls: What have you done today?', '<ul><li>Regeln gemeinsam erarbeiten</li><li>Übungen im Workbook S. 34</li></ul>', 'Exit ticket: 3 sentences'],
-                    ['Small Talk', 'Speaking', 'Warm-up game', '<ul><li>Dialoge in Partnerarbeit</li><li>Vorspielen</li></ul>', 'Feedback in der Klasse']],
+                D: [['Satzglieder bestimmen', 'Satzglieder', 'Rätsel an der Wandtafel', '<ul><li>Arbeitsblatt Satzglieder in Partnerarbeit</li><li>Besprechung im Plenum</li></ul>', 'Kurzer Rückblick: Welche Satzglieder kennt ihr?', 'Grammatik'],
+                    ['Kurzgeschichte lesen', 'Kurzgeschichten', 'Vorwissen sammeln: Was macht eine Kurzgeschichte aus?', '<ul><li>Text still lesen</li><li>Fragen zum Text in Gruppen</li></ul>', 'Lieblingsstelle vorlesen', 'Literatur'],
+                    ['Argumentieren', 'Erörterung', 'Streitfrage des Tages', '<ul><li>Pro- und Contra-Argumente sammeln</li><li>Einleitung schreiben</li></ul>', 'Zwei Einleitungen vergleichen', 'Schreiben']],
+                E: [['Past Simple vs. Present Perfect', 'Unit 4', 'Bildimpuls: What have you done today?', '<ul><li>Regeln gemeinsam erarbeiten</li><li>Übungen im Workbook S. 34</li></ul>', 'Exit ticket: 3 sentences', 'Grammar'],
+                    ['Small Talk', 'Speaking', 'Warm-up game', '<ul><li>Dialoge in Partnerarbeit</li><li>Vorspielen</li></ul>', 'Feedback in der Klasse', 'Speaking']],
                 MU: [['Rhythmus & Takt', 'Bodypercussion', 'Warm-up im Kreis', '<ul><li>Rhythmuspattern lernen</li><li>In Gruppen kombinieren</li></ul>', 'Vorführen'],
                      ['Notenwerte', 'Musiktheorie', 'Klatschspiel', '<ul><li>Notentrainer am Tablet</li><li>Kurzer Test</li></ul>', 'Lied singen']],
                 GESCHICHTE: [['Reformation', 'Neuzeit', 'Bildquelle: Thesenanschlag', '<ul><li>Text lesen und Stichworte notieren</li><li>Zeitstrahl ergänzen</li></ul>', 'Drei wichtigste Punkte']],
@@ -2308,7 +2417,7 @@ HA: ...</pre>
                     const x = list[(n - 1) % list.length];
                     const d = new Date(monday); d.setDate(monday.getDate() + offset + s.day);
                     const key = `${formatDateISO(d)}_${s.id}`;
-                    lessons[key] = { unit: x[1], title: x[0], einstieg: x[2], hauptteil: x[3], schluss: x[4], homework: n % 3 === 1 ? 'Arbeitsblatt fertig lösen' : '', homeworkDueToday: n % 4 === 2 ? 'Vokabeln S. 12' : '' };
+                    lessons[key] = { trackOverride: x[5] || '', unit: x[1], title: x[0], einstieg: x[2], hauptteil: x[3], schluss: x[4], homework: n % 3 === 1 ? 'Arbeitsblatt fertig lösen' : '', homeworkDueToday: n % 4 === 2 ? 'Vokabeln S. 12' : '' };
                     if (subj === 'D' && n === 2) lessons[key].todos = [{ id: Date.now() + n, text: 'Kopien für die nächste Lektion machen', done: false }];
                     if (subj === 'GESCHICHTE' && n === 2) lessons[key].isExam = true;
                 });
@@ -2317,7 +2426,9 @@ HA: ...</pre>
             const today = formatDateISO(new Date());
             const events = [...(DEFAULT_EVENTS_BY_YEAR[currentSchoolYear] || [])].map(e => ({ ...e }));
             events.push({ id: 'demo-ev-1', type: 'special', targetClass: 'ALL', name: 'Elternabend', start: iso(3), end: iso(3) });
-            events.push({ id: 'demo-ev-2', type: 'holiday', targetClass: '2a', name: 'Exkursion Naturmuseum', start: iso(11), end: iso(11) });
+            events.push({ id: 'demo-ev-2', type: 'specialday', targetClass: '2a', name: 'Exkursion Naturmuseum', start: iso(11), end: iso(11) });
+            events.push({ id: 'demo-ev-3', type: 'special', targetClass: 'ALL', name: 'Schulfotograf', start: iso(2), end: iso(2), timeFrom: '10:00', timeTo: '11:35' });
+            events.push({ id: 'demo-ev-4', type: 'holiday', targetClass: 'ALL', name: 'Weiterbildung', start: iso(8), end: iso(8), timeFrom: '13:00', timeTo: '17:00' });
             return {
                 template, lessons, events,
                 dayNotes: { [iso(2)]: 'Fotograf ab 10 Uhr im Schulhaus' },
@@ -2344,6 +2455,8 @@ HA: ...</pre>
             dayNotesStore = data.dayNotes;
             standaloneNotesStore = data.notes;
             geminiApiKey = ''; claudeApiKey = ''; openaiApiKey = '';
+            journal = [];
+            journalReset();
             currentMonday = getMonday(new Date());
             document.getElementById('authGateOverlay').classList.add('hidden');
             document.getElementById('protectedAppContainer').classList.remove('hidden');
@@ -2559,6 +2672,9 @@ HA: ...</pre>
                 dayNotesStore = {};
                 standaloneNotesStore = [];
             }
+            journal = [];
+            journalReset();
+            updateJournalUi();
         }
 
         function getActiveDocId() {
@@ -2603,6 +2719,7 @@ HA: ...</pre>
         }
 
         function saveAllState() {
+            journalRecord();   // Änderungsverlauf (auch in der Demo, dort nur im Arbeitsspeicher)
             if (isDemoMode) { updateOpenNotesBadge(); return; }   // Demo: nichts speichern
             persistLocal();
             updateOpenNotesBadge();
@@ -2641,7 +2758,7 @@ HA: ...</pre>
         function mainFieldsNow() {
             return stripForCloud({ weeklyTemplate, calendarEvents, dayNotesStore, standaloneNotesStore });
         }
-        function markChangeReason(reason) { nextChangeReason = reason; }
+        function markChangeReason(reason) { nextChangeReason = reason; journalReason = reason; }
         function deviceLabel() { return /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? 'Handy/Tablet' : 'Computer'; }
 
         function pushToCloud() {
@@ -2761,6 +2878,7 @@ HA: ...</pre>
         }
 
         function refreshViewsAfterSync() {
+            journalReset();   // Änderungen von aussen (anderes Gerät) sind keine eigene Aktion
             hydrateClipAudioSoon();
             renderCalendar();
             updateOpenNotesBadge();
@@ -2886,6 +3004,7 @@ HA: ...</pre>
                         try { await createCloudBackup('before-migration'); } catch (e) { console.warn(e); }
                     }
                     if (needsPush) await pushToCloud(); else storeBaseline();
+                    loadJournal();
                     maybeCreateDailyCloudBackup();
                     refreshBackupStatusUI();
                     maybeShowBackupReminder();
@@ -3106,7 +3225,7 @@ HA: ...</pre>
         function substituteSlotsForDate(iso) {
             const wd = (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
             if (wd > 4) return [];
-            return weeklyTemplate.filter(s => s.day === wd && !isHolidayDate(iso, s.className))
+            return weeklyTemplate.filter(s => s.day === wd && !isSlotCancelled(iso, s))
                 .sort((a, b) => a.start.localeCompare(b.start));
         }
         function printSubstitutePlan() {
@@ -3297,6 +3416,7 @@ HA: ...</pre>
 
             [wrapper, notesSec, holSec].forEach(s => s.classList.add('hidden'));
             document.getElementById('subjectFilterBar')?.classList.toggle('hidden', !(tab === 'plan' && viewMode === 'subject'));
+            document.getElementById('svBulkBar')?.classList.toggle('hidden', !(tab === 'plan' && viewMode === 'subject' && svSelect.on));
             [['plan', 'mobTabPlan'], ['notes', 'mobTabNotes'], ['holidays', 'mobTabHolidays']].forEach(([t, id]) => {
                 const el = document.getElementById(id);
                 if (el) el.className = `${id === 'mobTabNotes' ? 'relative ' : ''}flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold ${t === tab ? 'text-indigo-700' : 'text-slate-500'}`;
@@ -3364,6 +3484,7 @@ HA: ...</pre>
         function getHolidayEventForDate(isoDate, className = null) {
             return calendarEvents.find(ev => {
                 if (ev.type !== 'holiday') return false;
+                if (ev.timeFrom && ev.timeTo) return false;   // nur Teil des Tages: zählt pro Lektion (eventsForSlot)
                 if (isoDate < ev.start || isoDate > ev.end) return false;
                 const target = (ev.targetClass || 'ALL').toUpperCase();
                 if (target === 'ALL' || !className) return true;
@@ -3373,6 +3494,113 @@ HA: ...</pre>
 
         function isHolidayDate(isoDate, className = null) {
             return Boolean(getHolidayEventForDate(isoDate, className));
+        }
+
+        // ---------- Kalender-Einträge pro Lektion ----------
+        // Arten: holiday = Schulfrei · specialday = Spezialtag (anderer Unterricht) · special = Hinweis (Unterricht normal)
+        const EVENT_KINDS = {
+            holiday: { label: 'Schulfrei', icon: '🏖️', chip: 'bg-rose-100 text-rose-800 border-rose-200' },
+            specialday: { label: 'Spezialtag', icon: '🎯', chip: 'bg-violet-100 text-violet-900 border-violet-200' },
+            special: { label: 'Hinweis', icon: '📌', chip: 'bg-amber-200/90 text-amber-950 border-amber-300' }
+        };
+        function eventKind(ev) { return ev.type === 'holiday' ? 'holiday' : ev.type === 'specialday' ? 'specialday' : 'special'; }
+        function eventTimeLabel(ev) { return ev.timeFrom && ev.timeTo ? `${ev.timeFrom}–${ev.timeTo}` : ''; }
+        function eventMatchesClass(ev, cls) {
+            const t = String(ev.targetClass || 'ALL').toUpperCase();
+            return t === 'ALL' || !cls || t === String(cls).toUpperCase();
+        }
+        // Alle Einträge, die diese Lektion betreffen (Datum, Klasse, ggf. Uhrzeit überlappend)
+        function eventsForSlot(iso, slot) {
+            const key = `${iso}_${slot.id}`;
+            return calendarEvents.filter(ev => {
+                if (ev.lessonKey) return ev.lessonKey === key;
+                if (iso < ev.start || iso > (ev.end || ev.start)) return false;
+                if (!eventMatchesClass(ev, slot.className)) return false;
+                if (ev.timeFrom && ev.timeTo) return slot.start < ev.timeTo && ev.timeFrom < slot.end;
+                return true;
+            });
+        }
+        // Fällt die Lektion als Fachlektion aus? (Schulfrei vor Spezialtag)
+        function slotOffEvent(iso, slot) {
+            const evs = eventsForSlot(iso, slot).filter(e => !e.lessonKey);
+            return evs.find(e => e.type === 'holiday') || evs.find(e => e.type === 'specialday') || null;
+        }
+        function isSlotCancelled(iso, slot) { return Boolean(slotOffEvent(iso, slot)); }
+        function eventChipsHtml(evs, small) {
+            return evs.map(ev => {
+                const k = EVENT_KINDS[eventKind(ev)];
+                const t = eventTimeLabel(ev);
+                return `<span class="inline-flex items-center gap-1 px-1.5 py-px rounded border ${k.chip} ${small ? 'text-[10px]' : 'text-[10.5px]'} font-extrabold">${k.icon} ${escapeHtml(ev.name)}${t ? ` <span class="font-semibold opacity-80">${t}</span>` : ''}</span>`;
+            }).join(' ');
+        }
+
+        // ---------- Fenster: Eintrag (Schulfrei / Spezialtag / Hinweis) erfassen oder bearbeiten ----------
+        let eventEditId = null;
+        function openEventEditor(id, isoDefault) {
+            const ev = id ? calendarEvents.find(e => e.id === id) : null;
+            eventEditId = ev ? ev.id : null;
+            const iso = ev ? ev.start : (isoDefault || formatDateISO(new Date()));
+            document.getElementById('evEditTitle').innerText = ev ? 'Eintrag bearbeiten' : `Neuer Eintrag – ${formatDateCH(iso)}`;
+            document.getElementById('evEditName').value = ev ? ev.name : '';
+            document.getElementById('evEditType').value = ev ? eventKind(ev) : 'special';
+            const clsSel = document.getElementById('evEditClass');
+            clsSel.innerHTML = `<option value="ALL">Alle Klassen</option>` + getUniqueClasses().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            clsSel.value = ev && ev.targetClass && getUniqueClasses().includes(ev.targetClass) ? ev.targetClass : 'ALL';
+            document.getElementById('evEditStart').value = iso;
+            document.getElementById('evEditEnd').value = ev ? (ev.end || ev.start) : iso;
+            document.getElementById('evEditFrom').value = ev && ev.timeFrom ? ev.timeFrom : '';
+            document.getElementById('evEditTo').value = ev && ev.timeTo ? ev.timeTo : '';
+            document.getElementById('evEditDelete').classList.toggle('hidden', !ev);
+            document.getElementById('evEditLessonHint').classList.toggle('hidden', !(ev && ev.lessonKey));
+            updateEventTypeHint();
+            document.getElementById('eventEditModal').classList.remove('hidden');
+            updateBodyScrollLock();
+            setTimeout(() => document.getElementById('evEditName').focus(), 30);
+        }
+        function closeEventEditor() {
+            document.getElementById('eventEditModal').classList.add('hidden');
+            eventEditId = null;
+            updateBodyScrollLock();
+        }
+        function updateEventTypeHint() {
+            const t = document.getElementById('evEditType').value;
+            document.getElementById('evEditTypeHint').innerText = {
+                holiday: 'Kein Unterricht: Lektionen werden grau markiert und zählen nicht.',
+                specialday: 'Anderer Unterricht (z. B. Projektwoche, Sporttag): Lektionen grau markiert, zählen nicht als Fachlektion.',
+                special: 'Unterricht findet normal statt: Lektionen erhalten nur ein Etikett.'
+            }[t] || '';
+        }
+        function saveEventEditor() {
+            const name = document.getElementById('evEditName').value.trim();
+            const start = document.getElementById('evEditStart').value;
+            const end = document.getElementById('evEditEnd').value || start;
+            const from = document.getElementById('evEditFrom').value;
+            const to = document.getElementById('evEditTo').value;
+            if (!name || !isISODate(start)) { showToast('Bitte Bezeichnung und Datum ausfüllen.'); return; }
+            if (end < start) { showToast('«Bis» liegt vor «Von» – bitte korrigieren.'); return; }
+            if ((from && !to) || (!from && to) || (from && to && to <= from)) { showToast('Uhrzeit: bitte «von» und «bis» ausfüllen (bis nach von) – oder beide leer lassen.'); return; }
+            const data = { name, type: document.getElementById('evEditType').value, targetClass: document.getElementById('evEditClass').value || 'ALL', start, end };
+            let ev = eventEditId ? calendarEvents.find(e => e.id === eventEditId) : null;
+            if (ev) Object.assign(ev, data);
+            else { ev = { id: `ev-${Date.now()}`, ...data }; calendarEvents.push(ev); }
+            if (from && to) { ev.timeFrom = from; ev.timeTo = to; } else { delete ev.timeFrom; delete ev.timeTo; }
+            markChangeReason('Kalender-Eintrag');
+            closeEventEditor();
+            saveAllState();
+            renderCalendar();
+            renderSpecialDaysTable();
+            showToast('Eintrag gespeichert.');
+        }
+        function deleteEventFromEditor() {
+            if (!eventEditId) return;
+            const ev = calendarEvents.find(e => e.id === eventEditId);
+            if (!ev || !confirm(`Eintrag «${ev.name}» löschen?`)) return;
+            calendarEvents = calendarEvents.filter(e => e.id !== eventEditId);
+            closeEventEditor();
+            saveAllState();
+            renderCalendar();
+            renderSpecialDaysTable();
+            showToast('Eintrag gelöscht.');
         }
 
         function getUniqueClasses() {
@@ -3605,7 +3833,7 @@ HA: ...</pre>
             const range = schoolYearRange(currentSchoolYear);
             const dayShort = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
-            // Lektionen pro Klasse über das ganze Schuljahr (ohne Ferien / schulfreie Tage der Klasse)
+            // Alle Lektionen pro Klasse über das ganze Schuljahr – auch ausfallende (Schulfrei / Spezialtag), für die Kontinuität
             const perClass = {};
             st.selected.forEach(cls => {
                 const slots = weeklyTemplate.filter(s => subjectKeyOf(s) === st.subject && s.className === cls);
@@ -3617,7 +3845,7 @@ HA: ...</pre>
                     if (wd < 5) {
                         const iso = formatDateISO(d);
                         slots.filter(s => Number(s.day) === wd).forEach(s => {
-                            if (!isHolidayDate(iso, cls)) list.push({ iso, slot: s, key: `${iso}_${s.id}` });
+                            list.push({ iso, slot: s, key: `${iso}_${s.id}`, off: slotOffEvent(iso, s), evs: eventsForSlot(iso, s) });
                         });
                     }
                     d.setDate(d.getDate() + 1);
@@ -3630,10 +3858,24 @@ HA: ...</pre>
             const startMon = formatDateISO(getMonday(new Date(`${planned[0] && planned[0] < thisMonday ? planned[0] : thisMonday}T12:00:00`)));
             Object.keys(perClass).forEach(cls => {
                 perClass[cls] = perClass[cls].filter(x => x.iso >= startMon);
-                perClass[cls].forEach((x, i) => { x.num = i + 1; });
+                let n = 0;
+                perClass[cls].forEach(x => { if (!x.off) x.num = ++n; });   // nur echte Fachlektionen zählen
             });
+            // Gefässe (z. B. Literatur, Grammatik) für Etikett, Filter und Mehrfachbearbeitung
+            const trackSet = new Map();
+            Object.values(perClass).flat().forEach(x => {
+                const l = lessonsStore[x.key];
+                const t = l && lessonTopicLabel(l, 1) ? getEffectiveTrack(l, x.slot) : (x.slot.track || '').trim();
+                if (t && !trackSet.has(t.toLowerCase())) trackSet.set(t.toLowerCase(), t);
+            });
+            const tracks = [...trackSet.values()].sort((a, b) => a.localeCompare(b, 'de'));
+            const trackFilter = subjectViewTrack(st).toLowerCase();
+            const sel = (x) => svSelect.on && svSelect.keys.has(x.key);
+            const clickAttr = (x) => svSelect.on ? `onclick="svToggleSelect(${jsArg(x.key)})"` : `onclick="openLessonFromYear(${jsArg(x.key)})"`;
+            const selRing = (x) => sel(x) ? 'ring-2 ring-indigo-500 !border-indigo-500 !bg-indigo-50 !opacity-100' : '';
+            const selBox = (x) => svSelect.on ? `<span class="inline-flex items-center justify-center w-3.5 h-3.5 mr-1 rounded border ${sel(x) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-400'} text-[9px] leading-none align-[-2px]">${sel(x) ? '✓' : ''}</span>` : '';
 
-            // Nach Wochen gruppieren
+            // Nach Wochen gruppieren (jede Woche erscheint)
             const weeks = new Map();
             Object.entries(perClass).forEach(([cls, list]) => list.forEach(x => {
                 const mon = formatDateISO(getMonday(new Date(`${x.iso}T12:00:00`)));
@@ -3644,24 +3886,41 @@ HA: ...</pre>
 
             const card = (x) => {
                 const l = lessonsStore[x.key];
+                if (trackFilter) {
+                    const eff = (l && lessonTopicLabel(l, 1) ? getEffectiveTrack(l, x.slot) : (x.slot.track || '')).trim().toLowerCase();
+                    if (eff !== trackFilter) return '';
+                }
                 const past = x.iso < todayISO;
                 const isToday = x.iso === todayISO;
                 const dt = new Date(`${x.iso}T12:00:00`);
                 const head = `<div class="flex items-center justify-between gap-2 text-[10.5px] font-bold ${isToday ? 'text-indigo-700' : 'text-slate-500'}">
-                        <span>${dayShort[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}. · ${escapeHtml(x.slot.start)}${isToday ? ' · Heute' : ''}</span>
-                        <span class="text-slate-400">L${x.num}</span></div>`;
+                        <span>${selBox(x)}${dayShort[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}. · ${escapeHtml(x.slot.start)}${isToday ? ' · Heute' : ''}</span>
+                        <span class="text-slate-400">${x.off ? '–' : `L${x.num}`}</span></div>`;
+                const chips = x.evs.length ? `<div class="flex flex-wrap gap-1 mt-1">${eventChipsHtml(x.evs, true)}</div>` : '';
+                if (x.off) {
+                    const k = EVENT_KINDS[eventKind(x.off)];
+                    const t = l ? lessonTopicLabel(l, 60) : '';
+                    return `<button type="button" ${clickAttr(x)} class="w-full text-left rounded-lg border border-slate-200 bg-slate-100/80 px-2.5 py-2 hover:border-slate-400 ${past ? 'opacity-60' : ''} ${selRing(x)}">
+                        ${head}
+                        <div class="text-[11.5px] font-extrabold text-slate-600 mt-0.5">${k.icon} ${k.label}: ${escapeHtml(x.off.name)}</div>
+                        ${x.evs.length > 1 ? `<div class="flex flex-wrap gap-1 mt-1">${eventChipsHtml(x.evs.filter(e => e !== x.off), true)}</div>` : ''}
+                        ${t ? `<div class="text-[10.5px] text-slate-500 mt-0.5 truncate">${escapeHtml(t)}</div>` : ''}
+                    </button>`;
+                }
                 if (!l || !lessonTopicLabel(l, 1)) {
-                    return `<button type="button" onclick="openLessonFromYear(${jsArg(x.key)})" class="w-full text-left rounded-lg border border-dashed ${isToday ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-300 bg-white/60'} px-2.5 py-2 hover:border-indigo-400 hover:bg-indigo-50/40 ${past ? 'opacity-60' : ''}">
-                        ${head}<div class="text-[11px] italic text-slate-400 mt-0.5">Noch nicht geplant</div></button>`;
+                    return `<button type="button" ${clickAttr(x)} class="w-full text-left rounded-lg border border-dashed ${isToday ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-300 bg-white/60'} px-2.5 py-2 hover:border-indigo-400 hover:bg-indigo-50/40 ${past ? 'opacity-60' : ''} ${selRing(x)}">
+                        ${head}${chips}<div class="text-[11px] italic text-slate-400 mt-0.5">Noch nicht geplant</div></button>`;
                 }
                 const ehs = [['E', l.einstieg], ['H', l.hauptteil || l.notes], ['S', l.schluss]]
                     .map(([k, v]) => v && htmlToPlainText(v).trim() ? `<span class="font-extrabold text-indigo-700">${k}:</span> ${escapeHtml(plainSnippet(v, 70))}` : '').filter(Boolean).join(' ');
                 const openTodos = (l.todos || []).filter(t => !t.done).length;
-                return `<button type="button" onclick="openLessonFromYear(${jsArg(x.key)})" class="w-full text-left rounded-lg border bg-white px-2.5 py-2 shadow-2xs hover:border-indigo-400 hover:shadow-xs ${isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : l.isExam ? 'border-rose-300' : 'border-slate-200'} ${past ? 'opacity-60' : ''}">
-                        ${head}
+                const tr = getEffectiveTrack(l, x.slot);
+                return `<button type="button" ${clickAttr(x)} class="w-full text-left rounded-lg border bg-white px-2.5 py-2 shadow-2xs hover:border-indigo-400 hover:shadow-xs ${isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : l.isExam ? 'border-rose-300' : 'border-slate-200'} ${past ? 'opacity-60' : ''} ${selRing(x)}">
+                        ${head}${chips}
                         <div class="flex flex-wrap items-center gap-1 mt-1">
                             ${l.isExam ? '<span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9.5px] font-extrabold">PRÜFUNG</span>' : ''}
-                            ${l.unit ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${escapeHtml(plainSnippet(l.unit, 40))}</span>` : ''}
+                            ${tr ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold ${trackChipClass(tr)}">${escapeHtml(plainSnippet(tr, 30))}</span>` : ''}
+                            ${l.unit ? `<span class="text-slate-500 text-[10.5px] font-semibold truncate max-w-full">${escapeHtml(plainSnippet(l.unit, 50))}</span>` : ''}
                             ${openTodos ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">${openTodos} Pendenz${openTodos > 1 ? 'en' : ''}</span>` : ''}
                         </div>
                         ${l.title ? `<div class="text-[12px] font-extrabold text-slate-900 mt-1 leading-snug">${escapeHtml(plainSnippet(l.title, 90))}</div>` : ''}
@@ -3672,23 +3931,22 @@ HA: ...</pre>
 
             const cols = st.selected.length;
             const gridStyle = `grid-template-columns: repeat(${Math.max(cols, 1)}, minmax(min(240px, 44vw), 1fr))`;
-            let prevMon = null;
             const bands = mondays.map(mon => {
                 const fri = new Date(`${mon}T12:00:00`); fri.setDate(fri.getDate() + 4);
                 const m = new Date(`${mon}T12:00:00`);
-                // Ferien dazwischen als schmale Zeile
-                let gap = '';
-                if (prevMon) {
-                    const expected = new Date(`${prevMon}T12:00:00`); expected.setDate(expected.getDate() + 7);
-                    if (formatDateISO(expected) < mon) {
-                        const ev = getHolidayEventForDate(formatDateISO(expected));
-                        gap = `<div class="text-[11px] font-bold text-slate-400 px-2 py-1">${ev ? escapeHtml(ev.name) : 'Unterrichtsfreie Zeit'}</div>`;
-                    }
+                const all = st.selected.flatMap(cls => weeks.get(mon)[cls] || []);
+                // Ganze Woche schulfrei (Ferien) → eine kompakte Zeile
+                if (all.length && all.every(x => x.off && x.off.type === 'holiday')) {
+                    const names = [...new Set(all.map(x => x.off.name))].join(' · ');
+                    return `<section id="sv-week-${mon}" data-monday="${mon}" class="flex items-center gap-2 rounded-lg bg-rose-50/70 border border-rose-100 px-3 py-1.5 text-[11px]">
+                        <span class="font-extrabold text-slate-600">KW ${getWeekNumber(m)}</span>
+                        <span class="text-slate-500 font-semibold">${m.getDate()}.${m.getMonth() + 1}.–${fri.getDate()}.${fri.getMonth() + 1}.</span>
+                        <span class="font-extrabold text-rose-800">🏖️ ${escapeHtml(names)}</span>
+                    </section>`;
                 }
-                prevMon = mon;
                 const isCurrent = mon === thisMonday;
                 const w = weeks.get(mon);
-                return `${gap}<section id="sv-week-${mon}" data-monday="${mon}" class="rounded-xl p-2 ${isCurrent ? 'bg-indigo-50/80 ring-1 ring-indigo-200' : ''}">
+                return `<section id="sv-week-${mon}" data-monday="${mon}" class="rounded-xl p-2 ${isCurrent ? 'bg-indigo-50/80 ring-1 ring-indigo-200' : ''}">
                         <div class="flex items-center gap-2 mb-1.5 px-1">
                             <span class="text-[11.5px] font-extrabold ${isCurrent ? 'text-indigo-800' : 'text-slate-700'}">KW ${getWeekNumber(m)}</span>
                             <span class="text-[11px] text-slate-500 font-semibold">${m.getDate()}.${m.getMonth() + 1}.–${fri.getDate()}.${fri.getMonth() + 1}.${fri.getFullYear()}</span>
@@ -3713,11 +3971,19 @@ HA: ...</pre>
                     <span class="font-bold text-slate-700 ml-1">Klassen</span>
                     ${st.classes.map(c => `<label class="flex items-center gap-1.5 px-2 py-1 rounded-lg border cursor-pointer ${st.selected.includes(c) ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-white border-slate-200 text-slate-500'} font-bold">
                         <input type="checkbox" ${st.selected.includes(c) ? 'checked' : ''} onchange="toggleSubjectViewClass(${jsArg(c)}, this.checked)" class="rounded text-indigo-600"> ${escapeHtml(c)}</label>`).join('')}
-                    <button type="button" onclick="scrollSubjectViewToCurrent()" class="ml-auto px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-700">Zu heute</button>
+                    ${tracks.length ? `<label class="flex items-center gap-1.5 font-bold text-slate-700 ml-1">Gefäss
+                        <select onchange="setSubjectViewTrack(this.value)" class="border rounded-lg px-2 py-1.5 font-bold ${trackFilter ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-900'}">
+                            <option value="">Alle</option>
+                            ${tracks.map(t => `<option value="${escapeHtml(t)}" ${t.toLowerCase() === trackFilter ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
+                        </select></label>` : ''}
+                    <button type="button" onclick="toggleSubjectSelectMode()" class="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 border rounded-lg font-bold ${svSelect.on ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'}"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i>${svSelect.on ? 'Auswahl beenden' : 'Auswählen'}</button>
+                    <button type="button" onclick="scrollSubjectViewToCurrent()" class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-700">Zu heute</button>
                 </div>`;
             box.innerHTML = `
                 ${st.selected.length === 0 ? '<div class="py-10 text-center text-xs text-slate-400 italic">Bitte mindestens eine Klasse auswählen.</div>'
-                    : `<div class="flex flex-col gap-1.5" style="min-width: calc(${cols} * min(250px, 46vw))">${bands}</div>`}`;
+                    : `<div class="flex flex-col gap-1.5 ${svSelect.on ? 'pb-32' : ''}" style="min-width: calc(${cols} * min(250px, 46vw))">${bands}</div>`}`;
+            renderSubjectBulkBar(tracks);
+            refreshIcons();
         }
         function scrollSubjectViewToCurrent() {
             const secs = [...document.querySelectorAll('#subjectViewContainer section[data-monday]')];
@@ -3755,7 +4021,7 @@ HA: ...</pre>
             const iso = formatDateISO(new Date());
             const wd = (new Date().getDay() + 6) % 7;
             if (wd > 4) return iso;
-            const slots = weeklyTemplate.filter(s => Number(s.day) === wd && !isHolidayDate(iso, s.className));
+            const slots = weeklyTemplate.filter(s => Number(s.day) === wd && !isSlotCancelled(iso, s));
             return iso + '|' + slots.map(s => `${s.id}:${lessonNowState(s, slots)}`).join(',');
         }
         // Scrollt zur laufenden bzw. nächsten Lektion von heute. Nach Schulschluss / am Wochenende: kein Sprung.
@@ -3831,6 +4097,7 @@ HA: ...</pre>
 
         function renderCalendar() {
             renderCalendarInner();
+            if (viewMode !== 'subject') document.getElementById('svBulkBar')?.classList.add('hidden');
             if (Date.now() < autoScrollUntil) setTimeout(scrollToCurrentLesson, 30);
         }
         function renderCalendarInner() {
@@ -3869,12 +4136,10 @@ HA: ...</pre>
 
                 const eventsHtml = eventsToday.map(ev => {
                     const clsTag = ev.targetClass && ev.targetClass !== 'ALL' ? ` [${escapeHtml(ev.targetClass)}]` : '';
-                    return `
-                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-extrabold mb-1 mr-1 ${ev.type === 'holiday' ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-200/90 text-amber-950 border border-amber-300'}">
-                            <span>${ev.type === 'holiday' ? '🏖️' : '📌'}</span>
-                            <span>${escapeHtml(ev.name)}${clsTag}</span>
-                        </div>
-                    `;
+                    const k = EVENT_KINDS[eventKind(ev)];
+                    const t = eventTimeLabel(ev);
+                    return `<button type="button" onclick="openEventEditor(${jsArg(ev.id)})" title="${k.label} – bearbeiten" class="no-print-btn inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-extrabold mb-1 mr-1 border ${k.chip} hover:brightness-95">
+                            <span>${k.icon}</span><span>${escapeHtml(ev.name)}${clsTag}${t ? ` · ${t}` : ''}</span></button>`;
                 }).join('');
 
                 col.innerHTML = `
@@ -3883,7 +4148,7 @@ HA: ...</pre>
                         <span class="text-[11px] font-semibold ${isToday ? 'text-indigo-100' : 'text-slate-500'}">${dayDate.getDate()}.${dayDate.getMonth() + 1}.</span>
                     </div>
                     <div class="bg-[#FEF9C3] border border-amber-200/90 rounded-xl px-2.5 py-2 flex flex-col gap-1 shadow-2xs">
-                        ${eventsHtml ? `<div class="flex flex-wrap">${eventsHtml}</div>` : ''}
+                        <div class="flex flex-wrap items-center">${eventsHtml}<button type="button" onclick="openEventEditor(null, ${jsArg(iso)})" class="no-print inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-extrabold mb-1 text-amber-800/80 hover:bg-amber-200/70 hover:text-amber-950" title="Schulfrei, Spezialtag oder Hinweis für diesen Tag eintragen">+ Eintrag</button></div>
                         <input type="text" value="${escapeHtml(dayNotesStore[iso] || '')}" onchange="saveDayNote(${jsArg(iso)}, this.value)" placeholder="Tagesnotiz..." class="w-full bg-transparent text-[11px] text-amber-950 placeholder:text-amber-700/45 font-medium focus:outline-none">
                     </div>
                 `;
@@ -3911,13 +4176,15 @@ HA: ...</pre>
                     const openTodos = (data.todos || []).filter(t => !t.done).length;
                     const ehsHtml = buildCompactEHSHtml(data);
                     const activeTrack = getEffectiveTrack(data, slot);
-                    const slotBlockedByHoliday = isHolidayDate(iso, slot.className);
+                    const slotEvents = eventsForSlot(iso, slot);
+                    const slotOff = slotOffEvent(iso, slot);
+                    const slotBlockedByHoliday = Boolean(slotOff);
 
-                    const nowState = iso === todayISO && !slotBlockedByHoliday ? lessonNowState(slot, daySlots.filter(sl => !isHolidayDate(iso, sl.className))) : '';
+                    const nowState = iso === todayISO && !slotBlockedByHoliday ? lessonNowState(slot, daySlots.filter(sl => !isSlotCancelled(iso, sl))) : '';
                     const card = document.createElement('div');
                     card.onclick = () => openLessonModal(key, slot, dayDate);
                     if (nowState) card.dataset.now = nowState;
-                    card.className = `group bg-white border ${data.isExam ? 'border-rose-500 ring-2 ring-rose-200' : nowState === 'current' ? 'border-indigo-500 ring-2 ring-indigo-300' : style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${slotBlockedByHoliday ? 'opacity-65' : ''}`;
+                    card.className = `group bg-white border ${data.isExam ? 'border-rose-500 ring-2 ring-rose-200' : nowState === 'current' ? 'border-indigo-500 ring-2 ring-indigo-300' : style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${slotBlockedByHoliday ? 'opacity-60 grayscale' : ''}`;
 
                     card.innerHTML = `
                         <div class="${style.headerBg} px-3 py-2 text-white flex items-start justify-between gap-2">
@@ -3925,7 +4192,7 @@ HA: ...</pre>
                                 <div class="text-[11px] font-extrabold tracking-wide uppercase leading-tight">
                                     ${escapeHtml(style.label)} • ${escapeHtml(slot.className)}${activeTrack ? ` • <span class="underline decoration-white/70">${escapeHtml(activeTrack)}</span>` : ''}
                                 </div>
-                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}${overLunch ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/25 font-extrabold">🍽️ über Mittag</span>` : ''}${nowState === 'current' ? ` <span class="ml-1 px-1.5 py-px rounded bg-white text-slate-900 font-extrabold">● Jetzt</span>` : nowState === 'next' ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/85 text-slate-800 font-extrabold">Als Nächstes</span>` : ''}</div>
+                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}${overLunch ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/25 font-extrabold">🍽️ über Mittag</span>` : ''}${nowState === 'current' ? ` <span class="ml-1 px-1.5 py-px rounded bg-white text-slate-900 font-extrabold">● Jetzt</span>` : nowState === 'next' ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/85 text-slate-800 font-extrabold">Als Nächstes</span>` : ''}</div>${slotEvents.length ? `<div class="mt-1 flex flex-wrap gap-1">${eventChipsHtml(slotEvents, true)}</div>` : ''}
                             </div>
                             <div class="flex items-center gap-1 shrink-0 no-print">
                                 <button type="button" onclick="event.stopPropagation(); openQuickNoteModal(${jsArg(key)}, ${jsArg(`${style.label} ${slot.className}`)})" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">
@@ -4058,7 +4325,7 @@ HA: ...</pre>
                         const d = new Date(mon);
                         d.setDate(mon.getDate() + s.day);
                         const iso = formatDateISO(d);
-                        if ((iso > fromISO || (iso === fromISO && s.start > fromStart)) && !isHolidayDate(iso, className)) {
+                        if ((iso > fromISO || (iso === fromISO && s.start > fromStart)) && !isSlotCancelled(iso, s)) {
                             const key = `${iso}_${s.id}`;
                             const effTrack = getEffectiveTrack(lessonsStore[key], s);
                             allSameCourse.push({
@@ -4100,7 +4367,7 @@ HA: ...</pre>
                         const d = new Date(mon);
                         d.setDate(mon.getDate() + s.day);
                         const iso = formatDateISO(d);
-                        if (iso >= fromISO && iso <= endISO && !isHolidayDate(iso, s.className)) {
+                        if (iso >= fromISO && iso <= endISO && !isSlotCancelled(iso, s)) {
                             const style = getStyleForSlot(s.subject, s.className);
                             const tr = getEffectiveTrack(lessonsStore[`${iso}_${s.id}`], s);
                             results.push({
@@ -4155,9 +4422,6 @@ HA: ...</pre>
             document.getElementById('lessonAiResultBox').classList.add('hidden');
             document.getElementById('lessonAiPromptInput').value = "";
 
-            document.getElementById('bumpBtnLabel').innerText = activeTrack
-                ? `+1 Lektion schieben (${activeTrack})`
-                : `+1 Lektion schieben`;
 
             const hwSelect = document.getElementById('homeworkTargetLessonSelect');
             const nextSlots = findUpcomingSlotsForCourse(slot.subject, slot.className, activeTrack, iso, slot.start, 12).slice(0, 8);
@@ -4387,6 +4651,7 @@ HA: ...</pre>
             closeLessonModal(true);
             renderCalendar();
             saveAllState();
+            if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
             showToast("Lektion gespeichert!");
         }
 
@@ -4463,7 +4728,7 @@ HA: ...</pre>
                     d.setDate(mon.getDate() + s.day);
                     const iso = formatDateISO(d);
                     if (iso < fromISO || (iso === fromISO && s.start < minStart)) continue;
-                    if (!isHolidayDate(iso, className)) keys.push(`${iso}_${s.id}`);
+                    if (!isSlotCancelled(iso, s)) keys.push(`${iso}_${s.id}`);
                 }
                 mon.setDate(mon.getDate() + 7);
             }
@@ -4691,7 +4956,8 @@ Der Text kann ein einzelner Satz oder eine lange Liste sein: Erstelle für JEDEN
 Antworte AUSSCHLIESSLICH als gültiges JSON-Array ohne Markdown-Codeblock, exakt in diesem Format:
 [{"name":"Bezeichnung","start":"YYYY-MM-DD","end":"YYYY-MM-DD","type":"special","targetClass":"ALL"}]
 "name": kurz und sauber formuliert (z. B. «Elternbesuchstag», «Exkursion Zoo»), ohne Datum und ohne Klassenname.
-Nutze "type":"holiday" wenn schulfrei / Ferien / Exkursion / Lager (kein regulärer Fachunterricht) ist, sonst "type":"special".
+"type": "holiday" = schulfrei / kein Unterricht (Ferien, Offday, interne Weiterbildung); "specialday" = ganzer oder halber Tag mit anderem Unterricht statt Fachunterricht (Projektwoche, Sporttag, Exkursion, Lager, Berufsmesse); "special" = Hinweis, Unterricht läuft normal (Test, Elternabend, Elternbesuchstag, Besuch während einer Lektion).
+Falls eine Uhrzeit genannt ist, gib zusätzlich "timeFrom" und "timeTo" als HH:MM an.
 Falls sich der Termin nur auf eine bestimmte Klasse bezieht (z.B. 2a), trage diese unter "targetClass" ein, sonst "ALL".
 Text:
 """${text}"""`;
@@ -4727,7 +4993,8 @@ Text:
                         <option value="ALL">Alle</option>${classes.map(c => `<option value="${escapeHtml(c)}" ${c === p.targetClass ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
                     </select>
                     <select onchange="pendingAiHolidays[${i}].type=this.value" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10.5px] font-bold">
-                        <option value="special" ${p.type !== 'holiday' ? 'selected' : ''}>Anlass</option>
+                        <option value="special" ${p.type !== 'holiday' && p.type !== 'specialday' ? 'selected' : ''}>Hinweis</option>
+                        <option value="specialday" ${p.type === 'specialday' ? 'selected' : ''}>Spezialtag</option>
                         <option value="holiday" ${p.type === 'holiday' ? 'selected' : ''}>Schulfrei</option>
                     </select>
                     ${p.dup ? '<span class="text-[10px] font-bold text-amber-700">schon im Kalender</span>' : ''}
@@ -4744,7 +5011,8 @@ Text:
                 .map(p => {
                     const end = isISODate(p.end) && p.end >= p.start ? p.end : p.start;
                     const cls = classes.find(c => c.toUpperCase() === String(p.targetClass || '').toUpperCase()) || 'ALL';
-                    return { name: String(p.name || 'Termin').slice(0, 120), start: p.start, end, type: p.type === 'holiday' ? 'holiday' : 'special', targetClass: cls };
+                    return { name: String(p.name || 'Termin').slice(0, 120), start: p.start, end, type: ['holiday', 'specialday'].includes(p.type) ? p.type : 'special', targetClass: cls,
+                        ...(/^\d{2}:\d{2}$/.test(p.timeFrom || '') && /^\d{2}:\d{2}$/.test(p.timeTo || '') && p.timeTo > p.timeFrom ? { timeFrom: p.timeFrom, timeTo: p.timeTo } : {}) };
                 });
         }
 
@@ -4762,11 +5030,12 @@ Text:
             chosen.forEach((p, i) => {
                 calendarEvents.push({
                     id: `ev-ai-${Date.now()}-${i}`,
-                    type: p.type === 'holiday' ? 'holiday' : 'special',
+                    type: ['holiday', 'specialday'].includes(p.type) ? p.type : 'special',
                     targetClass: p.targetClass || 'ALL',
                     name: p.name,
                     start: p.start,
-                    end: p.end || p.start
+                    end: p.end || p.start,
+                    ...(p.timeFrom && p.timeTo ? { timeFrom: p.timeFrom, timeTo: p.timeTo } : {})
                 });
             });
             pendingAiHolidays = [];
@@ -5153,7 +5422,7 @@ Text:\n${raw.slice(0, 14000)}`;
             const prompt = `Extrahiere alle Ferien, Feiertage, Projektwochen, Exkursionen und Spezialtage aus diesem Jahresprogramm (Schuljahr ${currentSchoolYear}, bekannte Klassen: ${classesList}).
 Antworte AUSSCHLIESSLICH als gültiges JSON-Array ohne Markdown-Codeblock:
 [{"name":"Bezeichnung","start":"YYYY-MM-DD","end":"YYYY-MM-DD","type":"holiday","targetClass":"ALL"}]
-Nutze "type":"holiday" wenn schulfrei / Ferien / Exkursion / Lager (blockiert Lektionen), sonst "type":"special".
+"type": "holiday" = schulfrei / kein Unterricht; "specialday" = anderer Unterricht statt Fachunterricht (Projektwoche, Sporttag, Exkursion, Lager); "special" = Hinweis, Unterricht läuft normal.
 Falls nur eine bestimmte Klasse betroffen ist, schreibe sie in "targetClass", sonst "ALL".
 
 Text:\n${raw.slice(0, 12000)}`;
@@ -5297,7 +5566,7 @@ Text:\n${raw.slice(0, 12000)}`;
                         const d = new Date(mon);
                         d.setDate(mon.getDate() + s.day);
                         const iso = formatDateISO(d);
-                        if (iso >= startDateStr && !isHolidayDate(iso, targetClass)) {
+                        if (iso >= startDateStr && !isSlotCancelled(iso, s)) {
                             const slotKey = `${iso}_${s.id}`;
                             const existing = lessonsStore[slotKey];
                             const occupied = hasLessonContent(existing);
@@ -5879,8 +6148,9 @@ Text:\n${raw.slice(0, 12000)}`;
                     </td>
                     <td class="py-2 px-3 flex flex-col gap-1">
                         <select onchange="universalPreviewItems[${i}].type = this.value" class="bg-white border border-slate-200 rounded px-2 py-1 font-bold">
-                            <option value="holiday" ${it.type === 'holiday' ? 'selected' : ''}>Schulfrei / Blockiert Slots</option>
-                            <option value="special" ${it.type === 'special' ? 'selected' : ''}>Spezialtag (mit Unterricht)</option>
+                            <option value="holiday" ${it.type === 'holiday' ? 'selected' : ''}>Schulfrei – kein Unterricht</option>
+                            <option value="specialday" ${it.type === 'specialday' ? 'selected' : ''}>Spezialtag – anderer Unterricht</option>
+                            <option value="special" ${it.type === 'special' ? 'selected' : ''}>Hinweis – Unterricht normal</option>
                         </select>
                         ${it.hasConflict ? `
                             <select onchange="universalPreviewItems[${i}].conflictAction = this.value" class="bg-amber-100 border border-amber-300 rounded px-2 py-1 font-bold text-amber-950 text-[10.5px]">
@@ -6615,14 +6885,63 @@ Text:\n${raw.slice(0, 12000)}`;
         function renderModalTodosList() {
             const list = document.getElementById('lessonTodosList');
             list.innerHTML = tempLessonTodos.map((t, idx) => `
-                <div class="bg-white border border-amber-200/80 rounded-lg px-2.5 py-1 flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 flex-1">
+                <div data-todo-row class="bg-white border border-amber-200/80 rounded-lg px-2.5 py-1 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
                         <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleModalTodo(${idx})" class="rounded text-amber-600 w-4 h-4 cursor-pointer shrink-0" title="Als erledigt markieren">
-                        <span class="${t.done ? 'line-through text-slate-400' : 'text-slate-800 font-semibold'}">${t.fromMemo ? '🎙️ ' : ''}${escapeHtml(t.text)}${isISODate(t.due) ? ` <span class="text-[10px] font-semibold text-slate-400">· fällig ${escapeHtml(formatDateCH(t.due))}</span>` : ''}</span>
+                        <span class="${t.done ? 'line-through text-slate-400' : 'text-slate-800 font-semibold'}">${t.fromMemo ? '🎙️ ' : ''}<span data-todo-text>${escapeHtml(t.text)}</span>${isISODate(t.due) ? ` <span class="text-[10px] font-semibold text-slate-400">· fällig ${escapeHtml(formatDateCH(t.due))}</span>` : ''}</span>
                     </div>
-                    <button type="button" onclick="deleteModalTodo(${idx})" class="text-slate-400 hover:text-rose-600 font-bold text-[11px]">✕</button>
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        <button type="button" onclick="startTodoEdit(this, 'modal', ${idx})" title="Text bearbeiten" aria-label="Pendenz bearbeiten" class="p-1 rounded-md text-slate-400 hover:text-indigo-700 hover:bg-indigo-50"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                        <button type="button" onclick="deleteModalTodo(${idx})" class="text-slate-400 hover:text-rose-600 font-bold text-[11px] px-1">✕</button>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        // ---------- Pendenz-Text bearbeiten (✏️) – Übersicht und Lektion sind derselbe Eintrag ----------
+        function startTodoEdit(btn, kind, a, b) {
+            const row = btn.closest('[data-todo-row]');
+            const textEl = row && row.querySelector('[data-todo-text]');
+            if (!textEl || row.querySelector('textarea[data-todo-edit]')) return;
+            let todo = null;
+            if (kind === 'sn') todo = standaloneNotesStore.find(x => String(x.id) === String(a));
+            else if (kind === 'lt') todo = lessonsStore[a]?.todos?.[b];
+            else if (kind === 'modal') todo = tempLessonTodos[a];
+            if (!todo) return;
+            const ta = document.createElement('textarea');
+            ta.dataset.todoEdit = '1';
+            ta.value = todo.text;
+            ta.rows = Math.min(6, Math.max(1, Math.ceil(todo.text.length / 60)));
+            ta.className = 'w-full min-w-[160px] bg-white border border-indigo-300 rounded-md px-2 py-1 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400';
+            textEl.replaceWith(ta);
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+            let finished = false;
+            const finish = (save) => {
+                if (finished) return;
+                finished = true;
+                const val = ta.value.trim();
+                if (save && val && val !== todo.text) {
+                    todo.text = val.slice(0, 1000);
+                    if (kind === 'modal') {
+                        // Ist die Lektion schon gespeichert, gleich mitspeichern (verknüpft mit der Übersicht)
+                        const stored = activeLessonKey && lessonsStore[activeLessonKey];
+                        if (stored && stored.todos === tempLessonTodos) saveAllState();
+                    } else {
+                        if (kind === 'lt') markChangeReason('Pendenz geändert');
+                        saveAllState();
+                    }
+                    showToast('Pendenz geändert.');
+                }
+                if (kind === 'modal') renderModalTodosList();
+                else renderNotesOverview();
+                if (kind === 'lt') renderCalendar();
+            };
+            ta.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finish(true); }
+                else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+            });
+            ta.addEventListener('blur', () => finish(true));
         }
 
         function updateOpenNotesBadge() {
@@ -6773,15 +7092,16 @@ Text:\n${raw.slice(0, 12000)}`;
                     const frame = item.done ? 'bg-slate-50 border-slate-200 opacity-65' : (overdue ? 'bg-rose-50/40 border-rose-300 shadow-2xs' : 'bg-white border-amber-300 shadow-2xs');
                     if (item.isStandalone) {
                         return `
-                            <div class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+                            <div data-todo-row class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                                 <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                     <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodoById(${jsArg(item.sn.id)})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                     <div class="flex flex-col min-w-0">
-                                        <span class="${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${escapeHtml(item.sn.text)}</span>
+                                        <span data-todo-text class="${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${escapeHtml(item.sn.text)}</span>
                                         <span class="text-[11px] mt-0.5"><span class="${b.cls}">${escapeHtml(b.label)}</span> <span class="text-amber-800 font-semibold">· Allgemeine Pendenz</span></span>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+                                    <button type="button" onclick="startTodoEdit(this, 'sn', ${jsArg(item.sn.id)})" title="Text bearbeiten" aria-label="Pendenz bearbeiten" class="p-1.5 rounded-md text-slate-400 hover:text-indigo-700 hover:bg-indigo-50"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
                                     ${dateInput(item.due, `setStandaloneDueById(${jsArg(item.sn.id)}, this.value)`)}
                                     <button type="button" onclick="deleteStandaloneTodoById(${jsArg(item.sn.id)})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
                                 </div>
@@ -6789,15 +7109,16 @@ Text:\n${raw.slice(0, 12000)}`;
                     }
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
                     return `
-                        <div class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+                        <div data-todo-row class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                             <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                 <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                 <div class="flex flex-col min-w-0">
-                                    <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${item.todo.fromMemo ? '🎙️ ' : ''}${escapeHtml(item.todo.text)}</span>
+                                    <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${item.todo.fromMemo ? '🎙️ ' : ''}<span data-todo-text>${escapeHtml(item.todo.text)}</span></span>
                                     <span class="text-[11px] text-slate-500 mt-0.5"><span class="${b.cls}">${escapeHtml(b.label)}</span> · <button type="button" onclick="openLessonFromYear(${jsArg(item.key)})" class="hover:underline" title="Lektion öffnen">${escapeHtml(formatDateCH(item.isoDate))} (${escapeHtml(item.slot.start || '')})</button> • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+                                <button type="button" onclick="startTodoEdit(this, 'lt', ${jsArg(item.key)}, ${item.todoIdx})" title="Text bearbeiten" aria-label="Pendenz bearbeiten" class="p-1.5 rounded-md text-slate-400 hover:text-indigo-700 hover:bg-indigo-50"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
                                 ${dateInput(item.due, `setLessonTodoDue(${jsArg(item.key)}, ${item.todoIdx}, this.value)`)}
                                 <button type="button" onclick="deleteGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
                             </div>
@@ -7242,8 +7563,8 @@ Memo: """${text}"""`;
             calendarEvents.forEach(ev => {
                 const slot = ev.lessonKey ? slotForLessonKey(ev.lessonKey) : null;
                 entries.push({
-                    kind: ev.type === 'holiday' ? 'holiday' : (ev.lessonKey ? 'lessonEvent' : 'special'),
-                    start: ev.start, end: ev.end || ev.start, name: ev.name,
+                    kind: ev.type === 'holiday' ? 'holiday' : ev.type === 'specialday' ? 'specialday' : (ev.lessonKey ? 'lessonEvent' : 'special'),
+                    start: ev.start, end: ev.end || ev.start, name: ev.name, time: eventTimeLabel(ev),
                     cls: ev.targetClass || 'ALL', id: ev.id, lessonKey: ev.lessonKey || '',
                     sub: slot ? `${getStyleForSlot(slot.subject, slot.className).label} ${slot.className} · ${slot.start}` : ''
                 });
@@ -7261,7 +7582,7 @@ Memo: """${text}"""`;
                 if (!txt || !String(txt).trim() || iso < syS || iso > syE) return;
                 entries.push({ kind: 'note', start: iso, end: iso, name: String(txt).trim(), cls: 'ALL', noteIso: iso });
             });
-            const order = { holiday: 0, special: 1, note: 2, lessonEvent: 3, exam: 4 };
+            const order = { holiday: 0, specialday: 1, special: 2, note: 3, lessonEvent: 4, exam: 5 };
             return entries.sort((a, b) => a.start.localeCompare(b.start) || (order[a.kind] - order[b.kind]) || (a.sub || '').localeCompare(b.sub || ''));
         }
 
@@ -7280,9 +7601,9 @@ Memo: """${text}"""`;
 
             const entries = collectYearEntries().filter(e => cls === 'ALL' || e.cls === 'ALL' || String(e.cls).toUpperCase() === cls.toUpperCase())
                 .filter(e => !hidePast || e.end >= todayISO);
-            const icon = { holiday: '🏖️', special: '📌', note: '🗒️', lessonEvent: '🎓', exam: '📝' };
-            const badge = { holiday: 'bg-rose-100 text-rose-800', special: 'bg-amber-100 text-amber-900', note: 'bg-yellow-100 text-amber-900', lessonEvent: 'bg-violet-100 text-violet-900', exam: 'bg-rose-600 text-white' };
-            const kindLabel = { holiday: 'Ferien / schulfrei', special: 'Anlass', note: 'Tagesnotiz', lessonEvent: 'In Lektion', exam: 'Prüfung' };
+            const icon = { holiday: '🏖️', specialday: '🎯', special: '📌', note: '🗒️', lessonEvent: '🎓', exam: '📝' };
+            const badge = { holiday: 'bg-rose-100 text-rose-800', specialday: 'bg-violet-100 text-violet-900', special: 'bg-amber-100 text-amber-900', note: 'bg-yellow-100 text-amber-900', lessonEvent: 'bg-violet-100 text-violet-900', exam: 'bg-rose-600 text-white' };
+            const kindLabel = { holiday: 'Schulfrei', specialday: 'Spezialtag', special: 'Hinweis', note: 'Tagesnotiz', lessonEvent: 'In Lektion', exam: 'Prüfung' };
             const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
             const dayShort = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
@@ -7317,7 +7638,7 @@ Memo: """${text}"""`;
                 const past = e.end < todayISO;
                 const editKey = e.id ? `ev:${e.id}` : (e.noteIso ? `note:${e.noteIso}` : '');
                 if (editKey && editKey === yearEditKey) { html.push(renderYearEditForm(e)); return; }
-                const dateTxt = `${dayShort[d.getDay()]} ${formatDateCH(e.start)}${e.end !== e.start ? ` – ${dayShort[new Date(`${e.end}T12:00:00`).getDay()]} ${formatDateCH(e.end)}` : ''}`;
+                const dateTxt = `${dayShort[d.getDay()]} ${formatDateCH(e.start)}${e.end !== e.start ? ` – ${dayShort[new Date(`${e.end}T12:00:00`).getDay()]} ${formatDateCH(e.end)}` : ''}${e.time ? ` · ${e.time}` : ''}`;
                 const clickable = e.lessonKey ? `onclick="openLessonFromYear(${jsArg(e.lessonKey)})" class="cursor-pointer hover:bg-indigo-50` : `class="`;
                 html.push(`<div ${clickable} flex items-start gap-2.5 bg-white border border-slate-200 rounded-lg px-3 py-2 ${past ? 'opacity-50' : ''}">
                     <span class="text-base leading-none mt-0.5">${icon[e.kind]}</span>
@@ -7331,7 +7652,7 @@ Memo: """${text}"""`;
                         ${e.sub ? `<div class="text-[10.5px] text-slate-500">${escapeHtml(e.sub)}</div>` : ''}
                     </div>
                     <div class="no-print flex flex-col items-end gap-1 shrink-0">
-                        ${editKey ? `<button type="button" onclick="event.stopPropagation(); startYearEdit(${jsArg(editKey)})" class="text-indigo-700 hover:underline font-bold text-[10.5px]">Bearbeiten</button>` : ''}
+                        ${e.id ? `<button type="button" onclick="event.stopPropagation(); openEventEditor(${jsArg(e.id)})" class="text-indigo-700 hover:underline font-bold text-[10.5px]">Bearbeiten</button>` : editKey ? `<button type="button" onclick="event.stopPropagation(); startYearEdit(${jsArg(editKey)})" class="text-indigo-700 hover:underline font-bold text-[10.5px]">Bearbeiten</button>` : ''}
                         ${e.id ? `<button type="button" onclick="event.stopPropagation(); deleteCalendarEvent(${jsArg(e.id)})" class="text-rose-600 hover:underline font-bold text-[10.5px]">Löschen</button>` : ''}
                         ${e.noteIso ? `<button type="button" onclick="event.stopPropagation(); deleteYearNote(${jsArg(e.noteIso)})" class="text-rose-600 hover:underline font-bold text-[10.5px]">Löschen</button>` : ''}
                     </div>
@@ -7529,6 +7850,651 @@ Memo: """${text}"""`;
             renderCalendar();
             openLessonModal(key, slot, dayDate);
             showToast('Früherer Stand wiederhergestellt – der bisherige Stand ist als Version gesichert.');
+        }
+
+        // =========================================================================
+        // ÄNDERUNGSVERLAUF & RÜCKGÄNGIG (ab Version 20)
+        // Jede Aktion (Bearbeiten, Verschieben, Import, Mehrfachbearbeitung …) wird als Eintrag mit
+        // «vorher / nachher» der betroffenen Lektionen festgehalten → einzeln rückgängig machbar.
+        // Gespeichert in <docId>__J (30 Tage), damit es auch nach dem Neuladen und auf allen Geräten gilt.
+        // =========================================================================
+        var JOURNAL_DAYS = 30;
+        var JOURNAL_MAX_BYTES = 800 * 1024;
+        var JOURNAL_MAIN = {
+            calendarEvents: { label: 'Jahreskalender', get: () => calendarEvents, set: v => { calendarEvents = v || []; } },
+            standaloneNotesStore: { label: 'Pendenzen & Notizen', get: () => standaloneNotesStore, set: v => { standaloneNotesStore = v || []; } },
+            dayNotesStore: { label: 'Tagesnotizen', get: () => dayNotesStore, set: v => { dayNotesStore = v || {}; } },
+            weeklyTemplate: { label: 'Stundenplan', get: () => weeklyTemplate, set: v => { if (Array.isArray(v) && v.length) weeklyTemplate = v; } }
+        };
+        // Diese Aktionen werden nie mit einer vorherigen zusammengelegt
+        var JOURNAL_NO_MERGE = new Set(['Verschoben', 'Kopiert', 'Angehängt', 'Nachgeschoben', 'Import', 'Chalk-Import', 'Mehrfach bearbeitet',
+            'Rückgängig', 'Wiederholt', 'Backup wiederhergestellt', 'Backup-Datei importiert', 'Version wiederhergestellt']);
+        var JOURNAL_SESSION = Math.random().toString(36).slice(2, 10);
+        var journal = [];            // neueste zuerst
+        var journalBase = null;      // letzter bekannter Stand { lessons: {key: string}, main: {feld: string} }
+        var journalReason = '';
+        var journalRef = null;       // bei «Rückgängig»: Id des rückgängig gemachten Eintrags
+        var journalSaveTimer = null;
+        var journalConflictCtx = null;
+
+        function journalClean(v) {
+            if (v === undefined || v === null) return null;
+            return JSON.parse(JSON.stringify(v, (k, val) => (k === 'audioDataUrl' || k === 'transcribing') ? undefined : val));
+        }
+        function journalStr(v) { return stableStringify(journalClean(v)); }
+        function journalSnapshot() {
+            const lessons = {};
+            Object.keys(lessonsStore).forEach(k => { if (lessonsStore[k]) lessons[k] = journalStr(lessonsStore[k]); });
+            const main = {};
+            Object.entries(JOURNAL_MAIN).forEach(([f, d]) => { main[f] = journalStr(d.get()); });
+            return { lessons, main };
+        }
+        function journalReset() { if (!JOURNAL_MAIN) return; journalBase = journalSnapshot(); }
+
+        // Vergleicht mit dem letzten Stand und legt einen Eintrag an (wird von saveAllState aufgerufen)
+        function journalRecord() {
+            if (!JOURNAL_MAIN) return null;
+            if (!Array.isArray(journal)) journal = [];
+            const reason = journalReason || 'Änderung';
+            const ref = journalRef;
+            journalReason = '';
+            journalRef = null;
+            if (!journalBase) { journalReset(); return null; }
+            const now = journalSnapshot();
+            const l = {}, m = {};
+            new Set([...Object.keys(journalBase.lessons), ...Object.keys(now.lessons)]).forEach(k => {
+                if (journalBase.lessons[k] === now.lessons[k]) return;
+                l[k] = { b: journalBase.lessons[k] ? JSON.parse(journalBase.lessons[k]) : null, a: now.lessons[k] ? JSON.parse(now.lessons[k]) : null };
+            });
+            Object.keys(JOURNAL_MAIN).forEach(f => {
+                if (journalBase.main[f] === now.main[f]) return;
+                m[f] = { b: JSON.parse(journalBase.main[f]), a: JSON.parse(now.main[f]) };
+            });
+            journalBase = now;
+            if (!Object.keys(l).length && !Object.keys(m).length) return null;
+
+            const nowIso = new Date().toISOString();
+            const last = journal[0];
+            const newKeys = [...Object.keys(l), ...Object.keys(m).map(f => '#' + f)];
+            const lastKeys = last ? new Set([...Object.keys(last.l || {}), ...Object.keys(last.m || {}).map(f => '#' + f)]) : null;
+            const canMerge = last && !last.undone && last.session === JOURNAL_SESSION && last.reason === reason && !JOURNAL_NO_MERGE.has(reason) &&
+                Date.now() - Date.parse(last.atEnd || last.at) < 2 * 60 * 1000 && newKeys.every(k => lastKeys.has(k));
+            let entry;
+            if (canMerge) {
+                entry = last;
+                Object.entries(l).forEach(([k, v]) => { entry.l[k] = entry.l[k] ? { b: entry.l[k].b, a: v.a } : v; });
+                Object.entries(m).forEach(([f, v]) => { entry.m[f] = entry.m[f] ? { b: entry.m[f].b, a: v.a } : v; });
+                // Netto keine Änderung mehr → Paare entfernen
+                Object.keys(entry.l).forEach(k => { if (stableStringify(entry.l[k].b) === stableStringify(entry.l[k].a)) delete entry.l[k]; });
+                Object.keys(entry.m).forEach(f => { if (stableStringify(entry.m[f].b) === stableStringify(entry.m[f].a)) delete entry.m[f]; });
+                entry.atEnd = nowIso;
+                entry.rev = (entry.rev || 0) + 1;
+                if (!Object.keys(entry.l).length && !Object.keys(entry.m).length) { journal.shift(); entry = null; }
+            } else {
+                entry = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, at: nowIso, atEnd: nowIso, reason,
+                          device: deviceLabel(), session: JOURNAL_SESSION, l, m, undone: false, rev: 1 };
+                if (ref) entry.ref = ref;
+                journal.unshift(entry);
+            }
+            if (entry) entry.summary = journalSummary(entry);
+            journalPrune();
+            updateJournalUi();
+            scheduleJournalSave();
+            return entry;
+        }
+
+        function journalSlotLabel(key) {
+            const [iso, slotId] = key.split('_');
+            const slot = weeklyTemplate.find(s => s.id === slotId);
+            const d = new Date(`${iso}T12:00:00`);
+            const day = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][d.getDay()];
+            return { date: `${day} ${d.getDate()}.${d.getMonth() + 1}.`, time: slot ? slot.start : '',
+                     course: slot ? `${subjectDisplayName(subjectKeyOf(slot))} ${slot.className}` : 'Lektion' };
+        }
+        function journalSummary(e) {
+            const parts = [];
+            const keys = Object.keys(e.l || {}).sort();
+            if (keys.length === 1) {
+                const x = journalSlotLabel(keys[0]);
+                const pair = e.l[keys[0]];
+                const topic = lessonTopicLabel(pair.a || pair.b || {}, 50);
+                parts.push(`${x.course} · ${x.date}${topic ? ` · «${topic}»` : ''}`);
+            } else if (keys.length > 1) {
+                const courses = [...new Set(keys.map(k => journalSlotLabel(k).course))];
+                const first = journalSlotLabel(keys[0]).date.split(' ')[1], lastD = journalSlotLabel(keys[keys.length - 1]).date.split(' ')[1];
+                parts.push(`${courses.slice(0, 3).join(', ')}${courses.length > 3 ? ' …' : ''} · ${keys.length} Lektionen · ${first === lastD ? first : `${first}–${lastD}`}`);
+            }
+            Object.keys(e.m || {}).forEach(f => parts.push(JOURNAL_MAIN[f]?.label || f));
+            return parts.join(' · ');
+        }
+        function journalPrune() {
+            const cutoff = new Date(Date.now() - JOURNAL_DAYS * 86400000).toISOString();
+            journal = journal.filter(e => (e.atEnd || e.at) >= cutoff);
+            while (journal.length > 1 && new Blob([JSON.stringify(journal)]).size > JOURNAL_MAX_BYTES) journal.pop();
+        }
+        function journalMerge(a, b) {
+            const map = new Map();
+            [...a, ...b].forEach(e => {
+                const prev = map.get(e.id);
+                if (!prev || (e.rev || 0) > (prev.rev || 0)) map.set(e.id, e);
+            });
+            return [...map.values()].sort((x, y) => (y.at || '').localeCompare(x.at || ''));
+        }
+        function journalDocId() { return `${getActiveDocId()}__J`; }
+        async function loadJournal() {
+            if (isDemoMode || !db || !currentUser || !privateSyncKey) return;
+            try {
+                const snap = await db.collection('sekSync').doc(journalDocId()).get();
+                const remote = snap.exists && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+                journal = journalMerge(journal, remote);
+                journalPrune();
+                updateJournalUi();
+            } catch (e) { console.warn('Änderungsverlauf nicht lesbar:', e); }
+        }
+        function scheduleJournalSave() {
+            if (isDemoMode) return;
+            clearTimeout(journalSaveTimer);
+            journalSaveTimer = setTimeout(saveJournal, 1500);
+        }
+        async function saveJournal() {
+            if (isDemoMode || !db || !currentUser || !privateSyncKey || !cloudReady) return;
+            const ref = db.collection('sekSync').doc(journalDocId());
+            try {
+                const snap = await ref.get();
+                const remote = snap.exists && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+                journal = journalMerge(journal, remote);
+                journalPrune();
+                await ref.set({ ownerUid: currentUser.uid, kind: 'journal', parentDoc: getActiveDocId(), entries: journal,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { console.warn('Änderungsverlauf konnte nicht gespeichert werden:', e); }
+        }
+
+        // Neuester Eintrag, den ↶ rückgängig machen würde
+        function journalLastUndoable() { return journal.find(e => !e.undone && e.reason !== 'Rückgängig'); }
+        function updateJournalUi() {
+            if (!Array.isArray(journal)) journal = [];
+            const e = journalLastUndoable();
+            ['undoBtn', 'undoBtnMobile'].forEach(id => {
+                const b = document.getElementById(id);
+                if (!b) return;
+                b.disabled = !e;
+                b.title = e ? `Rückgängig: ${e.reason} – ${e.summary || ''}` : 'Nichts rückgängig zu machen';
+            });
+            if (!document.getElementById('journalModal')?.classList.contains('hidden')) renderJournalList();
+        }
+
+        function journalCurrent(k) { return lessonsStore[k] ? journalStr(lessonsStore[k]) : null; }
+        function journalConflicts(e) {
+            const out = [];
+            Object.entries(e.l || {}).forEach(([k, p]) => {
+                if (journalCurrent(k) !== (p.a ? stableStringify(p.a) : null)) out.push(k);
+            });
+            Object.entries(e.m || {}).forEach(([f, p]) => {
+                if (journalStr(JOURNAL_MAIN[f].get()) !== stableStringify(p.a)) out.push('#' + f);
+            });
+            return out;
+        }
+        // Sprachmemo-Audio, das nicht im Verlauf liegt, aus den aktuellen Lektionen übernehmen
+        function journalRestoreLesson(data) {
+            const r = JSON.parse(JSON.stringify(data));
+            if (Array.isArray(r.audioClips) && r.audioClips.length) {
+                const audio = {};
+                Object.values(lessonsStore).forEach(l => (l?.audioClips || []).forEach(c => { if (c.audioDataUrl) audio[c.id] = c.audioDataUrl; }));
+                r.audioClips.forEach(c => { if (!c.audioDataUrl && audio[c.id]) c.audioDataUrl = audio[c.id]; });
+            }
+            return r;
+        }
+
+        // «Rückgängig»/«Wiederholt» wirken auf ihren Bezugseintrag: ist einer aktiv, gilt der Bezug als rückgängig gemacht
+        function journalSetUndone(e, val, depth = 0) {
+            if (!e || depth > 50) return;
+            e.undone = val;
+            e.rev = (e.rev || 0) + 1;
+            if ((e.reason === 'Rückgängig' || e.reason === 'Wiederholt') && e.ref) {
+                const r = journal.find(x => x.id === e.ref);
+                if (r && r.undone !== !val) journalSetUndone(r, !val, depth + 1);
+            }
+        }
+        function undoLast() {
+            const e = journalLastUndoable();
+            if (!e) { showToast('Nichts mehr rückgängig zu machen.'); return; }
+            journalUndo(e.id);
+        }
+        // mode: undefined = bei Konflikten nachfragen · 'all' = alles zurücksetzen · 'skip' = nachträglich geänderte auslassen
+        function journalUndo(id, mode) {
+            const e = journal.find(x => x.id === id);
+            if (!e || e.undone) return;
+            // Offene, ungespeicherte Lektion zuerst speichern
+            if (!document.getElementById('lessonModal').classList.contains('hidden')) {
+                if (activeLessonKey && getLessonFormState() !== lessonModalInitialState) saveLessonModal(); else closeLessonModal(true);
+            }
+            journalRecord();   // noch nicht erfasste Änderungen sauber abschliessen
+            const conflicts = journalConflicts(e);
+            if (conflicts.length && !mode) { showJournalConflict(e, conflicts); return; }
+            const skip = new Set(mode === 'skip' ? conflicts : []);
+            let n = 0;
+            Object.entries(e.l || {}).forEach(([k, p]) => {
+                if (skip.has(k)) return;
+                if (p.b) lessonsStore[k] = journalRestoreLesson(p.b); else delete lessonsStore[k];
+                n++;
+            });
+            Object.entries(e.m || {}).forEach(([f, p]) => {
+                if (skip.has('#' + f)) return;
+                JOURNAL_MAIN[f].set(JSON.parse(JSON.stringify(p.b)));
+                n++;
+            });
+            journalSetUndone(e, true);
+            markChangeReason(e.reason === 'Rückgängig' ? 'Wiederholt' : 'Rückgängig');
+            journalRef = e.id;
+            hideJournalConflict();
+            saveAllState();
+            const undoEntry = journal[0] && journal[0].ref === e.id ? journal[0] : null;
+            hydrateClipAudioSoon();
+            renderCalendar();
+            updateOpenNotesBadge();
+            if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
+            if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
+            updateJournalUi();
+            const msg = `${e.reason === 'Rückgängig' ? 'Wiederhergestellt' : 'Rückgängig gemacht'}: ${e.reason} · ${e.summary}${skip.size ? ` (${skip.size} ausgelassen)` : ''}`;
+            if (undoEntry) showUndoToast(msg, () => journalUndo(undoEntry.id, 'all'));
+            else showToast(msg, 5000);
+            return n;
+        }
+
+        function showJournalConflict(e, conflicts) {
+            journalConflictCtx = { id: e.id };
+            openJournalModal(true);
+            const box = document.getElementById('journalConflict');
+            const total = Object.keys(e.l || {}).length + Object.keys(e.m || {}).length;
+            const rows = conflicts.slice(0, 12).map(k => {
+                if (k.startsWith('#')) return `<li>${escapeHtml(JOURNAL_MAIN[k.slice(1)]?.label || k)}</li>`;
+                const x = journalSlotLabel(k);
+                return `<li>${escapeHtml(x.course)} · ${escapeHtml(x.date)} ${escapeHtml(x.time)} – jetzt: «${escapeHtml(lessonTopicLabel(lessonsStore[k] || {}, 50) || 'leer')}»</li>`;
+            }).join('');
+            box.className = 'mx-3 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950';
+            box.innerHTML = `<div class="font-extrabold">«${escapeHtml(e.reason)}» rückgängig machen?</div>
+                <div class="mt-1">${conflicts.length} von ${total} Einträgen wurden danach nochmals geändert:</div>
+                <ul class="list-disc pl-5 mt-1 space-y-0.5">${rows}${conflicts.length > 12 ? '<li>…</li>' : ''}</ul>
+                <div class="flex flex-wrap gap-2 mt-2.5">
+                    ${conflicts.length < total ? `<button type="button" onclick="journalUndo(${jsArg(e.id)}, 'skip')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Nur die übrigen zurücksetzen</button>` : ''}
+                    <button type="button" onclick="journalUndo(${jsArg(e.id)}, 'all')" class="px-3 py-1.5 bg-white border border-amber-400 rounded-lg font-bold text-amber-900">Alle zurücksetzen (spätere Änderungen gehen verloren)</button>
+                    <button type="button" onclick="hideJournalConflict()" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-700">Abbrechen</button>
+                </div>`;
+        }
+        function hideJournalConflict() {
+            journalConflictCtx = null;
+            const box = document.getElementById('journalConflict');
+            if (box) { box.className = 'hidden'; box.innerHTML = ''; }
+        }
+
+        function openJournalModal(keepConflict) {
+            if (!keepConflict) hideJournalConflict();
+            document.getElementById('journalModal').classList.remove('hidden');
+            updateBodyScrollLock();
+            refreshIcons();
+            renderJournalList();
+            loadJournal();
+        }
+        function closeJournalModal() {
+            hideJournalConflict();
+            document.getElementById('journalModal').classList.add('hidden');
+            updateBodyScrollLock();
+        }
+        function journalDetailHtml(e) {
+            const rows = Object.keys(e.l || {}).sort().slice(0, 60).map(k => {
+                const x = journalSlotLabel(k), p = e.l[k];
+                const b = p.b ? lessonTopicLabel(p.b, 45) || '(ohne Thema)' : '(leer)';
+                const a = p.a ? lessonTopicLabel(p.a, 45) || '(ohne Thema)' : '(leer)';
+                return `<div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-2 py-0.5 border-t border-slate-100">
+                    <span class="font-bold text-slate-600 truncate">${escapeHtml(x.date)} ${escapeHtml(x.time)} <span class="font-semibold text-slate-400">${escapeHtml(x.course)}</span></span>
+                    <span class="min-w-0"><span class="text-slate-500">${escapeHtml(b)}</span> <span class="text-slate-400">→</span> <span class="font-semibold text-slate-800">${escapeHtml(a)}</span></span></div>`;
+            }).join('');
+            const more = Object.keys(e.l || {}).length > 60 ? `<div class="text-slate-400 italic pt-1">… und ${Object.keys(e.l).length - 60} weitere</div>` : '';
+            const main = Object.keys(e.m || {}).map(f => `<div class="py-0.5 border-t border-slate-100 font-semibold text-slate-700">${escapeHtml(JOURNAL_MAIN[f]?.label || f)} geändert</div>`).join('');
+            return rows + more + main;
+        }
+        function renderJournalList() {
+            const list = document.getElementById('journalList');
+            if (!list) return;
+            if (!journal.length) {
+                list.innerHTML = `<div class="text-slate-400 italic py-6 text-center">Noch keine Änderungen erfasst. Ab jetzt wird jede Aktion hier aufgelistet.</div>`;
+                return;
+            }
+            const today = formatDateISO(new Date());
+            const yest = formatDateISO(new Date(Date.now() - 86400000));
+            const lastUndoable = journalLastUndoable();
+            let lastDay = '';
+            list.innerHTML = journal.map(e => {
+                const d = new Date(e.at);
+                const iso = formatDateISO(d);
+                const dayHead = iso !== lastDay ? `<div class="font-bold text-slate-500 uppercase text-[10.5px] tracking-wide ${lastDay ? 'mt-2' : ''}">${iso === today ? 'Heute' : iso === yest ? 'Gestern' : formatDateCH(iso)}</div>` : '';
+                lastDay = iso;
+                const time = d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+                const badge = e.reason === 'Rückgängig' ? 'bg-indigo-100 text-indigo-800' : /Verschoben|Nachgeschoben|Angehängt|Kopiert/.test(e.reason) ? 'bg-amber-100 text-amber-900'
+                    : /Import|Mehrfach|Backup/.test(e.reason) ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700';
+                const btn = e.undone
+                    ? `<span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-500 font-bold whitespace-nowrap">↩︎ rückgängig gemacht</span>`
+                    : `<button type="button" onclick="journalUndo(${jsArg(e.id)})" class="px-2.5 py-1 rounded-lg font-bold whitespace-nowrap ${e === lastUndoable ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-700'}">${e.reason === 'Rückgängig' ? 'Wiederherstellen' : 'Rückgängig'}</button>`;
+                return `${dayHead}<details class="bg-white border border-slate-200 rounded-lg px-3 py-2 ${e.undone ? 'opacity-60' : ''}">
+                    <summary class="cursor-pointer list-none flex items-center gap-2">
+                        <span class="font-extrabold text-slate-800 w-10 shrink-0">${escapeHtml(time)}</span>
+                        <span class="px-1.5 py-0.5 rounded font-bold text-[10.5px] shrink-0 ${badge}">${escapeHtml(e.reason)}</span>
+                        <span class="flex-1 min-w-0 truncate text-slate-700 ${e.undone ? 'line-through' : ''}">${escapeHtml(e.summary || '')}</span>
+                        <span class="hidden sm:inline text-slate-400 shrink-0">${escapeHtml(e.device || '')}</span>
+                        <span onclick="event.preventDefault();event.stopPropagation()">${btn}</span>
+                    </summary>
+                    <div class="mt-2 text-[11px] leading-snug">${journalDetailHtml(e)}</div>
+                </details>`;
+            }).join('');
+        }
+
+        // Cmd/Ctrl+Z ausserhalb von Textfeldern → Rückgängig
+        document.addEventListener('keydown', (ev) => {
+            if (!(ev.metaKey || ev.ctrlKey) || ev.shiftKey || ev.altKey || (ev.key || '').toLowerCase() !== 'z') return;
+            const t = ev.target;
+            if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+            if (!currentUser && !isDemoMode) return;
+            if (['lessonModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal', 'eventEditModal', 'moveLessonModal'].some(id => !document.getElementById(id)?.classList.contains('hidden'))) return;
+            ev.preventDefault();
+            undoLast();
+        });
+
+        // =========================================================================
+        // LEKTION VERSCHIEBEN / KOPIEREN (Ziel wählen: ersetzen · anhängen · alle nachschieben)
+        // =========================================================================
+        var LESSON_CONTENT_FIELDS = ['unit', 'title', 'einstieg', 'hauptteil', 'schluss', 'notes', 'link', 'homework', 'homeworkTargetKey', 'isExam', 'trackOverride', 'audioClips', 'todos'];
+        var moveCtx = null;
+        function blankLesson() {
+            return { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
+        }
+        function openMoveLessonModal() {
+            if (!activeSlotMeta || !activeLessonKey) return;
+            if (getLessonFormState() !== lessonModalInitialState) {   // ungespeicherte Änderungen zuerst sichern
+                markChangeReason('Bearbeitet');
+                commitLessonModal();
+                saveAllState();
+            }
+            const { slot, dayDate } = activeSlotMeta;
+            const src = lessonsStore[activeLessonKey];
+            moveCtx = { srcKey: activeLessonKey, slot, iso: formatDateISO(dayDate), mode: src && hasLessonContent(src) ? 'replace' : 'shift',
+                        cls: slot.className, keep: false, target: null, showAll: false,
+                        track: document.getElementById('editLessonTrack').value.trim().toLowerCase() };
+            const st = getStyleForSlot(slot.subject, slot.className);
+            const d = new Date(`${moveCtx.iso}T12:00:00`);
+            document.getElementById('moveSubtitle').innerText = `${st.label} ${slot.className} · ${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}. ${slot.start} · «${lessonTopicLabel(src || {}, 60) || 'leer'}»`;
+            document.getElementById('moveLessonModal').classList.remove('hidden');
+            updateBodyScrollLock();
+            refreshIcons();
+            renderMoveModal();
+        }
+        function closeMoveLessonModal() {
+            moveCtx = null;
+            document.getElementById('moveLessonModal').classList.add('hidden');
+            updateBodyScrollLock();
+        }
+        function setMoveMode(m) { if (!moveCtx) return; moveCtx.mode = m; renderMoveModal(); }
+        function setMoveClass(c) { if (!moveCtx) return; moveCtx.cls = c; moveCtx.target = null; renderMoveModal(); }
+        function setMoveTarget(k) { if (!moveCtx) return; moveCtx.target = k; renderMoveModal(); }
+        function setMoveKeep(on) { if (!moveCtx) return; moveCtx.keep = on; renderMoveModal(); }
+        function moveShowAll() { if (!moveCtx) return; moveCtx.showAll = true; renderMoveModal(); }
+
+        function moveShiftPlan() {
+            const { slot, iso, track } = moveCtx;
+            const trackFilter = resolveTemplateTrackFilter(slot.subject, slot.className, track);
+            const keys = courseSlotKeys(slot.subject, slot.className, iso, slot.start, trackFilter);
+            const items = keys.map(k => lessonsStore[k]);
+            let last = items.length - 1;
+            while (last >= 0 && !items[last]) last--;
+            const moves = [];
+            for (let i = 0; i <= last; i++) if (items[i]) moves.push({ from: keys[i], to: keys[i + 1] });
+            return { keys, moves, ok: last < 0 || last + 1 < keys.length };
+        }
+        function moveRowLabel(k) {
+            const x = journalSlotLabel(k);
+            return `${x.date} ${x.time}`;
+        }
+        function renderMoveModal() {
+            if (!moveCtx) return;
+            const src = lessonsStore[moveCtx.srcKey];
+            const hasSrc = src && hasLessonContent(src);
+            const modes = [
+                ['replace', 'Ersetzen', 'Inhalt ersetzt die gewählte Lektion'],
+                ['append', 'Hinzufügen', 'Inhalt wird unten angehängt'],
+                ['shift', 'Alle nachschieben', 'Diese und alle folgenden rutschen 1 nach hinten']
+            ];
+            document.getElementById('moveModeBtns').innerHTML = modes.map(([k, t, d]) => {
+                const dis = k !== 'shift' && !hasSrc;
+                const on = moveCtx.mode === k;
+                return `<button type="button" ${dis ? 'disabled' : ''} onclick="setMoveMode('${k}')" class="text-left rounded-xl border px-2.5 py-2 ${on ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-300' : 'border-slate-200 bg-white hover:bg-slate-50'} disabled:opacity-40 disabled:cursor-not-allowed">
+                    <div class="font-extrabold ${on ? 'text-amber-900' : 'text-slate-800'}">${on ? '● ' : '○ '}${t}</div>
+                    <div class="text-[10.5px] text-slate-500 leading-snug mt-0.5">${d}</div></button>`;
+            }).join('');
+
+            const tools = document.getElementById('moveTools');
+            const list = document.getElementById('moveList');
+            const btn = document.getElementById('moveConfirmBtn');
+            const sum = document.getElementById('moveSummary');
+            const { slot } = moveCtx;
+
+            if (moveCtx.mode === 'shift') {
+                tools.innerHTML = '';
+                const plan = moveShiftPlan();
+                if (!plan.moves.length) {
+                    list.innerHTML = `<div class="text-slate-500 italic py-4 text-center">Ab hier ist nichts geplant – es gibt nichts nachzuschieben.</div>`;
+                    btn.disabled = true; sum.innerText = ''; btn.innerText = 'Nachschieben';
+                    return;
+                }
+                const lastTo = plan.moves[plan.moves.length - 1].to;
+                list.innerHTML = `<div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-amber-950 font-semibold mb-1">
+                        Vorschau: ${plan.moves.length} Lektion${plan.moves.length > 1 ? 'en rutschen' : ' rutscht'} um 1 nach hinten${lastTo ? ` – bis ${escapeHtml(moveRowLabel(lastTo))}` : ''}.</div>` +
+                    plan.moves.map(mv => `<div class="grid grid-cols-[6.5rem_1fr_auto_6.5rem] items-center gap-2 px-2 py-1 border-b border-slate-100">
+                        <span class="font-bold text-slate-500">${escapeHtml(moveRowLabel(mv.from))}</span>
+                        <span class="truncate font-semibold text-slate-800">${escapeHtml(lessonTopicLabel(lessonsStore[mv.from], 60) || '(ohne Thema)')}</span>
+                        <span class="text-slate-400">→</span>
+                        <span class="font-bold ${mv.to ? 'text-amber-800' : 'text-rose-700'}">${mv.to ? escapeHtml(moveRowLabel(mv.to)) : 'kein Platz!'}</span></div>`).join('');
+                btn.disabled = !plan.ok;
+                btn.innerText = `${plan.moves.length} Lektionen nachschieben`;
+                sum.innerText = plan.ok ? '' : 'Bis Schuljahresende ist kein Platz mehr – die letzte Lektion ginge verloren.';
+                return;
+            }
+
+            // Ziel wählen (Ersetzen / Hinzufügen)
+            const classes = [...new Set(weeklyTemplate.filter(s => s.subject === slot.subject).map(s => s.className))].sort((a, b) => a.localeCompare(b, 'de'));
+            tools.innerHTML = `
+                <label class="flex items-center gap-1.5 font-bold text-slate-700">Ziel-Klasse
+                    <select onchange="setMoveClass(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-bold text-slate-900">
+                        ${classes.map(c => `<option value="${escapeHtml(c)}" ${c === moveCtx.cls ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+                    </select></label>
+                <label class="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer">
+                    <input type="checkbox" ${moveCtx.keep ? 'checked' : ''} onchange="setMoveKeep(this.checked)" class="rounded text-amber-600"> Original behalten (kopieren)</label>`;
+            const todayISO = formatDateISO(new Date());
+            const from = todayISO < moveCtx.iso ? todayISO : moveCtx.iso;
+            let keys = courseSlotKeys(slot.subject, moveCtx.cls, from, '00:00', null).filter(k => k !== moveCtx.srcKey);
+            const total = keys.length;
+            if (!moveCtx.showAll) keys = keys.slice(0, 40);
+            list.innerHTML = keys.length ? keys.map(k => {
+                const l = lessonsStore[k];
+                const busy = l && hasLessonContent(l);
+                const on = moveCtx.target === k;
+                const tslot = weeklyTemplate.find(s => s.id === k.split('_')[1]);
+                const tr = busy ? getEffectiveTrack(l, tslot) : '';
+                return `<button type="button" onclick="setMoveTarget(${jsArg(k)})" class="w-full text-left grid grid-cols-[1.1rem_6.5rem_1fr_auto] items-center gap-2 px-2 py-1.5 rounded-lg border ${on ? 'border-amber-400 bg-amber-50' : 'border-transparent hover:bg-slate-50'}">
+                    <span class="${on ? 'text-amber-600' : 'text-slate-300'} font-extrabold">${on ? '●' : '○'}</span>
+                    <span class="font-bold text-slate-600">${escapeHtml(moveRowLabel(k))}</span>
+                    <span class="truncate ${busy ? 'font-semibold text-slate-800' : 'italic text-slate-400'}">${tr ? `<span class="px-1 py-0.5 rounded text-[10px] font-bold ${trackChipClass(tr)}">${escapeHtml(tr)}</span> ` : ''}${busy ? escapeHtml(lessonTopicLabel(l, 70) || '(ohne Thema)') : 'frei'}</span>
+                    ${busy ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold">belegt</span>` : '<span></span>'}
+                </button>`;
+            }).join('') + (!moveCtx.showAll && total > 40 ? `<button type="button" onclick="moveShowAll()" class="mt-1 py-1.5 rounded-lg border border-dashed border-slate-300 text-slate-600 font-bold">Weitere ${total - 40} Lektionen anzeigen</button>` : '')
+                : `<div class="text-slate-500 italic py-4 text-center">Keine weiteren Lektionen dieser Klasse im Schuljahr.</div>`;
+
+            const verb = moveCtx.keep ? 'Kopieren' : 'Verschieben';
+            btn.innerText = moveCtx.mode === 'append' ? (moveCtx.keep ? 'Kopieren & anhängen' : 'Verschieben & anhängen') : verb;
+            btn.disabled = !moveCtx.target;
+            if (!moveCtx.target) { sum.innerText = 'Ziel-Lektion auswählen'; return; }
+            const t = lessonsStore[moveCtx.target];
+            const tBusy = t && hasLessonContent(t);
+            sum.innerText = `→ ${moveRowLabel(moveCtx.target)}${moveCtx.cls !== slot.className ? ` (${moveCtx.cls})` : ''}: ` +
+                (moveCtx.mode === 'replace' ? (tBusy ? `ersetzt «${lessonTopicLabel(t, 40)}»` : 'freie Lektion') : (tBusy ? `wird unter «${lessonTopicLabel(t, 40)}» angehängt` : 'freie Lektion')) +
+                (moveCtx.keep ? ' · Original bleibt' : ' · Original wird geleert');
+        }
+
+        function joinHtml(a, b) { return a && b ? `${a}<br>${b}` : (a || b || ''); }
+        function executeMoveLesson() {
+            if (!moveCtx) return;
+            const { srcKey, slot, mode, keep, target } = moveCtx;
+            if (mode === 'shift') {
+                markChangeReason('Nachgeschoben');
+                const plan = moveShiftPlan();
+                if (!plan.ok) return;
+                const n = plan.moves.length;
+                if (!reflowLessons(plan.keys, plan.keys.slice(1))) { showToast('Nicht nachgeschoben: kein Platz bis Schuljahresende.'); return; }
+                closeMoveLessonModal();
+                closeLessonModal(true);
+                renderCalendar();
+                saveAllState();
+                showUndoToast(`${n} Lektionen um 1 nachgeschoben.`, undoLast);
+                return;
+            }
+            if (!target) return;
+            const src = lessonsStore[srcKey];
+            if (!src || !hasLessonContent(src)) return;
+            const tSlot = weeklyTemplate.find(s => s.id === target.split('_')[1]);
+            const content = {};
+            LESSON_CONTENT_FIELDS.forEach(f => { if (src[f] !== undefined) content[f] = JSON.parse(JSON.stringify(src[f])); });
+            const srcTrack = getEffectiveTrack(src, slot);
+            const old = lessonsStore[target];
+            const oldBusy = old && hasLessonContent(old);
+            if (keep) content.homeworkTargetKey = '';   // Kopie: HA-Verknüpfung bleibt beim Original
+            let res;
+            if (mode === 'append' && oldBusy) {
+                const tTrack = getEffectiveTrack(old, tSlot);
+                res = { ...old,
+                    title: old.title && content.title && old.title !== content.title ? `${old.title} / ${content.title}` : (old.title || content.title || ''),
+                    unit: old.unit || content.unit || '',
+                    einstieg: joinHtml(old.einstieg, content.einstieg),
+                    hauptteil: joinHtml(old.hauptteil || old.notes, content.hauptteil || content.notes),
+                    schluss: joinHtml(old.schluss, content.schluss),
+                    homework: [old.homework, content.homework].filter(x => (x || '').trim()).join('; '),
+                    homeworkTargetKey: old.homeworkTargetKey || content.homeworkTargetKey || '',
+                    isExam: Boolean(old.isExam || content.isExam),
+                    todos: [...(old.todos || []), ...(content.todos || [])],
+                    audioClips: [...(old.audioClips || []), ...(content.audioClips || [])],
+                    notes: '' };
+                const tr = tTrack || srcTrack;
+                res.trackOverride = tr === (tSlot?.track || '').trim() ? '' : tr;
+            } else {
+                res = { ...blankLesson(), homeworkDueToday: old?.homeworkDueToday || '', ...content };
+                if (old?.homeworkSourceKey) res.homeworkSourceKey = old.homeworkSourceKey;
+                res.trackOverride = srcTrack === (tSlot?.track || '').trim() ? '' : srcTrack;
+            }
+            if (keep) {   // Kopie: neue Ids für Pendenzen
+                res.todos = (res.todos || []).map((t, i) => (content.todos || []).some(c => c.id === t.id) ? { ...t, id: Date.now() + i + Math.random() } : t);
+            }
+            lessonsStore[target] = res;
+            if (!keep) {
+                // HA-Verknüpfung umhängen: Ziel-Lektion der HA zeigt jetzt auf die neue Lektion
+                if (src.homeworkTargetKey && lessonsStore[src.homeworkTargetKey]?.homeworkSourceKey === srcKey) lessonsStore[src.homeworkTargetKey].homeworkSourceKey = target;
+                const rest = {};
+                if ((src.homeworkDueToday || '').trim()) rest.homeworkDueToday = src.homeworkDueToday;
+                if (src.homeworkSourceKey) rest.homeworkSourceKey = src.homeworkSourceKey;
+                if (Object.keys(rest).length) lessonsStore[srcKey] = { ...blankLesson(), ...rest }; else delete lessonsStore[srcKey];
+            }
+            markChangeReason(keep ? 'Kopiert' : mode === 'append' ? 'Angehängt' : 'Verschoben');
+            const label = moveRowLabel(target) + (moveCtx.cls !== slot.className ? ` (${moveCtx.cls})` : '');
+            closeMoveLessonModal();
+            closeLessonModal(true);
+            renderCalendar();
+            saveAllState();
+            showUndoToast(`${keep ? 'Kopiert' : 'Verschoben'} nach ${label}${mode === 'append' && oldBusy ? ' (angehängt)' : ''}.`, undoLast);
+        }
+
+        // =========================================================================
+        // FACH-ANSICHT: Gefäss-Etikett, Gefäss-Filter und Mehrfachbearbeitung
+        // =========================================================================
+        var TRACK_CHIP_CLASSES = ['bg-sky-100 text-sky-800', 'bg-emerald-100 text-emerald-800', 'bg-violet-100 text-violet-800', 'bg-indigo-100 text-indigo-800',
+            'bg-blue-100 text-blue-800', 'bg-teal-100 text-teal-800', 'bg-fuchsia-100 text-fuchsia-800', 'bg-lime-100 text-lime-800', 'bg-orange-100 text-orange-800', 'bg-cyan-100 text-cyan-800'];
+        function trackChipClass(name) {
+            const s = String(name || '').trim().toLowerCase();
+            let h = 0;
+            for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+            return TRACK_CHIP_CLASSES[h % TRACK_CHIP_CLASSES.length];
+        }
+        var svSelect = { on: false, keys: new Set() };
+        function rerenderKeepScroll() { const y = window.scrollY; renderCalendar(); window.scrollTo(0, y); }
+        function setSubjectViewTrack(v) {
+            const st = subjectViewState();
+            const raw = st.raw;
+            raw.track = raw.track || {};
+            raw.track[st.subject] = v;
+            try { localStorage.setItem('sekPlaner_subjectView', JSON.stringify(raw)); } catch (e) {}
+            subjectViewTrackMem[st.subject] = v;
+            rerenderKeepScroll();
+        }
+        var subjectViewTrackMem = {};   // Demo: localStorage ist dort abgeschaltet
+        function subjectViewTrack(st) {
+            return (st.raw.track && st.raw.track[st.subject] !== undefined ? st.raw.track[st.subject] : subjectViewTrackMem[st.subject]) || '';
+        }
+        function toggleSubjectSelectMode() {
+            svSelect.on = !svSelect.on;
+            svSelect.keys.clear();
+            rerenderKeepScroll();
+        }
+        function svToggleSelect(key) {
+            if (svSelect.keys.has(key)) svSelect.keys.delete(key); else svSelect.keys.add(key);
+            rerenderKeepScroll();
+        }
+        function svClearSelection() { svSelect.keys.clear(); rerenderKeepScroll(); }
+        function renderSubjectBulkBar(tracks) {
+            let bar = document.getElementById('svBulkBar');
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'svBulkBar';
+                bar.className = 'hidden fixed left-1/2 -translate-x-1/2 bottom-20 md:bottom-5 z-[45] w-[min(980px,calc(100vw-1rem))] no-print';
+                document.body.appendChild(bar);
+            }
+            const show = svSelect.on && viewMode === 'subject' && !document.getElementById('subjectViewContainer').classList.contains('hidden') &&
+                !document.getElementById('planWithSidebarWrapper').classList.contains('hidden');
+            bar.classList.toggle('hidden', !show);
+            if (!show) return;
+            const keep = {};
+            ['svBulkTrack', 'svBulkUnit', 'svBulkTitle'].forEach(id => { const el = document.getElementById(id); if (el) keep[id] = el.value; });
+            const n = svSelect.keys.size;
+            const inp = 'min-w-0 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs';
+            bar.innerHTML = `<div class="bg-slate-900 text-white rounded-2xl shadow-2xl px-3 py-2.5 flex flex-wrap items-center gap-2 text-xs">
+                <span class="font-extrabold whitespace-nowrap">${n} ausgewählt</span>
+                <input id="svBulkTrack" list="svTrackList" placeholder="Gefäss / Schwerpunkt" class="${inp} text-slate-900 flex-1 basis-32">
+                <datalist id="svTrackList">${tracks.map(t => `<option value="${escapeHtml(t)}"></option>`).join('')}</datalist>
+                <input id="svBulkUnit" placeholder="Sequenz / Einheit" class="${inp} text-slate-900 flex-1 basis-32">
+                <input id="svBulkTitle" placeholder="Stundenthema / Fokus" class="${inp} text-slate-900 flex-[2] basis-40">
+                <button type="button" onclick="applySubjectBulkEdit()" ${n ? '' : 'disabled'} class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-900 rounded-lg font-extrabold disabled:opacity-40">Übernehmen</button>
+                <button type="button" onclick="svClearSelection()" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg font-bold">Leeren</button>
+                <button type="button" onclick="toggleSubjectSelectMode()" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg font-bold">Fertig</button>
+                <div class="basis-full text-[10.5px] text-slate-300">Lektionen antippen zum Auswählen · nur ausgefüllte Felder werden übernommen, der Rest bleibt.</div>
+            </div>`;
+            Object.entries(keep).forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
+        }
+        function applySubjectBulkEdit() {
+            const g = document.getElementById('svBulkTrack').value.trim();
+            const u = document.getElementById('svBulkUnit').value.trim();
+            const t = document.getElementById('svBulkTitle').value.trim();
+            if (!svSelect.keys.size) { showToast('Zuerst Lektionen auswählen.'); return; }
+            if (!g && !u && !t) { showToast('Mindestens ein Feld ausfüllen (Gefäss, Einheit oder Thema).'); return; }
+            let n = 0;
+            svSelect.keys.forEach(k => {
+                const slot = weeklyTemplate.find(s => s.id === k.split('_')[1]);
+                const l = lessonsStore[k] ? JSON.parse(JSON.stringify(lessonsStore[k])) : blankLesson();
+                if (g) l.trackOverride = g === (slot?.track || '').trim() ? '' : g;
+                if (u) l.unit = u;
+                if (t) l.title = t;
+                lessonsStore[k] = l;
+                n++;
+            });
+            markChangeReason('Mehrfach bearbeitet');
+            svSelect.keys.clear();
+            saveAllState();
+            rerenderKeepScroll();
+            ['svBulkTrack', 'svBulkUnit', 'svBulkTitle'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            showUndoToast(`${n} Lektion${n > 1 ? 'en' : ''} geändert.`, undoLast);
         }
 
         // ---------- Suche in Lektionen (Wörterbuch + KI) ----------
@@ -7825,8 +8791,14 @@ ${listing}`;
                 showToast("«Bis Datum» liegt vor «Von Datum» – bitte korrigieren.");
                 return;
             }
-            calendarEvents.push({ id: `ev-${Date.now()}`, type, targetClass, name, start, end });
+            const tf = document.getElementById('newEventTimeFrom').value, tt = document.getElementById('newEventTimeTo').value;
+            if ((tf && !tt) || (!tf && tt) || (tf && tt && tt <= tf)) { showToast("Uhrzeit: «von» und «bis» ausfüllen (bis nach von) – oder beide leer lassen."); return; }
+            const ev = { id: `ev-${Date.now()}`, type, targetClass, name, start, end };
+            if (tf && tt) { ev.timeFrom = tf; ev.timeTo = tt; }
+            calendarEvents.push(ev);
             document.getElementById('newEventName').value = "";
+            document.getElementById('newEventTimeFrom').value = ""; document.getElementById('newEventTimeTo').value = "";
+            renderCalendar();
             renderSpecialDaysTable();
             saveAllState();
             showToast("Termin hinzugefügt!");
@@ -8210,6 +9182,8 @@ ${listing}`;
             document.getElementById('toastUndoBtn')?.classList.add('hidden');
             t.classList.add('pointer-events-none');
             document.getElementById('toastMsg').innerText = msg;
+            const bulk = document.getElementById('svBulkBar');   // nicht über der Leiste der Mehrfachbearbeitung
+            t.style.bottom = bulk && !bulk.classList.contains('hidden') ? `${bulk.getBoundingClientRect().height + (innerWidth < 768 ? 90 : 30)}px` : '';
             t.classList.remove('opacity-0');
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => { t.classList.add('opacity-0', 'pointer-events-none'); document.getElementById('toastUndoBtn')?.classList.add('hidden'); toastUndoFn = null; }, ms);

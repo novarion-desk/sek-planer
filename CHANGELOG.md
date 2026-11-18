@@ -1,5 +1,18 @@
 # Änderungen
 
+## Version 20 – 18.11.2026
+- Rückgängig ↶ oben in der Kopfzeile (Handy: neben der Suche) und Cmd/Ctrl+Z ausserhalb von Textfeldern: macht die letzte Aktion rückgängig – mehrmals klicken geht weiter zurück. Hinweis zeigt, was rückgängig gemacht wurde, mit «Rückgängig» zum Wiederherstellen.
+- Änderungsverlauf 🕘: Liste aller Aktionen der letzten 30 Tage (Bearbeitet, Verschoben, Import, Mehrfachbearbeitung, Kalender, Pendenzen …) mit Uhrzeit, Gerät und betroffenen Lektionen (vorher → nachher). Jede Aktion einzeln rückgängig machbar, gespeichert in der Cloud (auch nach Neuladen und auf allen Geräten). Wurde eine betroffene Lektion danach nochmals geändert, fragt die App: nur die übrigen oder alle zurücksetzen.
+- «+1 Lektion schieben» ersetzt durch «Verschieben…»: Ziel-Lektion aus einer Liste wählen (auch Parallelklasse), Art «Ersetzen» (Standard), «Hinzufügen» (unten anhängen) oder «Alle nachschieben» (mit Vorschau, welche Lektionen wohin rutschen). Häkchen «Original behalten» kopiert statt verschiebt.
+- Fach-Ansicht: Gefäss / Schwerpunkt als farbiges Etikett, daneben Sequenz / Einheit, darunter das Stundenthema. Filter «Gefäss» (z. B. nur Literatur).
+- Fach-Ansicht: «Auswählen» → mehrere Lektionen antippen und Gefäss, Einheit und/oder Thema für alle auf einmal setzen (leere Felder bleiben unverändert).
+
+## Version 19 – 18.11.2026 (zusammen mit Version 20 eingespielt)
+- Einträge im Jahreskalender mit drei Arten: Schulfrei (Lektionen fallen aus), Spezialtag (anderer Unterricht, z. B. Projektwoche), Hinweis (z. B. Polizei, Elternbesuchstag) – wahlweise mit Uhrzeit. Betroffene Lektionen werden automatisch grau bzw. mit Etikett markiert.
+- Einträge stehen beim Wochentag; Klick darauf bearbeitet, «+ Eintrag» fügt direkt am Tag einen neuen hinzu.
+- Fach-Ansicht: alle Wochen bleiben sichtbar, ausfallende Lektionen grau, Ferien als schmale Zeile.
+- Pendenzen: Text mit ✏️ ändern (Übersicht und Lektion, verknüpft).
+
 ## Version 18.2 – 18.11.2026
 - Import-Fenster «Datei / Sequenz»: zwei Bereiche nebeneinander (Handy untereinander) – links Datei (Drag & Drop oder «Dateien auswählen»), rechts grosses Feld «Text einfügen» mit Beispiel-Format und «Leeren». Inhalt einer hochgeladenen Datei erscheint im selben Feld. Gilt für Sequenz, Stundenplan und Chalk.
 
