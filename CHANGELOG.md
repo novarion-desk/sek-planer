@@ -1,5 +1,11 @@
 # Änderungen
 
+## Version 17 – 18.11.2026
+- Neue Ansicht «Fach» neben Woche/Tag (Handy: Menü ☰): alle Lektionen eines Fachs im ganzen Schuljahr, chronologisch von oben nach unten, gruppiert nach Kalenderwoche.
+- Klassen per Häkchen wählbar; mehrere Klassen stehen nebeneinander zum Vergleichen. Auswahl bleibt gespeichert.
+- Öffnet bei der aktuellen Woche, ältere Wochen darüber. Noch nicht geplante Lektionen als leere Karten (Klick → planen), Lektionsnummer L1, L2 … pro Klasse, Ferien als schmale Zeile.
+- Pfeile ‹ › springen wochenweise, «Diese Woche» springt zu heute.
+
 ## Version 16 – 18.11.2026
 - Demo-Modus: «Als Gast ansehen (Demo)» im Anmeldefenster bzw. Adresse mit `?demo`. Neutraler Beispiel-Stundenplan mit ausgefüllten Lektionen (aktuelle und nächste Woche), Pendenzen, Tagesnotiz und Terminen. Alles anklickbar und änderbar, aber nichts wird gespeichert (keine Cloud, nichts auf dem Gerät) – nach Neuladen wieder wie am Anfang.
 - In der Demo: Hinweis, dass für die KI-Funktionen ein eigener API-Schlüssel nötig ist; Einstellungen, frühere Versionen und Schuljahrwechsel deaktiviert.

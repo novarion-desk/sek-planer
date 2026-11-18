@@ -203,9 +203,10 @@
                 <span id="syncLedMobile" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400"></span>
             </button>
             <div id="mobileMenu" class="hidden absolute right-2 top-full mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-lg p-2 flex flex-col gap-0.5 text-sm z-40" onclick="event.stopPropagation()">
-                <div class="grid grid-cols-2 gap-1 mb-1">
+                <div class="grid grid-cols-3 gap-1 mb-1">
                     <button type="button" id="mobViewWeek" onclick="setViewMode('week');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Woche</button>
                     <button type="button" id="mobViewDay" onclick="setViewMode('day');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Tag</button>
+                    <button type="button" id="mobViewSubject" onclick="setViewMode('subject');closeMobileMenu()" class="py-1.5 rounded-lg border border-slate-200 font-bold text-xs">Fach</button>
                 </div>
                 <button type="button" onclick="closeMobileMenu();openUniversalImportModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-600"></i> Datei / Sequenz</button>
                 <button type="button" onclick="closeMobileMenu();openScheduleEditorModal()" class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-500"></i> Stundenplan</button>
@@ -299,6 +300,7 @@
                 <div id="weekDayToggleWrap" class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
                     <button type="button" id="viewBtnWeek" onclick="setViewMode('week')" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs">Woche</button>
                     <button type="button" id="viewBtnDay" onclick="setViewMode('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
+                    <button type="button" id="viewBtnSubject" onclick="setViewMode('subject')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Fach</button>
                 </div>
 
                 <button type="button" onclick="openUniversalImportModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors">
@@ -336,6 +338,7 @@
         <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
             <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
                 <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]"></div>
+                <div id="subjectViewContainer" class="hidden"></div>
             </main>
 
             <aside id="aiRightSidebar" class="hidden fixed inset-0 z-40 sm:z-20 w-full sm:w-[370px] shrink-0 bg-white border-l border-slate-200 flex flex-col sm:sticky sm:inset-auto shadow-lg text-xs">
@@ -3339,7 +3342,9 @@ HA: ...</pre>
             const el = document.getElementById('mobileDateLabel');
             if (!el) return;
             const dayNames = ["Mo", "Di", "Mi", "Do", "Fr"];
-            if (viewMode === 'day') {
+            if (viewMode === 'subject') {
+                el.innerText = `Fach: ${subjectDisplayName(subjectViewState().subject) || '–'}`;
+            } else if (viewMode === 'day') {
                 const d = new Date(currentMonday); d.setDate(currentMonday.getDate() + selectedDayIdx);
                 const isToday = formatDateISO(d) === formatDateISO(new Date());
                 el.innerText = `${dayNames[selectedDayIdx]} ${d.getDate()}.${d.getMonth() + 1}.${isToday ? ' · heute' : ''}`;
@@ -3347,11 +3352,10 @@ HA: ...</pre>
                 const fri = new Date(currentMonday); fri.setDate(currentMonday.getDate() + 4);
                 el.innerText = `KW ${getWeekNumber(currentMonday)} · ${currentMonday.getDate()}.${currentMonday.getMonth() + 1}.–${fri.getDate()}.${fri.getMonth() + 1}.`;
             }
-            const w = document.getElementById('mobViewWeek'), dd = document.getElementById('mobViewDay');
-            if (w && dd) {
-                w.className = `py-1.5 rounded-lg border font-bold text-xs ${viewMode === 'week' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-700'}`;
-                dd.className = `py-1.5 rounded-lg border font-bold text-xs ${viewMode === 'day' ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-700'}`;
-            }
+            [['mobViewWeek', 'week'], ['mobViewDay', 'day'], ['mobViewSubject', 'subject']].forEach(([id, m]) => {
+                const b = document.getElementById(id);
+                if (b) b.className = `py-1.5 rounded-lg border font-bold text-xs ${viewMode === m ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-700'}`;
+            });
             const sy = document.getElementById('schoolYearSelectMobile');
             if (sy) sy.value = currentSchoolYear;
         }
@@ -3377,6 +3381,7 @@ HA: ...</pre>
         document.addEventListener('click', () => closeMobileMenu());
 
         function changeWeek(delta) {
+            if (viewMode === 'subject') { scrollSubjectViewByWeek(delta); return; }
             if (viewMode === 'day') {
                 // In der Tagesansicht blättern die Pfeile tageweise (Mo–Fr)
                 selectedDayIdx += delta;
@@ -3396,6 +3401,7 @@ HA: ...</pre>
             currentMonday = getMonday(new Date());
             selectedDayIdx = Math.min((new Date().getDay() + 6) % 7, 4);
             renderCalendar();
+            if (viewMode === 'subject') scrollSubjectViewToCurrent();
         }
 
         // Tagesansicht: per Wischen nach links/rechts den Tag wechseln (Handy/Tablet)
@@ -3460,18 +3466,208 @@ HA: ...</pre>
             viewMode = mode;
             document.getElementById('planViewSection')?.classList.toggle('day-swipe-mode', mode === 'day');
             const grid = document.getElementById('weekGridContainer');
-            const btnW = document.getElementById('viewBtnWeek');
-            const btnD = document.getElementById('viewBtnDay');
-            if (mode === 'week') {
-                grid.className = "grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]";
-                btnW.className = "px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs";
-                btnD.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
-            } else {
-                grid.className = "grid grid-cols-1 max-w-2xl mx-auto gap-4";
-                btnD.className = "px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs";
-                btnW.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
-            }
+            const on = "px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs";
+            const off = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
+            document.getElementById('viewBtnWeek').className = mode === 'week' ? on : off;
+            document.getElementById('viewBtnDay').className = mode === 'day' ? on : off;
+            document.getElementById('viewBtnSubject').className = mode === 'subject' ? on : off;
+            const sv = document.getElementById('subjectViewContainer');
+            grid.classList.toggle('hidden', mode === 'subject');
+            sv.classList.toggle('hidden', mode !== 'subject');
+            if (mode === 'week') grid.className = "grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]";
+            else if (mode === 'day') grid.className = "grid grid-cols-1 max-w-2xl mx-auto gap-4";
             renderCalendar();
+            if (mode === 'subject') scrollSubjectViewToCurrent();
+        }
+
+        // =========================================================================
+        // FACH-ANSICHT: alle Lektionen eines Fachs, Klassen nebeneinander, Woche für Woche
+        // =========================================================================
+        const SUBJECT_NAMES = { 'DEUTSCH': 'Deutsch', 'ENGLISCH': 'Englisch', 'MUSIK': 'Musik', 'GESCHICHTE': 'Geschichte', 'GEOGRAFIE': 'Geografie', 'ECON': 'Econ' };
+        function subjectKeyOf(slot) { return getStyleForSlot(slot.subject, '').label; }
+        function subjectDisplayName(key) { return key ? (SUBJECT_NAMES[key] || key) : ''; }
+        function subjectViewState() {
+            let st = {};
+            try { st = JSON.parse(localStorage.getItem('sekPlaner_subjectView') || '{}') || {}; } catch (e) { st = {}; }
+            const keys = [...new Set(weeklyTemplate.map(subjectKeyOf))].sort((a, b) => subjectDisplayName(a).localeCompare(subjectDisplayName(b), 'de'));
+            if (!keys.includes(st.subject)) {
+                // Standard: das Fach mit den meisten Lektionen pro Woche
+                const count = k => weeklyTemplate.filter(s => subjectKeyOf(s) === k).length;
+                st.subject = [...keys].sort((a, b) => count(b) - count(a))[0] || '';
+            }
+            const classes = [...new Set(weeklyTemplate.filter(s => subjectKeyOf(s) === st.subject).map(s => s.className))].sort((a, b) => a.localeCompare(b, 'de'));
+            const sel = (st.classes && st.classes[st.subject]) || classes;
+            return { subject: st.subject, keys, classes, selected: classes.filter(c => sel.includes(c)), raw: st };
+        }
+        function saveSubjectViewState(subject, selectedClasses) {
+            const st = subjectViewState().raw;
+            st.subject = subject;
+            st.classes = st.classes || {};
+            if (selectedClasses) st.classes[subject] = selectedClasses;
+            try { localStorage.setItem('sekPlaner_subjectView', JSON.stringify(st)); } catch (e) {}
+        }
+        function setSubjectViewSubject(key) {
+            saveSubjectViewState(key, null);
+            renderCalendar();
+            scrollSubjectViewToCurrent();
+        }
+        function toggleSubjectViewClass(cls, on) {
+            const st = subjectViewState();
+            const sel = new Set(st.selected);
+            if (on) sel.add(cls); else sel.delete(cls);
+            saveSubjectViewState(st.subject, st.classes.filter(c => sel.has(c)));
+            const y = window.scrollY;
+            renderCalendar();
+            window.scrollTo(0, y);
+        }
+        function plainSnippet(html, max) {
+            const t = htmlToPlainText(html || '').replace(/\s+/g, ' ').trim();
+            return t.length > max ? t.slice(0, max - 1) + '…' : t;
+        }
+        function renderSubjectView() {
+            const box = document.getElementById('subjectViewContainer');
+            if (!box) return;
+            const st = subjectViewState();
+            if (!st.subject) {
+                box.innerHTML = `<div class="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-xs text-indigo-950">Noch kein Stundenplan erfasst.</div>`;
+                return;
+            }
+            const style = getStyleForSlot(weeklyTemplate.find(s => subjectKeyOf(s) === st.subject)?.subject || st.subject, '');
+            const todayISO = formatDateISO(new Date());
+            const thisMonday = formatDateISO(getMonday(new Date()));
+            const range = schoolYearRange(currentSchoolYear);
+            const dayShort = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+            // Lektionen pro Klasse über das ganze Schuljahr (ohne Ferien / schulfreie Tage der Klasse)
+            const perClass = {};
+            st.selected.forEach(cls => {
+                const slots = weeklyTemplate.filter(s => subjectKeyOf(s) === st.subject && s.className === cls);
+                const list = [];
+                let d = new Date(`${range.start}T12:00:00`);
+                const end = new Date(`${range.end}T12:00:00`);
+                while (d <= end) {
+                    const wd = (d.getDay() + 6) % 7;
+                    if (wd < 5) {
+                        const iso = formatDateISO(d);
+                        slots.filter(s => Number(s.day) === wd).forEach(s => {
+                            if (!isHolidayDate(iso, cls)) list.push({ iso, slot: s, key: `${iso}_${s.id}` });
+                        });
+                    }
+                    d.setDate(d.getDate() + 1);
+                }
+                list.sort((a, b) => (a.iso + a.slot.start).localeCompare(b.iso + b.slot.start));
+                perClass[cls] = list;
+            });
+            // Beginn: erste Woche mit geplanter Lektion (spätestens diese Woche) – keine leeren Wochen vor dem Schulstart
+            const planned = Object.values(perClass).flat().filter(x => lessonsStore[x.key] && lessonTopicLabel(lessonsStore[x.key], 1)).map(x => x.iso).sort();
+            const startMon = formatDateISO(getMonday(new Date(`${planned[0] && planned[0] < thisMonday ? planned[0] : thisMonday}T12:00:00`)));
+            Object.keys(perClass).forEach(cls => {
+                perClass[cls] = perClass[cls].filter(x => x.iso >= startMon);
+                perClass[cls].forEach((x, i) => { x.num = i + 1; });
+            });
+
+            // Nach Wochen gruppieren
+            const weeks = new Map();
+            Object.entries(perClass).forEach(([cls, list]) => list.forEach(x => {
+                const mon = formatDateISO(getMonday(new Date(`${x.iso}T12:00:00`)));
+                if (!weeks.has(mon)) weeks.set(mon, {});
+                (weeks.get(mon)[cls] = weeks.get(mon)[cls] || []).push(x);
+            }));
+            const mondays = [...weeks.keys()].sort();
+
+            const card = (x) => {
+                const l = lessonsStore[x.key];
+                const past = x.iso < todayISO;
+                const isToday = x.iso === todayISO;
+                const dt = new Date(`${x.iso}T12:00:00`);
+                const head = `<div class="flex items-center justify-between gap-2 text-[10.5px] font-bold ${isToday ? 'text-indigo-700' : 'text-slate-500'}">
+                        <span>${dayShort[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}. · ${escapeHtml(x.slot.start)}${isToday ? ' · Heute' : ''}</span>
+                        <span class="text-slate-400">L${x.num}</span></div>`;
+                if (!l || !lessonTopicLabel(l, 1)) {
+                    return `<button type="button" onclick="openLessonFromYear(${jsArg(x.key)})" class="w-full text-left rounded-lg border border-dashed ${isToday ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-300 bg-white/60'} px-2.5 py-2 hover:border-indigo-400 hover:bg-indigo-50/40 ${past ? 'opacity-60' : ''}">
+                        ${head}<div class="text-[11px] italic text-slate-400 mt-0.5">Noch nicht geplant</div></button>`;
+                }
+                const ehs = [['E', l.einstieg], ['H', l.hauptteil || l.notes], ['S', l.schluss]]
+                    .map(([k, v]) => v && htmlToPlainText(v).trim() ? `<span class="font-extrabold text-indigo-700">${k}:</span> ${escapeHtml(plainSnippet(v, 70))}` : '').filter(Boolean).join(' ');
+                const openTodos = (l.todos || []).filter(t => !t.done).length;
+                return `<button type="button" onclick="openLessonFromYear(${jsArg(x.key)})" class="w-full text-left rounded-lg border bg-white px-2.5 py-2 shadow-2xs hover:border-indigo-400 hover:shadow-xs ${isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : l.isExam ? 'border-rose-300' : 'border-slate-200'} ${past ? 'opacity-60' : ''}">
+                        ${head}
+                        <div class="flex flex-wrap items-center gap-1 mt-1">
+                            ${l.isExam ? '<span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9.5px] font-extrabold">PRÜFUNG</span>' : ''}
+                            ${l.unit ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${escapeHtml(plainSnippet(l.unit, 40))}</span>` : ''}
+                            ${openTodos ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">${openTodos} Pendenz${openTodos > 1 ? 'en' : ''}</span>` : ''}
+                        </div>
+                        ${l.title ? `<div class="text-[12px] font-extrabold text-slate-900 mt-1 leading-snug">${escapeHtml(plainSnippet(l.title, 90))}</div>` : ''}
+                        ${ehs ? `<div class="text-[11px] text-slate-600 mt-0.5 leading-snug line-clamp-3">${ehs}</div>` : ''}
+                        ${(l.homework || '').trim() ? `<div class="text-[10.5px] text-indigo-700 font-semibold mt-1 truncate">→ HA: ${escapeHtml(plainSnippet(l.homework, 80))}</div>` : ''}
+                    </button>`;
+            };
+
+            const cols = st.selected.length;
+            const gridStyle = `grid-template-columns: repeat(${Math.max(cols, 1)}, minmax(min(240px, 44vw), 1fr))`;
+            let prevMon = null;
+            const bands = mondays.map(mon => {
+                const fri = new Date(`${mon}T12:00:00`); fri.setDate(fri.getDate() + 4);
+                const m = new Date(`${mon}T12:00:00`);
+                // Ferien dazwischen als schmale Zeile
+                let gap = '';
+                if (prevMon) {
+                    const expected = new Date(`${prevMon}T12:00:00`); expected.setDate(expected.getDate() + 7);
+                    if (formatDateISO(expected) < mon) {
+                        const ev = getHolidayEventForDate(formatDateISO(expected));
+                        gap = `<div class="text-[11px] font-bold text-slate-400 px-2 py-1">${ev ? escapeHtml(ev.name) : 'Unterrichtsfreie Zeit'}</div>`;
+                    }
+                }
+                prevMon = mon;
+                const isCurrent = mon === thisMonday;
+                const w = weeks.get(mon);
+                return `${gap}<section id="sv-week-${mon}" data-monday="${mon}" class="rounded-xl p-2 ${isCurrent ? 'bg-indigo-50/80 ring-1 ring-indigo-200' : ''}">
+                        <div class="flex items-center gap-2 mb-1.5 px-1">
+                            <span class="text-[11.5px] font-extrabold ${isCurrent ? 'text-indigo-800' : 'text-slate-700'}">KW ${getWeekNumber(m)}</span>
+                            <span class="text-[11px] text-slate-500 font-semibold">${m.getDate()}.${m.getMonth() + 1}.–${fri.getDate()}.${fri.getMonth() + 1}.${fri.getFullYear()}</span>
+                            ${isCurrent ? '<span class="px-1.5 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold">Diese Woche</span>' : ''}
+                        </div>
+                        <div class="grid gap-2" style="${gridStyle}">
+                            ${st.selected.map(cls => `<div class="flex flex-col gap-1.5 min-w-0">
+                                ${cols > 1 ? `<div class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 px-0.5">${escapeHtml(cls)}</div>` : ''}
+                                ${(w[cls] || []).map(card).join('') || '<div class="text-[11px] italic text-slate-300 px-1 py-2">–</div>'}
+                            </div>`).join('')}
+                        </div>
+                    </section>`;
+            }).join('');
+
+            box.innerHTML = `
+                <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-2xs text-xs">
+                    <span class="w-3 h-3 rounded-full ${style.headerBg}"></span>
+                    <label for="subjectViewSelect" class="font-bold text-slate-700">Fach</label>
+                    <select id="subjectViewSelect" onchange="setSubjectViewSubject(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-extrabold text-slate-900">
+                        ${st.keys.map(k => `<option value="${escapeHtml(k)}" ${k === st.subject ? 'selected' : ''}>${escapeHtml(subjectDisplayName(k))}</option>`).join('')}
+                    </select>
+                    <span class="font-bold text-slate-700 ml-1">Klassen</span>
+                    ${st.classes.map(c => `<label class="flex items-center gap-1.5 px-2 py-1 rounded-lg border cursor-pointer ${st.selected.includes(c) ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-white border-slate-200 text-slate-500'} font-bold">
+                        <input type="checkbox" ${st.selected.includes(c) ? 'checked' : ''} onchange="toggleSubjectViewClass(${jsArg(c)}, this.checked)" class="rounded text-indigo-600"> ${escapeHtml(c)}</label>`).join('')}
+                    <button type="button" onclick="scrollSubjectViewToCurrent()" class="ml-auto px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-700">Zu heute</button>
+                </div>
+                ${st.selected.length === 0 ? '<div class="py-10 text-center text-xs text-slate-400 italic">Bitte mindestens eine Klasse auswählen.</div>'
+                    : `<div class="flex flex-col gap-1.5" style="min-width: calc(${cols} * min(250px, 46vw))">${bands}</div>`}`;
+        }
+        function scrollSubjectViewToCurrent() {
+            const secs = [...document.querySelectorAll('#subjectViewContainer section[data-monday]')];
+            if (!secs.length) return;
+            const thisMonday = formatDateISO(getMonday(new Date()));
+            const target = secs.find(s => s.dataset.monday >= thisMonday) || secs[secs.length - 1];
+            const topBar = window.innerWidth < 768 ? (document.getElementById('mobileTopBar')?.offsetHeight || 0) : (document.querySelector('#protectedAppContainer header')?.offsetHeight || 0);
+            window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - topBar - 8), behavior: 'auto' });
+        }
+        function scrollSubjectViewByWeek(delta) {
+            const secs = [...document.querySelectorAll('#subjectViewContainer section[data-monday]')];
+            if (!secs.length) return;
+            const topBar = window.innerWidth < 768 ? (document.getElementById('mobileTopBar')?.offsetHeight || 0) : (document.querySelector('#protectedAppContainer header')?.offsetHeight || 0);
+            const pos = secs.map(s => s.getBoundingClientRect().top - topBar - 10);
+            let idx = pos.findIndex(p => p >= -2);
+            if (idx < 0) idx = secs.length - 1;
+            const t = secs[Math.min(secs.length - 1, Math.max(0, idx + delta))];
+            window.scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + window.scrollY - topBar - 8), behavior: 'smooth' });
         }
 
         function saveDayNote(isoDate, val) {
@@ -3508,6 +3704,7 @@ HA: ...</pre>
 
         function renderCalendar() {
             updateMobileDateLabel();
+            if (viewMode === 'subject') { renderSubjectView(); return; }
             const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
             const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
