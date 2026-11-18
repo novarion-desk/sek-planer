@@ -1,5 +1,11 @@
 # Änderungen
 
+## Version 18.1 – 18.11.2026
+- Neue Kopfzeile (Computer): Wochenplan · Notizen & Memos · Jahreskalender gross in der Mitte, Werkzeuge (Datei/Sequenz, Stundenplan, Stellvertretung, KI-Chat, Einstellungen) rechts. Zweite Zeile nur im Wochenplan: «Heute», ‹ ›, Woche, und Woche/Tag/Fach in der Mitte.
+- «Diese Woche» heisst jetzt «Heute»: Woche → aktuelle Woche + aktuelle Lektion, Tag → heutiger Tag (am Wochenende nächster Montag), Fach → aktuelle Woche.
+- Jeder Wechsel zu Woche, Tag oder Fach (auch von Notizen/Jahreskalender und nach dem Blättern) springt zu heute und zur aktuellen Lektion. Schliessen einer Lektion und Blättern springen nicht.
+- Tagesansicht auf dem Computer breiter (ca. 1000 px) mit rund 20 % grösserer Schrift; Handy unverändert.
+
 ## Version 18 – 18.11.2026
 - Beim Öffnen springt der Wochenplan (Handy: Tagesansicht) zur laufenden Lektion, in der Pause zur nächsten; nach Schulschluss und am Wochenende kein Sprung. Ebenso bei «Heute»/«Diese Woche» und wenn man nach mindestens 30 Minuten in die App zurückkehrt.
 - Markierung «● Jetzt» (mit Rahmen) und «Als Nächstes» auf den Karten von heute, aktualisiert sich jede Minute.
