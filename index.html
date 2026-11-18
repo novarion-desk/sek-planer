@@ -3751,7 +3751,7 @@ HA: ...</pre>
         var autoScrollUntil = 0;
         function armAutoScrollToNow() {
             autoScrollUntil = Date.now() + 8000;
-            requestAnimationFrame(() => requestAnimationFrame(scrollToCurrentLesson));
+            setTimeout(scrollToCurrentLesson, 60);
         }
         ['wheel', 'touchmove', 'keydown'].forEach(ev => window.addEventListener(ev, () => { autoScrollUntil = 0; }, { passive: true }));
         var lastNowSig = "";
@@ -3810,7 +3810,7 @@ HA: ...</pre>
 
         function renderCalendar() {
             renderCalendarInner();
-            if (Date.now() < autoScrollUntil) requestAnimationFrame(scrollToCurrentLesson);
+            if (Date.now() < autoScrollUntil) setTimeout(scrollToCurrentLesson, 30);
         }
         function renderCalendarInner() {
             updateMobileDateLabel();
