@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 16 – 18.11.2026
+- Demo-Modus: «Als Gast ansehen (Demo)» im Anmeldefenster bzw. Adresse mit `?demo`. Neutraler Beispiel-Stundenplan mit ausgefüllten Lektionen (aktuelle und nächste Woche), Pendenzen, Tagesnotiz und Terminen. Alles anklickbar und änderbar, aber nichts wird gespeichert (keine Cloud, nichts auf dem Gerät) – nach Neuladen wieder wie am Anfang.
+- In der Demo: Hinweis, dass für die KI-Funktionen ein eigener API-Schlüssel nötig ist; Einstellungen, frühere Versionen und Schuljahrwechsel deaktiviert.
+
 ## Version 15.3 – 18.11.2026
 - Keine persönlichen Angaben mehr im Code: Das Konto wird über eine private Zuordnung im eigenen Firebase-Konto erkannt statt über die E-Mail-Adresse.
 - Persönlicher Standard-Stundenplan entfernt (neutraler Beispielplan), Beispiele in Eingabefeldern neutralisiert.

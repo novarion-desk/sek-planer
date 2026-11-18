@@ -97,7 +97,7 @@
         <div id="bootSplashMsg" class="text-xs text-slate-500">Wird geladen …</div>
     </div>
     <script>
-        try { if (localStorage.getItem('sekPlaner_wasSignedIn') === '1') { var bs = document.getElementById('bootSplash'); bs.classList.remove('hidden'); bs.classList.add('flex'); } } catch (e) {}
+        try { if (localStorage.getItem('sekPlaner_wasSignedIn') === '1' && !/[?&]demo\b/.test(location.search)) { var bs = document.getElementById('bootSplash'); bs.classList.remove('hidden'); bs.classList.add('flex'); } } catch (e) {}
     </script>
     <div id="authGateOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4 my-auto">
@@ -155,6 +155,12 @@
 
             <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5 text-[11px] font-semibold"></div>
             <div id="loginInfoBox" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2.5 text-[11px] font-semibold"></div>
+
+            <div class="flex items-center gap-2 text-[11px] font-bold text-slate-400"><span class="flex-1 h-px bg-slate-200"></span>oder<span class="flex-1 h-px bg-slate-200"></span></div>
+            <button type="button" onclick="startDemoFromLogin()" class="w-full py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors">
+                <i data-lucide="eye" class="w-4 h-4"></i> Als Gast ansehen (Demo)
+            </button>
+            <p class="text-[11px] text-slate-500 text-center -mt-1">Die Demo zeigt einen Beispiel-Stundenplan. Es wird nichts gespeichert.</p>
         </div>
     </div>
 
@@ -162,6 +168,17 @@
     <!-- APP-CONTAINER                                                         -->
     <!-- ===================================================================== -->
     <div id="protectedAppContainer" class="hidden flex-1 flex flex-col pb-16 md:pb-0">
+
+        <div id="demoBanner" class="hidden no-print bg-amber-50 border-b border-amber-200 px-3 sm:px-4 py-2 text-[11.5px] text-amber-950">
+            <div class="max-w-[1600px] mx-auto flex items-center justify-between gap-2">
+                <div class="flex items-start gap-2 min-w-0">
+                    <i data-lucide="eye" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                    <span class="hidden sm:inline"><strong>Demo-Modus:</strong> Beispieldaten, nichts wird gespeichert – beim Neuladen ist alles wieder wie am Anfang. Für die KI-Funktionen wird ein eigener API-Schlüssel (Gemini, Claude oder ChatGPT) benötigt.</span>
+                    <span class="sm:hidden"><strong>Demo</strong> – nichts wird gespeichert. KI braucht einen eigenen API-Schlüssel.</span>
+                </div>
+                <button type="button" onclick="exitDemoMode()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold shrink-0">Zum Login</button>
+            </div>
+        </div>
 
         <div id="printHeaderBanner" class="hidden border-b-2 border-slate-800 pb-2 mb-3">
             <div class="flex justify-between items-baseline">
@@ -1676,6 +1693,7 @@ HA: ...</pre>
 
         // options.extraParts: zusätzliche Gemini-Parts (z. B. Audio); options.geminiOnly: kein Claude-Fallback
         async function callGeminiUnified(userPrompt, conversationHistory = null, options = {}) {
+            if (isDemoMode) throw new Error(DEMO_AI_MSG);
             const key = (geminiApiKey || "").trim().replace(/^["']|["']$/g, '');
             const cKey = (claudeApiKey || "").trim().replace(/^["']|["']$/g, '');
             const oKey = (openaiApiKey || "").trim().replace(/^["']|["']$/g, '');
@@ -1800,6 +1818,7 @@ HA: ...</pre>
         }
 
         async function transcribeAudioWithAi(audioDataUrl) {
+            if (isDemoMode) throw new Error(DEMO_AI_MSG);
             const m = String(audioDataUrl || '').match(/^data:([^;,]+)(?:;[^,]*)?;base64,(.+)$/);
             if (!m) throw new Error("Audiodaten nicht lesbar.");
             const mime = m[1] === 'audio/x-m4a' ? 'audio/mp4' : m[1];
@@ -2018,6 +2037,7 @@ HA: ...</pre>
         }
 
         async function handleFirebaseLogout() {
+            if (isDemoMode) { exitDemoMode(); return; }
             if (!auth) return;
             await flushPendingSave();
             if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
@@ -2197,6 +2217,101 @@ HA: ...</pre>
             window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
         }
 
+        // =========================================================================
+        // DEMO-MODUS: Beispieldaten, keine Cloud, nichts auf dem Gerät gespeichert
+        // =========================================================================
+        var isDemoMode = false;
+        var DEMO_AI_MSG = 'In der Demo nicht verfügbar: Für die KI-Funktionen wird ein eigener API-Schlüssel (Gemini, Claude oder ChatGPT) benötigt.';
+        function startDemoFromLogin() {
+            location.href = location.pathname + '?demo';
+        }
+        function exitDemoMode() {
+            location.replace(location.pathname);
+        }
+        function buildDemoData() {
+            const S = [[0,'08:00','08:45','D','2a','A1'],[0,'08:50','09:35','E','2a','A1'],[0,'10:00','10:45','Mu','1b','B2'],[0,'10:50','11:35','D','3c','A1'],
+                       [1,'08:00','08:45','Geschichte','2a','A1'],[1,'08:50','09:35','D','2a','A1'],[1,'10:00','10:45','E','3c','A4'],[1,'10:50','11:35','BO','2a','A1'],
+                       [2,'08:00','08:45','Mu','2b','B2'],[2,'08:50','09:35','E','2a','A1'],[2,'10:00','10:45','D','3c','A1'],[2,'10:50','11:35','RKE','2b','C3'],
+                       [3,'08:00','08:45','D','2a','A1'],[3,'08:50','09:35','Geografie','2a','A1'],[3,'10:00','10:45','Mu','3c','B2'],[3,'10:50','11:35','E','2a','A1'],
+                       [4,'08:00','08:45','E','3c','A4'],[4,'08:50','09:35','D','2a','A1'],[4,'10:00','10:45','Geschichte','2a','A1'],[4,'10:50','11:35','Mu','1b','B2']];
+            const template = S.map((x, i) => ({ id: `demo-${i}`, day: x[0], start: x[1], end: x[2], subject: x[3], className: x[4], track: '', room: x[5] }));
+            const T = {
+                D: [['Satzglieder bestimmen', 'Grammatik', 'Rätsel an der Wandtafel', '<ul><li>Arbeitsblatt Satzglieder in Partnerarbeit</li><li>Besprechung im Plenum</li></ul>', 'Kurzer Rückblick: Welche Satzglieder kennt ihr?'],
+                    ['Kurzgeschichte lesen', 'Literatur', 'Vorwissen sammeln: Was macht eine Kurzgeschichte aus?', '<ul><li>Text still lesen</li><li>Fragen zum Text in Gruppen</li></ul>', 'Lieblingsstelle vorlesen'],
+                    ['Argumentieren', 'Erörterung', 'Streitfrage des Tages', '<ul><li>Pro- und Contra-Argumente sammeln</li><li>Einleitung schreiben</li></ul>', 'Zwei Einleitungen vergleichen']],
+                E: [['Past Simple vs. Present Perfect', 'Unit 4', 'Bildimpuls: What have you done today?', '<ul><li>Regeln gemeinsam erarbeiten</li><li>Übungen im Workbook S. 34</li></ul>', 'Exit ticket: 3 sentences'],
+                    ['Small Talk', 'Speaking', 'Warm-up game', '<ul><li>Dialoge in Partnerarbeit</li><li>Vorspielen</li></ul>', 'Feedback in der Klasse']],
+                MU: [['Rhythmus & Takt', 'Bodypercussion', 'Warm-up im Kreis', '<ul><li>Rhythmuspattern lernen</li><li>In Gruppen kombinieren</li></ul>', 'Vorführen'],
+                     ['Notenwerte', 'Musiktheorie', 'Klatschspiel', '<ul><li>Notentrainer am Tablet</li><li>Kurzer Test</li></ul>', 'Lied singen']],
+                GESCHICHTE: [['Reformation', 'Neuzeit', 'Bildquelle: Thesenanschlag', '<ul><li>Text lesen und Stichworte notieren</li><li>Zeitstrahl ergänzen</li></ul>', 'Drei wichtigste Punkte']],
+                GEOGRAFIE: [['Klimazonen der Erde', 'Klima', 'Karte deuten', '<ul><li>Klimadiagramme lesen</li><li>Zonen auf der Karte einfärben</li></ul>', 'Quiz']],
+                BO: [['Bewerbungsdossier', 'Berufswahl', 'Checkliste besprechen', '<ul><li>Lebenslauf am Computer</li><li>Gegenseitig korrigieren</li></ul>', 'Nächste Schritte notieren']],
+                RKE: [['Weltreligionen', 'Religionen', 'Bildimpuls: Feste', '<ul><li>Gruppenpuzzle</li><li>Plakat gestalten</li></ul>', 'Galerierundgang']]
+            };
+            const monday = getMonday(new Date());
+            const lessons = {};
+            const counters = {};
+            [0, 7].forEach(offset => {
+                template.forEach((s, i) => {
+                    const subj = s.subject.toUpperCase();
+                    const list = T[subj];
+                    if (!list) return;
+                    if ((i + offset) % 7 === 5) return;   // ein paar Lektionen bleiben leer
+                    const n = counters[subj] = (counters[subj] || 0) + 1;
+                    const x = list[(n - 1) % list.length];
+                    const d = new Date(monday); d.setDate(monday.getDate() + offset + s.day);
+                    const key = `${formatDateISO(d)}_${s.id}`;
+                    lessons[key] = { unit: x[1], title: x[0], einstieg: x[2], hauptteil: x[3], schluss: x[4], homework: n % 3 === 1 ? 'Arbeitsblatt fertig lösen' : '', homeworkDueToday: n % 4 === 2 ? 'Vokabeln S. 12' : '' };
+                    if (subj === 'D' && n === 2) lessons[key].todos = [{ id: Date.now() + n, text: 'Kopien für die nächste Lektion machen', done: false }];
+                    if (subj === 'GESCHICHTE' && n === 2) lessons[key].isExam = true;
+                });
+            });
+            const iso = (off) => { const d = new Date(monday); d.setDate(monday.getDate() + off); return formatDateISO(d); };
+            const today = formatDateISO(new Date());
+            const events = [...(DEFAULT_EVENTS_BY_YEAR[currentSchoolYear] || [])].map(e => ({ ...e }));
+            events.push({ id: 'demo-ev-1', type: 'special', targetClass: 'ALL', name: 'Elternabend', start: iso(3), end: iso(3) });
+            events.push({ id: 'demo-ev-2', type: 'holiday', targetClass: '2a', name: 'Exkursion Naturmuseum', start: iso(11), end: iso(11) });
+            return {
+                template, lessons, events,
+                dayNotes: { [iso(2)]: 'Fotograf ab 10 Uhr im Schulhaus' },
+                notes: [
+                    { id: 1, text: 'Elternbrief Exkursion verteilen', done: false, createdAt: formatDateCH(today), due: iso(4) },
+                    { id: 2, text: 'Noten Vortrag eintragen', done: false, createdAt: formatDateCH(today), due: today },
+                    { id: 3, text: 'Kopierpapier bestellen', done: false, createdAt: formatDateCH(today), due: iso(8) }
+                ]
+            };
+        }
+        function startDemoMode() {
+            isDemoMode = true;
+            // Nichts auf dem Gerät speichern (alle localStorage-/sessionStorage-Schreibvorgänge ignorieren)
+            try {
+                const proto = Object.getPrototypeOf(window.localStorage);
+                proto.setItem = function () {};
+                proto.removeItem = function () {};
+                proto.clear = function () {};
+            } catch (e) {}
+            const data = buildDemoData();
+            weeklyTemplate = data.template;
+            lessonsStore = data.lessons;
+            calendarEvents = data.events;
+            dayNotesStore = data.dayNotes;
+            standaloneNotesStore = data.notes;
+            geminiApiKey = ''; claudeApiKey = ''; openaiApiKey = '';
+            currentMonday = getMonday(new Date());
+            document.getElementById('authGateOverlay').classList.add('hidden');
+            document.getElementById('protectedAppContainer').classList.remove('hidden');
+            document.getElementById('demoBanner').classList.remove('hidden');
+            document.getElementById('schoolYearSelect').value = currentSchoolYear;
+            document.getElementById('holidayTitleSjLabel').innerText = `SJ ${currentSchoolYear}`;
+            document.getElementById('scheduleSjLabel').innerText = `SJ ${currentSchoolYear}`;
+            updateSyncIndicator('offline', 'Demo – nichts wird gespeichert');
+            requestAnimationFrame(syncHeaderHeightVar);
+            renderCalendar();
+            applyPhoneDefaultView();
+            updateOpenNotesBadge();
+            refreshIcons();
+        }
+
         // Welches Planer-Dokument gehört zu diesem Konto? Steht privat im Konto (users/<uid>.planerSyncKey),
         // sonst Standard «user-<uid>». So steht keine E-Mail-Adresse und kein persönlicher Schlüssel im Code.
         async function resolvePlanerSyncKey(user) {
@@ -2232,6 +2347,7 @@ HA: ...</pre>
 
         window.addEventListener('DOMContentLoaded', () => {
             refreshIcons();
+            if (/[?&]demo\b/.test(location.search)) { hideBootSplash(); startDemoMode(); return; }
             if (!auth) hideBootSplash();
             if (auth) {
                 // Falls Firebase nicht antwortet (z. B. kein Netz): Ladebildschirm nach 10 s wegnehmen
@@ -2339,6 +2455,7 @@ HA: ...</pre>
         }
 
         async function switchSchoolYear(newYear, keepWeek = false) {
+            if (isDemoMode) { document.getElementById('schoolYearSelect').value = currentSchoolYear; showToast('In der Demo gibt es nur das Beispiel-Schuljahr.'); return; }
             await flushPendingSave();   // ausstehende Änderungen noch ins ALTE Jahr schreiben
             currentSchoolYear = newYear;
             localStorage.setItem('sekPlaner_schoolYear', newYear);
@@ -2437,6 +2554,7 @@ HA: ...</pre>
         }
 
         function saveAllState() {
+            if (isDemoMode) { updateOpenNotesBadge(); return; }   // Demo: nichts speichern
             persistLocal();
             updateOpenNotesBadge();
             if (!cloudReady) return;
@@ -5911,6 +6029,7 @@ Text:\n${raw.slice(0, 12000)}`;
         // heruntergeladen – ohne Sicherung wird nichts importiert.
         let importBusy = false;
         async function backupBeforeImport() {
+            if (isDemoMode) return true;
             if (db && currentUser && privateSyncKey && navigator.onLine !== false) {
                 showToast('Sicherung vor dem Import wird erstellt…');
                 try {
@@ -6371,6 +6490,7 @@ Text:\n${raw.slice(0, 12000)}`;
             let items = [];
             btn.disabled = true; btn.innerText = 'Erkenne…';
             try {
+                if (isDemoMode) throw new Error(DEMO_AI_MSG + ' Die Liste wird zeilenweise übernommen.');
                 if (!hasAnyAiKey()) throw new Error('Kein KI-Schlüssel hinterlegt – Liste wird zeilenweise übernommen.');
                 const prompt = `Heute ist ${wd}, ${today}. Mache aus folgendem Text eine Liste einzelner Pendenzen (To-dos) für eine Lehrperson.
 Regeln: Jede eigenständige Aufgabe = ein Eintrag. Formuliere jede Aufgabe kurz und klar auf Hochdeutsch, aber ohne Inhalt wegzulassen (Namen, Klassen, Zahlen bleiben).
@@ -6485,6 +6605,7 @@ Memo: """${text}"""`;
         // ---------- Audio nur lokal (IndexedDB, pro Gerät) ----------
         let audioDbPromise = null;
         function audioDb() {
+            if (isDemoMode) return Promise.resolve(null);   // Demo: kein Speicher auf dem Gerät
             if (!audioDbPromise) {
                 audioDbPromise = new Promise((resolve) => {
                     try {
@@ -6645,7 +6766,7 @@ Memo: """${text}"""`;
                         // Zuverlässige Transkription per KI (ersetzt die Live-Erkennung des Browsers)
                         if (hasTranscriptionKey()) runClipTranscription(clip, targetClips);
                         else if (finalTranscriptText) createTodosFromMemo(clip);
-                        else showToast("Sprachmemo gespeichert. Für die automatische Transkription einen Gemini- oder ChatGPT-Schlüssel hinterlegen (Zahnrad).");
+                        else showToast(isDemoMode ? "Sprachmemo aufgenommen (Demo: wird nicht gespeichert). " + DEMO_AI_MSG : "Sprachmemo gespeichert. Für die automatische Transkription einen Gemini- oder ChatGPT-Schlüssel hinterlegen (Zahnrad).");
                     };
                     reader.readAsDataURL(blob);
                     stream.getTracks().forEach(t => t.stop());
@@ -6969,6 +7090,7 @@ Memo: """${text}"""`;
         }
         let versionsCtx = null;   // { key, slot, dayDate, entries: [{ source, at, reason, device, data, backupId }] }
         async function openVersionsModal() {
+            if (isDemoMode) { showToast('Frühere Versionen gibt es in der Demo nicht (nichts wird gespeichert).'); return; }
             if (!activeLessonKey || !activeSlotMeta) return;
             const key = activeLessonKey;
             versionsCtx = { key, slot: activeSlotMeta.slot, dayDate: activeSlotMeta.dayDate, entries: [], backups: [] };
@@ -7401,6 +7523,7 @@ ${listing}`;
         }
 
         function openSettingsModal() {
+            if (isDemoMode) { showToast(DEMO_AI_MSG + ' Einstellungen sind in der Demo deaktiviert.'); return; }
             document.getElementById('settingsGeminiKeyInput').value = geminiApiKey;
             document.getElementById('settingsClaudeKeyInput').value = claudeApiKey;
             document.getElementById('settingsOpenAiKeyInput').value = openaiApiKey;
@@ -7465,6 +7588,7 @@ ${listing}`;
 
         // Legt eine komprimierte Sicherung in Firestore ab und führt die Liste (Index) nach
         async function createCloudBackup(label = 'daily') {
+            if (isDemoMode) return false;
             if (!db || !currentUser || !privateSyncKey) return false;
             const docId = getActiveDocId();
             const now = new Date();
