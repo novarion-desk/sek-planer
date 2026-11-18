@@ -321,6 +321,13 @@
             <!-- Zeile 2 (nur Wochenplan): Navigation links · Ansicht in der Mitte -->
             <div id="planContextBar" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:px-6 py-1.5 border-t border-slate-100 bg-slate-50/60">
                 <div class="flex items-center gap-2 min-w-0">
+                    <div class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white border border-slate-200/70 min-w-0">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600 shrink-0"></i>
+                        <span id="weekTitleDisplay" class="text-xs md:text-sm font-extrabold text-slate-900 truncate">Woche</span>
+                        <span id="kwBadge" class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 shrink-0">KW</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
                     <button type="button" onclick="jumpToCurrentWeek()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs">
                         Heute
                     </button>
@@ -332,16 +339,11 @@
                             <i data-lucide="chevron-right" class="w-4 h-4"></i>
                         </button>
                     </div>
-                    <div class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white border border-slate-200/70 min-w-0">
-                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600 shrink-0"></i>
-                        <span id="weekTitleDisplay" class="text-xs md:text-sm font-extrabold text-slate-900 truncate">Woche</span>
-                        <span id="kwBadge" class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 shrink-0">KW</span>
-                    </div>
-                </div>
                 <div id="weekDayToggleWrap" class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-bold">
                     <button type="button" id="viewBtnWeek" onclick="userSetView('week')" class="px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs">Woche</button>
                     <button type="button" id="viewBtnDay" onclick="userSetView('day')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Tag</button>
                     <button type="button" id="viewBtnSubject" onclick="userSetView('subject')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Fach</button>
+                </div>
                 </div>
                 <div></div>
             </div>
@@ -3736,6 +3738,41 @@ HA: ...</pre>
                     animateDaySwitch(dir);
                 }
             }, { passive: true });
+        })();
+
+        // Mac-Trackpad: mit zwei Fingern seitlich wischen → Woche (bzw. Tag) wechseln. Finger nach rechts = weiter.
+        (function setupTrackpadSwipe() {
+            let acc = 0, locked = false, idleTimer = null;
+            function scrollableX(el) {
+                for (let n = el; n && n !== document.body; n = n.parentElement) {
+                    if (n.scrollWidth > n.clientWidth + 2) {
+                        const ox = getComputedStyle(n).overflowX;
+                        if (ox === 'auto' || ox === 'scroll') return true;
+                    }
+                }
+                return false;
+            }
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.5) return;   // nur klar seitliche Bewegungen
+                if (viewMode !== 'week' && viewMode !== 'day') return;
+                if (document.getElementById('planViewSection')?.classList.contains('hidden')) return;
+                if (document.body.classList.contains('overflow-hidden') || MODAL_IDS.some(id => !document.getElementById(id)?.classList.contains('hidden'))) return;
+                if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                if (scrollableX(e.target)) return;
+                e.preventDefault();   // verhindert «Seite zurück» des Browsers
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => { acc = 0; locked = false; }, 260);   // Geste (inkl. Nachschwung) beendet
+                if (locked) return;
+                acc += e.deltaX;
+                if (Math.abs(acc) < 60) return;
+                locked = true;
+                // Standard am Mac («natürliches Scrollen»): Finger nach rechts ergibt deltaX < 0
+                const inverted = e.webkitDirectionInvertedFromDevice !== false;
+                const fingersRight = inverted ? acc < 0 : acc > 0;
+                const dir = fingersRight ? 1 : -1;
+                changeWeek(dir);
+                if (typeof animateDaySwitch === 'function') animateDaySwitch(dir);
+            }, { passive: false });
         })();
 
         // Handy: beim Öffnen direkt die Tagesansicht mit heute (Wochenende → Montag der nächsten Woche)

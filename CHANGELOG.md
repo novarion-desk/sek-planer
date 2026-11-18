@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 20.1 – 18.11.2026
+- Zweite Zeile (Computer): «Heute» und ‹ › stehen jetzt in der Mitte direkt neben Woche/Tag/Fach, das Datum bleibt links.
+- Mac-Trackpad: mit zwei Fingern seitlich wischen wechselt in der Woche die Woche, in der Tagesansicht den Tag (Finger nach rechts = weiter, nach links = zurück). Ein Wisch = ein Schritt. Nicht in der Fach-Ansicht, in offenen Fenstern oder Textfeldern; «Seite zurück» des Browsers wird dabei unterdrückt.
+
 ## Version 20 – 18.11.2026
 - Rückgängig ↶ oben in der Kopfzeile (Handy: neben der Suche) und Cmd/Ctrl+Z ausserhalb von Textfeldern: macht die letzte Aktion rückgängig – mehrmals klicken geht weiter zurück. Hinweis zeigt, was rückgängig gemacht wurde, mit «Rückgängig» zum Wiederherstellen.
 - Änderungsverlauf 🕘: Liste aller Aktionen der letzten 30 Tage (Bearbeitet, Verschoben, Import, Mehrfachbearbeitung, Kalender, Pendenzen …) mit Uhrzeit, Gerät und betroffenen Lektionen (vorher → nachher). Jede Aktion einzeln rückgängig machbar, gespeichert in der Cloud (auch nach Neuladen und auf allen Geräten). Wurde eine betroffene Lektion danach nochmals geändert, fragt die App: nur die übrigen oder alle zurücksetzen.
