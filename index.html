@@ -334,6 +334,9 @@
             </div>
         </header>
 
+        <!-- Fach-Ansicht: Auswahlleiste bleibt beim Scrollen oben fixiert -->
+        <div id="subjectFilterBar" class="hidden no-print sticky z-20 bg-[#F4F6FA]/95 backdrop-blur-xs border-b border-slate-200 px-3 md:px-4 py-2" style="top: var(--stickyTop, 0px)"></div>
+
         <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS -->
         <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
             <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
@@ -762,7 +765,7 @@
 
     <!-- MODAL 1B: SCHNELL-NOTIZ -->
  <!-- FRÜHERE VERSIONEN EINER LEKTION -->
-    <div id="versionsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-2xs z-[60] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden" onclick="if(event.target===this)closeVersionsModal()">
+    <div id="versionsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-2xs z-[60] flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
         <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
             <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
                 <div>
@@ -776,7 +779,7 @@
     </div>
 
  <!-- SUCHE IN LEKTIONEN -->
-    <div id="substituteModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-start sm:items-center justify-center p-2 sm:p-6 hidden" onclick="if(event.target===this)closeSubstituteModal()">
+    <div id="substituteModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-start sm:items-center justify-center p-2 sm:p-6 hidden">
         <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
             <div class="p-4 border-b border-slate-100 flex flex-col gap-3">
                 <div class="flex items-center justify-between">
@@ -822,7 +825,7 @@
 
     <div id="substitutePrintArea" class="hidden"></div>
 
-    <div id="searchModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-start justify-center p-2 sm:p-6 hidden" onclick="if(event.target===this)closeSearchModal()">
+    <div id="searchModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-start justify-center p-2 sm:p-6 hidden">
         <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 text-xs">
             <div class="p-4 border-b border-slate-100 flex flex-col gap-2.5">
                 <div class="flex items-center justify-between">
@@ -1257,6 +1260,30 @@ HA: ...</pre>
         const MODAL_IDS = ['lessonModal', 'quickNoteModal', 'universalImportModal', 'scheduleEditorModal', 'settingsModal', 'searchModal', 'versionsModal', 'substituteModal'];
         let lockedScrollY = 0;
 
+        // Klick neben ein Fenster (auf den abgedunkelten Hintergrund) schliesst es.
+        // Lektion: Änderungen werden dabei gespeichert. Nur wenn der Klick auch dort BEGANN
+        // (sonst würde z. B. Text markieren und daneben loslassen das Fenster schliessen).
+        var backdropDownTarget = null;
+        document.addEventListener('pointerdown', (e) => { backdropDownTarget = e.target; }, true);
+        document.addEventListener('click', (e) => {
+            const id = e.target && e.target.id;
+            if (!id || !MODAL_IDS.includes(id) || backdropDownTarget !== e.target) return;
+            closeModalByBackdrop(id);
+        });
+        function closeModalByBackdrop(id) {
+            const closers = {
+                quickNoteModal: () => closeQuickNoteModal(), universalImportModal: () => closeUniversalImportModal(),
+                scheduleEditorModal: () => closeScheduleEditorModal(), settingsModal: () => closeSettingsModal(),
+                searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal(), substituteModal: () => closeSubstituteModal()
+            };
+            if (id === 'lessonModal') {
+                if (activeLessonKey && getLessonFormState() !== lessonModalInitialState) saveLessonModal();
+                else closeLessonModal(true);
+                return;
+            }
+            if (closers[id]) closers[id]();
+        }
+
         // iOS-sicherer Scroll-Lock: body fixieren statt nur overflow:hidden
         function updateBodyScrollLock() {
             const anyOpen = MODAL_IDS.some(id => {
@@ -1277,6 +1304,18 @@ HA: ...</pre>
         function syncHeaderHeightVar() {
             const hdr = document.querySelector('#protectedAppContainer header');
             if (hdr && hdr.offsetHeight > 0) document.documentElement.style.setProperty('--hdr', `${hdr.offsetHeight}px`);
+            document.documentElement.style.setProperty('--stickyTop', `${stickyTopHeight()}px`);
+        }
+        // Höhe der oben fixierten Kopfzeile (Handy: schmale Leiste, sonst Kopfzeile)
+        function stickyTopHeight() {
+            const mob = document.getElementById('mobileTopBar');
+            const hdr = document.querySelector('#protectedAppContainer header');
+            if (mob && mob.offsetHeight > 0) return mob.offsetHeight;
+            return hdr ? hdr.offsetHeight : 0;
+        }
+        function fixedTopOffset() {
+            const bar = document.getElementById('subjectFilterBar');
+            return stickyTopHeight() + (bar && !bar.classList.contains('hidden') ? bar.offsetHeight : 0);
         }
         window.addEventListener('resize', syncHeaderHeightVar);
 
@@ -2313,6 +2352,7 @@ HA: ...</pre>
             applyPhoneDefaultView();
             updateOpenNotesBadge();
             refreshIcons();
+            armAutoScrollToNow();
         }
 
         // Welches Planer-Dokument gehört zu diesem Konto? Steht privat im Konto (users/<uid>.planerSyncKey),
@@ -2382,6 +2422,7 @@ HA: ...</pre>
                         applyPhoneDefaultView();
                         updateOpenNotesBadge();
                         refreshIcons();
+                        armAutoScrollToNow();
                     } else {
                         document.getElementById('protectedAppContainer').classList.add('hidden');
                         document.getElementById('authGateOverlay').classList.remove('hidden');
@@ -3250,6 +3291,7 @@ HA: ...</pre>
             const wdWrap = document.getElementById('weekDayToggleWrap');
 
             [wrapper, notesSec, holSec].forEach(s => s.classList.add('hidden'));
+            document.getElementById('subjectFilterBar')?.classList.toggle('hidden', !(tab === 'plan' && viewMode === 'subject'));
             [['plan', 'mobTabPlan'], ['notes', 'mobTabNotes'], ['holidays', 'mobTabHolidays']].forEach(([t, id]) => {
                 const el = document.getElementById(id);
                 if (el) el.className = `${id === 'mobTabNotes' ? 'relative ' : ''}flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold ${t === tab ? 'text-indigo-700' : 'text-slate-500'}`;
@@ -3370,7 +3412,7 @@ HA: ...</pre>
             await jumpToCurrentWeek();
             const wd = (new Date().getDay() + 6) % 7;
             if (wd > 4) { currentMonday.setDate(currentMonday.getDate() + 7); selectedDayIdx = 0; renderCalendar(); }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!scrollToCurrentLesson()) window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         function toggleMobileMenu(e) {
             if (e) e.stopPropagation();
@@ -3402,6 +3444,7 @@ HA: ...</pre>
             selectedDayIdx = Math.min((new Date().getDay() + 6) % 7, 4);
             renderCalendar();
             if (viewMode === 'subject') scrollSubjectViewToCurrent();
+            else if (!scrollToCurrentLesson()) window.scrollTo({ top: 0 });
         }
 
         // Tagesansicht: per Wischen nach links/rechts den Tag wechseln (Handy/Tablet)
@@ -3474,6 +3517,9 @@ HA: ...</pre>
             const sv = document.getElementById('subjectViewContainer');
             grid.classList.toggle('hidden', mode === 'subject');
             sv.classList.toggle('hidden', mode !== 'subject');
+            const planVisible = !document.getElementById('planWithSidebarWrapper').classList.contains('hidden');
+            document.getElementById('subjectFilterBar').classList.toggle('hidden', !(mode === 'subject' && planVisible));
+            syncHeaderHeightVar();
             if (mode === 'week') grid.className = "grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]";
             else if (mode === 'day') grid.className = "grid grid-cols-1 max-w-2xl mx-auto gap-4";
             renderCalendar();
@@ -3636,8 +3682,8 @@ HA: ...</pre>
                     </section>`;
             }).join('');
 
-            box.innerHTML = `
-                <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-2xs text-xs">
+            document.getElementById('subjectFilterBar').innerHTML = `
+                <div class="max-w-[1600px] mx-auto flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-2xs text-xs">
                     <span class="w-3 h-3 rounded-full ${style.headerBg}"></span>
                     <label for="subjectViewSelect" class="font-bold text-slate-700">Fach</label>
                     <select id="subjectViewSelect" onchange="setSubjectViewSubject(this.value)" class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-extrabold text-slate-900">
@@ -3647,7 +3693,8 @@ HA: ...</pre>
                     ${st.classes.map(c => `<label class="flex items-center gap-1.5 px-2 py-1 rounded-lg border cursor-pointer ${st.selected.includes(c) ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-white border-slate-200 text-slate-500'} font-bold">
                         <input type="checkbox" ${st.selected.includes(c) ? 'checked' : ''} onchange="toggleSubjectViewClass(${jsArg(c)}, this.checked)" class="rounded text-indigo-600"> ${escapeHtml(c)}</label>`).join('')}
                     <button type="button" onclick="scrollSubjectViewToCurrent()" class="ml-auto px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-700">Zu heute</button>
-                </div>
+                </div>`;
+            box.innerHTML = `
                 ${st.selected.length === 0 ? '<div class="py-10 text-center text-xs text-slate-400 italic">Bitte mindestens eine Klasse auswählen.</div>'
                     : `<div class="flex flex-col gap-1.5" style="min-width: calc(${cols} * min(250px, 46vw))">${bands}</div>`}`;
         }
@@ -3656,19 +3703,78 @@ HA: ...</pre>
             if (!secs.length) return;
             const thisMonday = formatDateISO(getMonday(new Date()));
             const target = secs.find(s => s.dataset.monday >= thisMonday) || secs[secs.length - 1];
-            const topBar = window.innerWidth < 768 ? (document.getElementById('mobileTopBar')?.offsetHeight || 0) : (document.querySelector('#protectedAppContainer header')?.offsetHeight || 0);
+            const topBar = fixedTopOffset();
             window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - topBar - 8), behavior: 'auto' });
         }
         function scrollSubjectViewByWeek(delta) {
             const secs = [...document.querySelectorAll('#subjectViewContainer section[data-monday]')];
             if (!secs.length) return;
-            const topBar = window.innerWidth < 768 ? (document.getElementById('mobileTopBar')?.offsetHeight || 0) : (document.querySelector('#protectedAppContainer header')?.offsetHeight || 0);
+            const topBar = fixedTopOffset();
             const pos = secs.map(s => s.getBoundingClientRect().top - topBar - 10);
             let idx = pos.findIndex(p => p >= -2);
             if (idx < 0) idx = secs.length - 1;
             const t = secs[Math.min(secs.length - 1, Math.max(0, idx + delta))];
             window.scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + window.scrollY - topBar - 8), behavior: 'smooth' });
         }
+
+        // ---------- Aktuelle Lektion: Markierung «Jetzt» / «Als Nächstes» und Sprung dorthin ----------
+        function nowHM() {
+            const d = new Date();
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+        // 'current' = läuft gerade, 'next' = nächste Lektion heute (nach der laufenden bzw. in der Pause / vor Schulbeginn)
+        function lessonNowState(slot, todaysSlots) {
+            const now = nowHM();
+            const sorted = [...todaysSlots].sort((a, b) => a.start.localeCompare(b.start));
+            if (slot.start <= now && now < slot.end) return 'current';
+            const next = sorted.find(s => s.start > now);
+            return next && next.id === slot.id ? 'next' : '';
+        }
+        function nowSignature() {
+            const iso = formatDateISO(new Date());
+            const wd = (new Date().getDay() + 6) % 7;
+            if (wd > 4) return iso;
+            const slots = weeklyTemplate.filter(s => Number(s.day) === wd && !isHolidayDate(iso, s.className));
+            return iso + '|' + slots.map(s => `${s.id}:${lessonNowState(s, slots)}`).join(',');
+        }
+        // Scrollt zur laufenden bzw. nächsten Lektion von heute. Nach Schulschluss / am Wochenende: kein Sprung.
+        function scrollToCurrentLesson() {
+            if (viewMode === 'subject') return false;
+            if (document.getElementById('planWithSidebarWrapper').classList.contains('hidden')) return false;
+            const el = document.querySelector('#weekGridContainer [data-now="current"]') || document.querySelector('#weekGridContainer [data-now="next"]');
+            if (!el) return false;
+            const top = el.getBoundingClientRect().top + window.scrollY - fixedTopOffset() - 12;
+            window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+            return true;
+        }
+        // Beim Öffnen: Sprung, solange Daten noch nachladen und der Benutzer nicht selbst scrollt
+        var autoScrollUntil = 0;
+        function armAutoScrollToNow() {
+            autoScrollUntil = Date.now() + 8000;
+            requestAnimationFrame(() => requestAnimationFrame(scrollToCurrentLesson));
+        }
+        ['wheel', 'touchmove', 'keydown'].forEach(ev => window.addEventListener(ev, () => { autoScrollUntil = 0; }, { passive: true }));
+        var lastNowSig = "";
+        setInterval(() => {
+            if (document.hidden || weeklyTemplate.length === 0) return;
+            const sig = nowSignature();
+            if (sig === lastNowSig) return;
+            lastNowSig = sig;
+            const anyModal = MODAL_IDS.some(id => !document.getElementById(id)?.classList.contains('hidden'));
+            if (!anyModal && viewMode !== 'subject') { const y = window.scrollY; renderCalendar(); window.scrollTo(0, y); }
+        }, 30000);
+        // Zurück in die App nach mindestens 30 Minuten: wieder zu heute / zur aktuellen Lektion
+        var hiddenSince = 0;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { hiddenSince = Date.now(); return; }
+            if (hiddenSince && Date.now() - hiddenSince >= 30 * 60 * 1000 && (currentUser || isDemoMode)) {
+                const anyModal = MODAL_IDS.some(id => !document.getElementById(id)?.classList.contains('hidden'));
+                if (!anyModal && !document.getElementById('planWithSidebarWrapper').classList.contains('hidden')) {
+                    jumpToCurrentWeek().then(() => armAutoScrollToNow());
+                }
+            }
+            hiddenSince = 0;
+        });
 
         function saveDayNote(isoDate, val) {
             dayNotesStore[isoDate] = val;
@@ -3703,6 +3809,10 @@ HA: ...</pre>
         }
 
         function renderCalendar() {
+            renderCalendarInner();
+            if (Date.now() < autoScrollUntil) requestAnimationFrame(scrollToCurrentLesson);
+        }
+        function renderCalendarInner() {
             updateMobileDateLabel();
             if (viewMode === 'subject') { renderSubjectView(); return; }
             const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -3782,9 +3892,11 @@ HA: ...</pre>
                     const activeTrack = getEffectiveTrack(data, slot);
                     const slotBlockedByHoliday = isHolidayDate(iso, slot.className);
 
+                    const nowState = iso === todayISO && !slotBlockedByHoliday ? lessonNowState(slot, daySlots.filter(sl => !isHolidayDate(iso, sl.className))) : '';
                     const card = document.createElement('div');
                     card.onclick = () => openLessonModal(key, slot, dayDate);
-                    card.className = `group bg-white border ${data.isExam ? 'border-rose-500 ring-2 ring-rose-200' : style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${slotBlockedByHoliday ? 'opacity-65' : ''}`;
+                    if (nowState) card.dataset.now = nowState;
+                    card.className = `group bg-white border ${data.isExam ? 'border-rose-500 ring-2 ring-rose-200' : nowState === 'current' ? 'border-indigo-500 ring-2 ring-indigo-300' : style.border} hover:border-indigo-400 rounded-xl overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col ${slotBlockedByHoliday ? 'opacity-65' : ''}`;
 
                     card.innerHTML = `
                         <div class="${style.headerBg} px-3 py-2 text-white flex items-start justify-between gap-2">
@@ -3792,7 +3904,7 @@ HA: ...</pre>
                                 <div class="text-[11px] font-extrabold tracking-wide uppercase leading-tight">
                                     ${escapeHtml(style.label)} • ${escapeHtml(slot.className)}${activeTrack ? ` • <span class="underline decoration-white/70">${escapeHtml(activeTrack)}</span>` : ''}
                                 </div>
-                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}${overLunch ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/25 font-extrabold">🍽️ über Mittag</span>` : ''}</div>
+                                <div class="text-[10px] opacity-90 font-medium mt-0.5">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)} ${slot.room ? `(${escapeHtml(slot.room)})` : ''}${overLunch ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/25 font-extrabold">🍽️ über Mittag</span>` : ''}${nowState === 'current' ? ` <span class="ml-1 px-1.5 py-px rounded bg-white text-slate-900 font-extrabold">● Jetzt</span>` : nowState === 'next' ? ` <span class="ml-1 px-1.5 py-px rounded bg-white/85 text-slate-800 font-extrabold">Als Nächstes</span>` : ''}</div>
                             </div>
                             <div class="flex items-center gap-1 shrink-0 no-print">
                                 <button type="button" onclick="event.stopPropagation(); openQuickNoteModal(${jsArg(key)}, ${jsArg(`${style.label} ${slot.className}`)})" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">

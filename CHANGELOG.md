@@ -1,5 +1,11 @@
 # Änderungen
 
+## Version 18 – 18.11.2026
+- Beim Öffnen springt der Wochenplan (Handy: Tagesansicht) zur laufenden Lektion, in der Pause zur nächsten; nach Schulschluss und am Wochenende kein Sprung. Ebenso bei «Heute»/«Diese Woche» und wenn man nach mindestens 30 Minuten in die App zurückkehrt.
+- Markierung «● Jetzt» (mit Rahmen) und «Als Nächstes» auf den Karten von heute, aktualisiert sich jede Minute.
+- Fach-Ansicht: Auswahlleiste (Fach + Klassen-Häkchen) bleibt beim Scrollen oben fixiert.
+- Klick neben ein Fenster schliesst es; bei der Lektion werden Änderungen dabei gespeichert. Markieren und daneben loslassen schliesst nicht.
+
 ## Version 17 – 18.11.2026
 - Neue Ansicht «Fach» neben Woche/Tag (Handy: Menü ☰): alle Lektionen eines Fachs im ganzen Schuljahr, chronologisch von oben nach unten, gruppiert nach Kalenderwoche.
 - Klassen per Häkchen wählbar; mehrere Klassen stehen nebeneinander zum Vergleichen. Auswahl bleibt gespeichert.
