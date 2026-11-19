@@ -1822,7 +1822,9 @@ HA: ...</pre>
                             let obj;
                             try { obj = JSON.parse(payload); } catch (e) { continue; }
                             if (obj.error) throw new Error(obj.error.message || 'Fehler im Antwort-Stream');
-                            const piece = obj.choices?.[0]?.delta?.content;
+                            // Mistral liefert den Inhalt teils als Liste von Teilen (z. B. «thinking» + «text»)
+                            const raw = obj.choices?.[0]?.delta?.content;
+                            const piece = Array.isArray(raw) ? raw.filter(p => p && p.type === 'text').map(p => p.text || '').join('') : (typeof raw === 'string' ? raw : '');
                             if (piece) {
                                 if (!text) clearTimeout(firstTimer);
                                 text += piece;
@@ -1997,16 +1999,19 @@ HA: ...</pre>
             const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
             const ext = /mp4|m4a|aac/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : /mpeg|mp3/.test(mime) ? 'mp3' : /wav/.test(mime) ? 'wav' : 'webm';
-            const fd = new FormData();
-            fd.append('file', new Blob([bytes], { type: mime }), `memo.${ext}`);
-            fd.append('model', 'voxtral-mini-latest');
-            fd.append('language', 'de');
-            const res = await fetchWithTimeout('https://api.mistral.ai/v1/audio/transcriptions', { method: 'POST', headers: { 'Authorization': `Bearer ${mKey}` }, body: fd }, 90000);
-            if (!res.ok) {
+            let lastErr = null;
+            for (const model of ['voxtral-mini-transcribe-3', 'voxtral-mini-latest']) {
+                const fd = new FormData();
+                fd.append('file', new Blob([bytes], { type: mime }), `memo.${ext}`);
+                fd.append('model', model);
+                fd.append('language', 'de');
+                const res = await fetchWithTimeout('https://api.mistral.ai/v1/audio/transcriptions', { method: 'POST', headers: { 'Authorization': `Bearer ${mKey}` }, body: fd }, 90000);
+                if (res.ok) return String((await res.json()).text || '').trim();
                 const data = await res.json().catch(() => ({}));
-                throw new Error(`Mistral ${res.status}${data.message ? ': ' + data.message : ''}`);
+                lastErr = new Error(`Mistral ${res.status}${data.message ? ': ' + String(data.message).slice(0, 120) : ''}`);
+                if (res.status === 401 || res.status === 403 || res.status === 429) break;
             }
-            return String((await res.json()).text || '').trim();
+            throw lastErr;
         }
 
         // ChatGPT (OpenAI) als Ersatz – eigener Transkriptions-Endpunkt

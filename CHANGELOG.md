@@ -6,6 +6,7 @@
 - Neu: Mistral als vierte KI (Chat und Sprachmemos).
 - Sprachmemos folgen derselben Reihenfolge: Gemini, ChatGPT oder Mistral (Claude kann keine Tonaufnahmen).
 - Schlüssel und Reihenfolge gelten gemeinsam mit dem Zeitstrahl.
+- Korrektur: Antworten von Mistral (mit «Denk»-Teil) werden richtig gelesen; Sprachmemos über Mistral nutzen zuerst das neue Transkriptionsmodell (voxtral-mini-transcribe-3).
 
 ## Version 20.1 – 18.11.2026
 - Zweite Zeile (Computer): «Heute» und ‹ › stehen jetzt in der Mitte direkt neben Woche/Tag/Fach, das Datum bleibt links.
