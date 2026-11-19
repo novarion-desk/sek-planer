@@ -41,6 +41,11 @@
         /* Tagesansicht: horizontales Wischen gehört der App (kein «Seite zurück» des Browsers) */
         html, body { overscroll-behavior-x: none; }
         #planViewSection.day-swipe-mode { touch-action: pan-y; }
+        /* Tablet/Touch: Wochenansicht an die Bildschirmbreite anpassen (kein seitliches Scrollen, Wischen wechselt die Woche) */
+        @media (pointer: coarse) and (min-width: 768px) {
+            #weekGridContainer.week-fit { min-width: 0 !important; }
+            #weekGridContainer.week-fit > * { min-width: 0; }
+        }
         @media (min-width: 640px) {
             #aiRightSidebar { top: var(--hdr, 57px); height: calc(100dvh - var(--hdr, 57px)); }
         }
@@ -355,7 +360,7 @@
         <!-- HAUPTBEREICH: WOCHENPLAN LINKS + AUSKLAPPBARE KI-SIDEBAR RECHTS -->
         <div id="planWithSidebarWrapper" class="flex-1 flex w-full max-w-[1920px] mx-auto overflow-hidden">
             <main id="planViewSection" class="flex-1 p-3 md:p-4 overflow-x-auto custom-scroll">
-                <div id="weekGridContainer" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]"></div>
+                <div id="weekGridContainer" class="week-fit grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]"></div>
                 <div id="subjectViewContainer" class="hidden"></div>
             </main>
 
@@ -1246,6 +1251,16 @@ HA: ...</pre>
             </div>
 
             <div class="flex-1 min-h-0 p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4">
+                <!-- WISCHRICHTUNG -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-1.5">
+                    <label for="swipeDirSelect" class="font-extrabold text-slate-900">Wischen (Tablet, Handy, Trackpad mit zwei Fingern)</label>
+                    <select id="swipeDirSelect" onchange="setSwipeDirection(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900">
+                        <option value="right-next">Nach rechts wischen = nächste Woche / nächster Tag</option>
+                        <option value="left-next">Nach links wischen = nächste Woche / nächster Tag</option>
+                    </select>
+                    <span class="text-[10.5px] text-slate-500">Gilt in der Wochen- und Tagesansicht, wird auf diesem Gerät gespeichert.</span>
+                </div>
+
                 <!-- CLOUD DIAGNOSE & WIEDERHERSTELLUNG -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-2.5">
                     <div class="flex items-center justify-between">
@@ -3900,17 +3915,39 @@ HA: ...</pre>
             }));
         }
 
-        (function setupDaySwipe() {
+        // Wischrichtung (pro Gerät): Standard «nach rechts wischen = weiter»
+        function swipeRightIsNext() {
+            try { return localStorage.getItem('sekPlaner_swipeDir') !== 'left-next'; } catch (e) { return true; }
+        }
+        function setSwipeDirection(v) {
+            try { localStorage.setItem('sekPlaner_swipeDir', v === 'left-next' ? 'left-next' : 'right-next'); } catch (e) {}
+            showToast(v === 'left-next' ? 'Nach links wischen = weiter' : 'Nach rechts wischen = weiter');
+        }
+        // fingersRight: Bewegung der Finger nach rechts? → Woche/Tag wechseln, Inhalt gleitet in Fingerrichtung herein
+        function swipeStep(fingersRight) {
+            const dir = (fingersRight === swipeRightIsNext()) ? 1 : -1;
+            changeWeek(dir);
+            animateDaySwitch(fingersRight ? -1 : 1);
+        }
+        function swipeAllowed() {
+            if (viewMode !== 'week' && viewMode !== 'day') return false;
+            if (document.getElementById('planViewSection')?.classList.contains('hidden')) return false;
+            if (document.body.classList.contains('overflow-hidden') || MODAL_IDS.some(id => !document.getElementById(id)?.classList.contains('hidden'))) return false;
+            return true;
+        }
+        // Touch (Tablet/Handy): Woche bzw. Tag per Wischen wechseln
+        (function setupTouchSwipe() {
             const area = document.getElementById('planViewSection');
             if (!area) return;
-            let startX = 0, startY = 0, startT = 0, tracking = false;
+            let startX = 0, startY = 0, startT = 0, tracking = false, startTarget = null;
             area.addEventListener('touchstart', (e) => {
                 tracking = false;
-                if (viewMode !== 'day' || e.touches.length !== 1) return;
+                if (!swipeAllowed() || e.touches.length !== 1) return;
                 if (e.target.closest('input, textarea, select, button, [contenteditable="true"]')) return;
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
                 startT = Date.now();
+                startTarget = e.target;
                 tracking = true;
             }, { passive: true });
             area.addEventListener('touchend', (e) => {
@@ -3921,45 +3958,52 @@ HA: ...</pre>
                 const dy = t.clientY - startY;
                 // Nur klare horizontale Wischbewegungen (kein Scrollen nach oben/unten)
                 if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - startT < 900) {
-                    const dir = dx < 0 ? 1 : -1;   // nach links wischen = nächster Tag
-                    changeWeek(dir);
-                    animateDaySwitch(dir);
+                    // Inhalt, der selbst seitlich scrollt (z. B. Tabelle), hat Vorrang
+                    for (let n = startTarget; n && n !== area; n = n.parentElement) {
+                        if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return;
+                    }
+                    swipeStep(dx > 0);
                 }
             }, { passive: true });
         })();
 
-        // Mac-Trackpad: mit zwei Fingern seitlich wischen → Woche (bzw. Tag) wechseln. Finger nach rechts = weiter.
+        // Mac-Trackpad: zwei Finger seitlich → genau ein Wechsel pro Geste (Nachschwingen wird ignoriert)
         (function setupTrackpadSwipe() {
-            let acc = 0, locked = false, idleTimer = null;
-            function scrollableX(el) {
-                for (let n = el; n && n !== document.body; n = n.parentElement) {
-                    if (n.scrollWidth > n.clientWidth + 2) {
-                        const ox = getComputedStyle(n).overflowX;
-                        if (ox === 'auto' || ox === 'scroll') return true;
+            let accX = 0, accY = 0, locked = false, lastT = 0, lockT = 0, minAbs = Infinity;
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || !swipeAllowed()) return;
+                const now = performance.now();
+                // Pause > 200 ms = neue Geste
+                if (now - lastT > 200) { accX = 0; accY = 0; locked = false; minAbs = Infinity; }
+                lastT = now;
+                const ax = Math.abs(e.deltaX), ay = Math.abs(e.deltaY);
+                if (locked) {
+                    // Nachschwingen wird schwächer; wird es plötzlich wieder deutlich stärker, beginnt eine neue Geste
+                    minAbs = Math.min(minAbs, ax);
+                    if (now - lockT > 220 && ax > 10 && ax > minAbs * 3) { locked = false; accX = 0; accY = 0; }
+                    else { if (ax > ay) e.preventDefault(); return; }
+                }
+                accX += e.deltaX;
+                accY += e.deltaY;
+                if (Math.abs(accX) <= Math.abs(accY) * 1.5) return;   // überwiegend senkrecht → normales Scrollen
+                if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                // Finger nach rechts: bei «natürlichem Scrollen» (Standard am Mac) ist deltaX negativ
+                const inverted = e.webkitDirectionInvertedFromDevice !== false;
+                const fingersRight = inverted ? accX < 0 : accX > 0;
+                const target = e.target.closest ? e.target : null;
+                if (target && target.closest('#planViewSection') !== null) {
+                    const sec = document.getElementById('planViewSection');
+                    // nur innere seitlich scrollbare Elemente (nicht der Wochenplan selbst) haben Vorrang
+                    for (let n = target; n && n !== sec; n = n.parentElement) {
+                        if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return;
                     }
                 }
-                return false;
-            }
-            window.addEventListener('wheel', (e) => {
-                if (e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.5) return;   // nur klar seitliche Bewegungen
-                if (viewMode !== 'week' && viewMode !== 'day') return;
-                if (document.getElementById('planViewSection')?.classList.contains('hidden')) return;
-                if (document.body.classList.contains('overflow-hidden') || MODAL_IDS.some(id => !document.getElementById(id)?.classList.contains('hidden'))) return;
-                if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
-                if (scrollableX(e.target)) return;
                 e.preventDefault();   // verhindert «Seite zurück» des Browsers
-                clearTimeout(idleTimer);
-                idleTimer = setTimeout(() => { acc = 0; locked = false; }, 260);   // Geste (inkl. Nachschwung) beendet
-                if (locked) return;
-                acc += e.deltaX;
-                if (Math.abs(acc) < 60) return;
+                if (Math.abs(accX) < 90) return;
                 locked = true;
-                // Standard am Mac («natürliches Scrollen»): Finger nach rechts ergibt deltaX < 0
-                const inverted = e.webkitDirectionInvertedFromDevice !== false;
-                const fingersRight = inverted ? acc < 0 : acc > 0;
-                const dir = fingersRight ? 1 : -1;
-                changeWeek(dir);
-                if (typeof animateDaySwitch === 'function') animateDaySwitch(dir);
+                lockT = now;
+                minAbs = ax;
+                swipeStep(fingersRight);
             }, { passive: false });
         })();
 
@@ -3981,7 +4025,7 @@ HA: ...</pre>
 
         function setViewMode(mode) {
             viewMode = mode;
-            document.getElementById('planViewSection')?.classList.toggle('day-swipe-mode', mode === 'day');
+            document.getElementById('planViewSection')?.classList.toggle('day-swipe-mode', mode === 'day' || mode === 'week');
             const grid = document.getElementById('weekGridContainer');
             const on = "px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-2xs";
             const off = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
@@ -3994,7 +4038,7 @@ HA: ...</pre>
             const planVisible = !document.getElementById('planWithSidebarWrapper').classList.contains('hidden');
             document.getElementById('subjectFilterBar').classList.toggle('hidden', !(mode === 'subject' && planVisible));
             syncHeaderHeightVar();
-            if (mode === 'week') grid.className = "grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]";
+            if (mode === 'week') grid.className = "week-fit grid grid-cols-1 md:grid-cols-5 gap-3 md:min-w-[1080px]";
             else if (mode === 'day') grid.className = "day-large grid grid-cols-1 max-w-2xl mx-auto gap-4";
             renderCalendar();
             if (mode === 'subject') scrollSubjectViewToCurrent();
@@ -9060,6 +9104,7 @@ ${listing}`;
 
         function openSettingsModal() {
             if (isDemoMode) { showToast(DEMO_AI_MSG + ' Einstellungen sind in der Demo deaktiviert.'); return; }
+            document.getElementById('swipeDirSelect').value = swipeRightIsNext() ? 'right-next' : 'left-next';
             document.getElementById('aiKeyInput').value = '';
             document.getElementById('aiKeyProvider').value = '';
             updateAiKeyDetect();

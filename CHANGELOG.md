@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 20.3 – 19.11.2026
+- Tablet: Wochenansicht passt sich der Bildschirmbreite an (kein seitliches Scrollen mehr) und lässt sich wie die Tagesansicht per Wischen wechseln.
+- Wischrichtung: nach rechts wischen = nächste Woche / nächster Tag (Tablet, Handy und Mac-Trackpad gleich). In den Einstellungen (Zahnrad) pro Gerät umstellbar.
+- Mac-Trackpad: genau ein Wechsel pro Geste, auch mehrere Gesten kurz hintereinander funktionieren (vorher reagierte oft nur die erste). Senkrechtes Scrollen löst keinen Wechsel mehr aus.
+
 ## Version 20.2 – 19.11.2026
 - KI-Schlüssel: ein einziges Feld für Gemini, Claude, ChatGPT und Mistral. Der Anbieter wird erkannt (auch neue Gemini-Schlüssel mit «AQ.»), der Schlüssel vor dem Speichern getestet und sofort gespeichert. Unbekanntes Format: alle Anbieter werden durchprobiert.
 - Liste der hinterlegten Schlüssel mit Reihenfolge ↑↓ (oberste KI zuerst, die anderen springen automatisch ein), «Testen» und «Entfernen» pro Schlüssel, «Alle testen».
