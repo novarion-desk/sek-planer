@@ -15,6 +15,7 @@ Live-App: https://novarion-desk.github.io/sek-planer/
 
 Jede Version ist sofort direkt aufrufbar (gleiche Daten, gleiches Konto):
 
+- Version 20.2: https://novarion-desk.github.io/sek-planer/versions/v20.2/
 - Version 20.1: https://novarion-desk.github.io/sek-planer/versions/v20.1/
 - Version 20: https://novarion-desk.github.io/sek-planer/versions/v20/
 - Version 18.2: https://novarion-desk.github.io/sek-planer/versions/v18.2/

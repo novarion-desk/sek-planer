@@ -1,5 +1,12 @@
 # Änderungen
 
+## Version 20.2 – 19.11.2026
+- KI-Schlüssel: ein einziges Feld für Gemini, Claude, ChatGPT und Mistral. Der Anbieter wird erkannt (auch neue Gemini-Schlüssel mit «AQ.»), der Schlüssel vor dem Speichern getestet und sofort gespeichert. Unbekanntes Format: alle Anbieter werden durchprobiert.
+- Liste der hinterlegten Schlüssel mit Reihenfolge ↑↓ (oberste KI zuerst, die anderen springen automatisch ein), «Testen» und «Entfernen» pro Schlüssel, «Alle testen».
+- Neu: Mistral als vierte KI (Chat und Sprachmemos).
+- Sprachmemos folgen derselben Reihenfolge: Gemini, ChatGPT oder Mistral (Claude kann keine Tonaufnahmen).
+- Schlüssel und Reihenfolge gelten gemeinsam mit dem Zeitstrahl.
+
 ## Version 20.1 – 18.11.2026
 - Zweite Zeile (Computer): «Heute» und ‹ › stehen jetzt in der Mitte direkt neben Woche/Tag/Fach, das Datum bleibt links.
 - Mac-Trackpad: mit zwei Fingern seitlich wischen wechselt in der Woche die Woche, in der Tagesansicht den Tag (Finger nach rechts = weiter, nach links = zurück). Ein Wisch = ein Schritt. Nicht in der Fach-Ansicht, in offenen Fenstern oder Textfeldern; «Seite zurück» des Browsers wird dabei unterdrückt.
