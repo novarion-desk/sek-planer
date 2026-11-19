@@ -708,6 +708,8 @@
                             <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncContent" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Einstieg / Hauptteil / Schluss</label>
                             <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncHw" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Hausaufgaben (inkl. Verknüpfung)</label>
                             <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncExam" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Prüfungs-Markierung</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncTop" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> HA auf heute (oben)</label>
+                            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="parIncMisc" checked onchange="updateParallelPreview()" class="rounded text-purple-600"> Gefäss, Pendenzen &amp; Sprachmemo-Text</label>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
@@ -4777,6 +4779,15 @@ HA: ...</pre>
                 const hw = document.getElementById('editLessonHomework').value.trim();
                 if (hw) parts.push(`HA: ${hw} (wird an nächste Lektion verknüpft)`);
             }
+            if (document.getElementById('parIncTop').checked) {
+                const top = document.getElementById('editLessonHomeworkToday').value.trim();
+                if (top) parts.push(`HA auf heute: ${top}`);
+            }
+            if (document.getElementById('parIncMisc').checked) {
+                const nT = (tempLessonTodos || []).length, nA = (tempAudioClips || []).filter(c => (c.transcript || '').trim()).length;
+                if (nT) parts.push(`${nT} Pendenz${nT > 1 ? 'en' : ''}`);
+                if (nA) parts.push(`${nA} Sprachmemo-Text${nA > 1 ? 'e' : ''} (ohne Aufnahme)`);
+            }
 
             const incomingText = parts.join('\n') || "(Keine Inhalte zur Übertragung angewählt)";
             if (parMode === 'overwrite' || existingText === "(Aktuell leer)") {
@@ -4803,6 +4814,11 @@ HA: ...</pre>
             const hauptteil = incContent ? readEditorCleanHtml('editPhaseHauptteil') : "";
             const schluss = incContent ? readEditorCleanHtml('editPhaseSchluss') : "";
             const homework = incHw ? document.getElementById('editLessonHomework').value.trim() : "";
+            const incTop = document.getElementById('parIncTop').checked;
+            const incMisc = document.getElementById('parIncMisc').checked;
+            const topHw = incTop ? document.getElementById('editLessonHomeworkToday').value.trim() : "";
+            const srcStored = lessonsStore[activeLessonKey] || {};
+            markChangeReason('Auf Parallelklasse übertragen');
 
             const [parIso, parSlotId] = parTargetKey.split('_');
             const parSlot = weeklyTemplate.find(s => s.id === parSlotId);
@@ -4848,6 +4864,22 @@ HA: ...</pre>
                     homework: existingPar.homework || homework,
                     homeworkTargetKey: existingPar.homeworkTargetKey || parNextHwKey
                 };
+            }
+
+            // HA auf heute, Gefäss, Pendenzen, Sprachmemo-Text, Notizen/Link
+            const tgt = lessonsStore[parTargetKey];
+            if (incTop && topHw) {
+                tgt.homeworkDueToday = parMode === 'overwrite' || !(existingPar.homeworkDueToday || '').trim()
+                    ? topHw : (existingPar.homeworkDueToday.includes(topHw) ? existingPar.homeworkDueToday : `${existingPar.homeworkDueToday}\n${topHw}`);
+            }
+            if (incMisc) {
+                const enteredTrack = document.getElementById('editLessonTrack').value.trim();
+                const trackOv = parSlot && enteredTrack === (parSlot.track || '').trim() ? '' : enteredTrack;
+                if (parMode === 'overwrite' || !existingPar.trackOverride) tgt.trackOverride = trackOv;
+                const todos = copyTodos(tempLessonTodos);
+                tgt.todos = parMode === 'overwrite' ? todos : [...(existingPar.todos || []), ...todos];
+                tgt.audioClips = [...(parMode === 'overwrite' ? [] : (existingPar.audioClips || [])), ...textOnlyClips(tempAudioClips)];
+                ['notes', 'link'].forEach(f => { if ((srcStored[f] || '').trim() && (parMode === 'overwrite' || !(existingPar[f] || '').trim())) tgt[f] = srcStored[f]; });
             }
 
             updateParallelPreview();
@@ -5025,6 +5057,7 @@ HA: ...</pre>
                 if (l.homeworkTargetKey && keyMap[l.homeworkTargetKey]) l.homeworkTargetKey = keyMap[l.homeworkTargetKey];
                 if (l.homeworkSourceKey && keyMap[l.homeworkSourceKey]) l.homeworkSourceKey = keyMap[l.homeworkSourceKey];
             });
+            refreshHwDueTexts(Object.values(keyMap));
             return true;
         }
 
@@ -7792,7 +7825,7 @@ Memo: """${text}"""`;
                 <div class="bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10.5px] font-bold text-slate-600">Memo (${escapeHtml(clip.createdAt)})</span>
-                        ${safeAudioSrc(clip.audioDataUrl) ? `<audio controls src="${safeAudioSrc(clip.audioDataUrl)}" class="h-6 max-w-[155px]"></audio>` : `<span class="text-[10px] text-slate-400 italic">Audio nur auf dem Aufnahmegerät</span>`}
+                        ${safeAudioSrc(clip.audioDataUrl) ? `<audio controls src="${safeAudioSrc(clip.audioDataUrl)}" class="h-6 max-w-[155px]"></audio>` : `<span class="text-[10px] text-slate-400 italic">${clip.textOnly ? 'Kopie – nur Text' : 'Audio nur auf dem Aufnahmegerät'}</span>`}
                         <button type="button" onclick="removeAudioClip(${idx})" class="text-rose-500 text-[10.5px] font-bold">✕</button>
                     </div>
                     <textarea rows="2" oninput="updateAudioClipTranscript(${idx}, this.value)" ${clip.transcribing ? 'disabled' : ''} placeholder="${clip.transcribing ? '⏳ Wird mit KI transkribiert…' : 'Transkribierter Text (hier bearbeitbar)...'}" class="w-full text-[11px] text-slate-800 bg-slate-50 border border-slate-200 rounded p-1.5 focus:bg-white focus:outline-none">${clip.transcribing ? '' : escapeHtml(clip.transcript || '')}</textarea>
@@ -8471,7 +8504,61 @@ Memo: """${text}"""`;
         // =========================================================================
         // LEKTION VERSCHIEBEN / KOPIEREN (Ziel wählen: ersetzen · anhängen · alle nachschieben)
         // =========================================================================
-        var LESSON_CONTENT_FIELDS = ['unit', 'title', 'einstieg', 'hauptteil', 'schluss', 'notes', 'link', 'homework', 'homeworkTargetKey', 'isExam', 'trackOverride', 'audioClips', 'todos'];
+        var LESSON_CONTENT_FIELDS = ['unit', 'title', 'einstieg', 'hauptteil', 'schluss', 'notes', 'link', 'homework', 'homeworkTargetKey', 'isExam', 'trackOverride', 'audioClips', 'todos', 'homeworkDueToday'];
+
+        // Pendenzen kopieren: eigene Einträge (eine erledigte Pendenz bleibt in der Kopie offen)
+        function copyTodos(list) {
+            return (list || []).map((t, i) => ({ ...JSON.parse(JSON.stringify(t)), id: Date.now() + i + Math.random(), done: false }));
+        }
+        // Sprachmemos kopieren: nur der Text, keine Aufnahme (spart Platz in der Cloud)
+        function textOnlyClips(list) {
+            return (list || []).filter(c => c && (c.transcript || '').trim()).map((c, i) => ({
+                id: `copy-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+                createdAt: c.createdAt || '', transcript: c.transcript, textOnly: true
+            }));
+        }
+        function hwDueText(srcKey, homework) {
+            return `${homework} (aufgegeben am ${formatDateCH(srcKey.split('_')[0])})`;
+        }
+        // «HA auf heute», die diese Lektion in einer anderen Lektion eingetragen hat, entfernen
+        function clearHwLink(srcKey, lessonObj) {
+            const l = lessonObj || lessonsStore[srcKey];
+            const tKey = l && l.homeworkTargetKey;
+            const t = tKey && lessonsStore[tKey];
+            if (t && t.homeworkSourceKey === srcKey) {
+                t.homeworkDueToday = '';
+                delete t.homeworkSourceKey;
+                if (!hasLessonContent(t) && !(t.audioClips || []).length && !(t.todos || []).length) delete lessonsStore[tKey];
+            }
+        }
+        // HA dieser Lektion als «HA auf heute» in die nächste Lektion derselben Klasse eintragen (Datum passend)
+        function linkHomeworkToNext(key) {
+            const l = lessonsStore[key];
+            if (!l) return;
+            if (!(l.homework || '').trim()) { l.homeworkTargetKey = ''; return; }
+            const slot = weeklyTemplate.find(sl => sl.id === key.split('_')[1]);
+            if (!slot) return;
+            const next = findUpcomingSlotsForCourse(slot.subject, slot.className, getEffectiveTrack(l, slot), key.split('_')[0], slot.start, 4)[0];
+            if (!next) { l.homeworkTargetKey = ''; return; }
+            const t = lessonsStore[next.key] || { ...blankLesson(), unit: l.unit || '' };
+            const text = hwDueText(key, l.homework.trim());
+            if ((t.homeworkDueToday || '').trim() && t.homeworkSourceKey && t.homeworkSourceKey !== key) {
+                if (!t.homeworkDueToday.includes(l.homework.trim())) t.homeworkDueToday = `${t.homeworkDueToday}\n${text}`;
+            } else {
+                t.homeworkDueToday = text;
+                t.homeworkSourceKey = key;
+            }
+            lessonsStore[next.key] = t;
+            l.homeworkTargetKey = next.key;
+        }
+        // nach dem Nachschieben: «aufgegeben am …» an das neue Datum anpassen
+        function refreshHwDueTexts(keys) {
+            keys.forEach(k => {
+                const l = lessonsStore[k];
+                const t = l && l.homeworkTargetKey && lessonsStore[l.homeworkTargetKey];
+                if (t && t.homeworkSourceKey === k && (l.homework || '').trim()) t.homeworkDueToday = hwDueText(k, l.homework.trim());
+            });
+        }
         var moveCtx = null;
         function blankLesson() {
             return { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
@@ -8630,10 +8717,20 @@ Memo: """${text}"""`;
             const tSlot = weeklyTemplate.find(s => s.id === target.split('_')[1]);
             const content = {};
             LESSON_CONTENT_FIELDS.forEach(f => { if (src[f] !== undefined) content[f] = JSON.parse(JSON.stringify(src[f])); });
+            content.homeworkTargetKey = '';   // wird unten passend zum neuen Datum neu verknüpft
+            if (keep) {   // Kopie: eigene Pendenzen, Sprachmemos nur als Text
+                content.todos = copyTodos(src.todos);
+                content.audioClips = textOnlyClips(src.audioClips);
+            }
             const srcTrack = getEffectiveTrack(src, slot);
             const old = lessonsStore[target];
             const oldBusy = old && hasLessonContent(old);
-            if (keep) content.homeworkTargetKey = '';   // Kopie: HA-Verknüpfung bleibt beim Original
+            const joinLines = (a, b) => { a = (a || '').trim(); b = (b || '').trim(); return a && b ? (a.includes(b) ? a : `${a}\n${b}`) : (a || b); };
+
+            // 1. alte HA-Verknüpfungen lösen (Original beim Verschieben, Ziel beim Ersetzen/Anhängen)
+            if (!keep) clearHwLink(srcKey, src);
+            if (old) clearHwLink(target, old);
+
             let res;
             if (mode === 'append' && oldBusy) {
                 const tTrack = getEffectiveTrack(old, tSlot);
@@ -8644,29 +8741,36 @@ Memo: """${text}"""`;
                     hauptteil: joinHtml(old.hauptteil || old.notes, content.hauptteil || content.notes),
                     schluss: joinHtml(old.schluss, content.schluss),
                     homework: [old.homework, content.homework].filter(x => (x || '').trim()).join('; '),
-                    homeworkTargetKey: old.homeworkTargetKey || content.homeworkTargetKey || '',
+                    homeworkDueToday: joinLines(old.homeworkDueToday, content.homeworkDueToday),
+                    homeworkTargetKey: '',
                     isExam: Boolean(old.isExam || content.isExam),
                     todos: [...(old.todos || []), ...(content.todos || [])],
                     audioClips: [...(old.audioClips || []), ...(content.audioClips || [])],
+                    link: old.link || content.link || '',
                     notes: '' };
                 const tr = tTrack || srcTrack;
                 res.trackOverride = tr === (tSlot?.track || '').trim() ? '' : tr;
             } else {
-                res = { ...blankLesson(), homeworkDueToday: old?.homeworkDueToday || '', ...content };
-                if (old?.homeworkSourceKey) res.homeworkSourceKey = old.homeworkSourceKey;
+                res = { ...blankLesson(), ...content, homeworkDueToday: joinLines(content.homeworkDueToday, old?.homeworkDueToday) };
                 res.trackOverride = srcTrack === (tSlot?.track || '').trim() ? '' : srcTrack;
             }
-            if (keep) {   // Kopie: neue Ids für Pendenzen
-                res.todos = (res.todos || []).map((t, i) => (content.todos || []).some(c => c.id === t.id) ? { ...t, id: Date.now() + i + Math.random() } : t);
-            }
+            // «HA auf heute» oben: Verknüpfung zur Lektion, in der sie aufgegeben wurde
+            delete res.homeworkSourceKey;
+            if (!keep && src.homeworkSourceKey && (src.homeworkDueToday || '').trim()) res.homeworkSourceKey = src.homeworkSourceKey;
+            else if (old?.homeworkSourceKey && (old.homeworkDueToday || '').trim()) res.homeworkSourceKey = old.homeworkSourceKey;
             lessonsStore[target] = res;
+
             if (!keep) {
-                // HA-Verknüpfung umhängen: Ziel-Lektion der HA zeigt jetzt auf die neue Lektion
-                if (src.homeworkTargetKey && lessonsStore[src.homeworkTargetKey]?.homeworkSourceKey === srcKey) lessonsStore[src.homeworkTargetKey].homeworkSourceKey = target;
-                const rest = {};
-                if ((src.homeworkDueToday || '').trim()) rest.homeworkDueToday = src.homeworkDueToday;
-                if (src.homeworkSourceKey) rest.homeworkSourceKey = src.homeworkSourceKey;
-                if (Object.keys(rest).length) lessonsStore[srcKey] = { ...blankLesson(), ...rest }; else delete lessonsStore[srcKey];
+                // Lektion, die die HA oben aufgegeben hat, zeigt jetzt auf die neue Lektion
+                const giver = src.homeworkSourceKey && lessonsStore[src.homeworkSourceKey];
+                if (giver && giver.homeworkTargetKey === srcKey) giver.homeworkTargetKey = target;
+                delete lessonsStore[srcKey];   // alles ist mitgewandert
+            }
+            // 2. HA unten neu verknüpfen: nächste Lektion der Ziel-Klasse, Datum passend
+            linkHomeworkToNext(target);
+            if (old?.homeworkSourceKey && res.homeworkSourceKey === old.homeworkSourceKey) {
+                const giver = lessonsStore[old.homeworkSourceKey];
+                if (giver && giver.homeworkTargetKey !== target) giver.homeworkTargetKey = target;
             }
             markChangeReason(keep ? 'Kopiert' : mode === 'append' ? 'Angehängt' : 'Verschoben');
             const label = moveRowLabel(target) + (moveCtx.cls !== slot.className ? ` (${moveCtx.cls})` : '');

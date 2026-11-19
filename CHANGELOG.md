@@ -1,5 +1,12 @@
 # Änderungen
 
+## Version 20.4 – 19.11.2026
+- «Verschieben…» und «Kopieren» nehmen jetzt alles mit: Titel, Unit, Gefäss, Einstieg/Hauptteil/Schluss, Prüfung, Pendenzen, Sprachmemos, «HA auf heute» (oben) und HA (unten).
+- HA bleiben verknüpft: Die HA unten erscheint als «HA auf heute» in der nächsten Lektion am neuen Ort (auch in der Parallelklasse), mit dem neuen Datum; der alte Eintrag wird entfernt. Beim Verschieben zeigt die Lektion, die die HA oben aufgegeben hat, auf die neue Lektion.
+- Nachschieben: «aufgegeben am …» wird ans neue Datum angepasst.
+- Kopien: eigene, offene Pendenzen; Sprachmemos nur als Text («Kopie – nur Text»), ohne Aufnahme.
+- «Auf parallele Klasse übertragen»: neu auch «HA auf heute (oben)» sowie «Gefäss, Pendenzen & Sprachmemo-Text».
+
 ## Version 20.3 – 19.11.2026
 - Tablet: Wochenansicht passt sich der Bildschirmbreite an (kein seitliches Scrollen mehr) und lässt sich wie die Tagesansicht per Wischen wechseln.
 - Wischrichtung: nach rechts wischen = nächste Woche / nächster Tag (Tablet, Handy und Mac-Trackpad gleich). In den Einstellungen (Zahnrad) pro Gerät umstellbar.
