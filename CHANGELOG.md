@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 20.8 – 21.11.2026
+- Neu: Zurück-Geste / Zurück-Taste (Handy, Tablet) schliesst offene Fenster (Lektion, Suche, Einstellungen, Journal u. a.), statt die App zu schliessen.
+
 ## Version 20.7 – 21.11.2026
 - Neuer Knopf «Feedback» (Computer: Kopfzeile neben Abmelden; Handy/Tablet: Menü): öffnet ein anonymes Formular für Fehler, Inhaltsfehler und Wünsche. Version und Gerät werden automatisch mitgegeben; es werden keine Namen abgefragt.
 
