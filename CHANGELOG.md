@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 20.6 – 21.11.2026
+- Wischen: Richtung ist fest «nach links wischen = nächste Woche / nächster Tag»; die Auswahl in den Einstellungen entfällt.
+
 ## Version 20.5 – 20.11.2026
 - Wischrichtung: neuer Standard «nach links wischen = nächste Woche / nächster Tag» (Tablet, Handy, Trackpad). Gilt auf allen Geräten neu; in den Einstellungen (Zahnrad) weiterhin umstellbar.
 - Pendenzen & Vergessene Abgaben: Datum jetzt mit Wochentag (z. B. «Do, 19.11.2026»), auch bei «Überfällig» und beim Lektionsdatum.

@@ -1253,16 +1253,6 @@ HA: ...</pre>
             </div>
 
             <div class="flex-1 min-h-0 p-5 overflow-y-auto overscroll-contain custom-scroll flex flex-col gap-4">
-                <!-- WISCHRICHTUNG -->
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-1.5">
-                    <label for="swipeDirSelect" class="font-extrabold text-slate-900">Wischen (Tablet, Handy, Trackpad mit zwei Fingern)</label>
-                    <select id="swipeDirSelect" onchange="setSwipeDirection(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900">
-                        <option value="right-next">Nach rechts wischen = nächste Woche / nächster Tag</option>
-                        <option value="left-next">Nach links wischen = nächste Woche / nächster Tag</option>
-                    </select>
-                    <span class="text-[10.5px] text-slate-500">Gilt in der Wochen- und Tagesansicht, wird auf diesem Gerät gespeichert.</span>
-                </div>
-
                 <!-- CLOUD DIAGNOSE & WIEDERHERSTELLUNG -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-2.5">
                     <div class="flex items-center justify-between">
@@ -3923,17 +3913,10 @@ HA: ...</pre>
             }));
         }
 
-        // Wischrichtung (pro Gerät): Standard «nach links wischen = weiter» (ab v20.5; neuer Schlüssel setzt alle Geräte auf den neuen Standard)
-        function swipeRightIsNext() {
-            try { return localStorage.getItem('sekPlaner_swipeDir_v2') === 'right-next'; } catch (e) { return false; }
-        }
-        function setSwipeDirection(v) {
-            try { localStorage.setItem('sekPlaner_swipeDir_v2', v === 'left-next' ? 'left-next' : 'right-next'); } catch (e) {}
-            showToast(v === 'left-next' ? 'Nach links wischen = weiter' : 'Nach rechts wischen = weiter');
-        }
+        // Wischrichtung fest: nach links wischen = nächste Woche / nächster Tag
         // fingersRight: Bewegung der Finger nach rechts? → Woche/Tag wechseln, Inhalt gleitet in Fingerrichtung herein
         function swipeStep(fingersRight) {
-            const dir = (fingersRight === swipeRightIsNext()) ? 1 : -1;
+            const dir = fingersRight ? -1 : 1;
             changeWeek(dir);
             animateDaySwitch(fingersRight ? -1 : 1);
         }
@@ -9214,7 +9197,6 @@ ${listing}`;
 
         function openSettingsModal() {
             if (isDemoMode) { showToast(DEMO_AI_MSG + ' Einstellungen sind in der Demo deaktiviert.'); return; }
-            document.getElementById('swipeDirSelect').value = swipeRightIsNext() ? 'right-next' : 'left-next';
             document.getElementById('aiKeyInput').value = '';
             document.getElementById('aiKeyProvider').value = '';
             updateAiKeyDetect();
