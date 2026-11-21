@@ -3675,6 +3675,12 @@ HA: ...</pre>
             const [y, m, d] = iso.split('-');
             return `${d}.${m}.${y}`;
         }
+        // Mit Wochentag: «Do, 19.11.2026»
+        function formatDateCHWd(iso) {
+            if (!isISODate(iso)) return formatDateCH(iso);
+            const [y, m, d] = iso.split('-').map(Number);
+            return `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][new Date(y, m - 1, d).getDay()]}, ${formatDateCH(iso)}`;
+        }
 
         function getWeekNumber(d) {
             const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -3917,12 +3923,12 @@ HA: ...</pre>
             }));
         }
 
-        // Wischrichtung (pro Gerät): Standard «nach rechts wischen = weiter»
+        // Wischrichtung (pro Gerät): Standard «nach links wischen = weiter» (ab v20.5; neuer Schlüssel setzt alle Geräte auf den neuen Standard)
         function swipeRightIsNext() {
-            try { return localStorage.getItem('sekPlaner_swipeDir') !== 'left-next'; } catch (e) { return true; }
+            try { return localStorage.getItem('sekPlaner_swipeDir_v2') === 'right-next'; } catch (e) { return false; }
         }
         function setSwipeDirection(v) {
-            try { localStorage.setItem('sekPlaner_swipeDir', v === 'left-next' ? 'left-next' : 'right-next'); } catch (e) {}
+            try { localStorage.setItem('sekPlaner_swipeDir_v2', v === 'left-next' ? 'left-next' : 'right-next'); } catch (e) {}
             showToast(v === 'left-next' ? 'Nach links wischen = weiter' : 'Nach rechts wischen = weiter');
         }
         // fingersRight: Bewegung der Finger nach rechts? → Woche/Tag wechseln, Inhalt gleitet in Fingerrichtung herein
@@ -7333,11 +7339,11 @@ Text:\n${raw.slice(0, 12000)}`;
         }
         function dueBadge(due, done) {
             const today = formatDateISO(new Date());
-            if (done) return { cls: 'text-slate-400', label: formatDateCH(due) };
-            if (due < today) return { cls: 'text-rose-700 font-extrabold', label: `Überfällig (${formatDateCH(due)})` };
+            if (done) return { cls: 'text-slate-400', label: formatDateCHWd(due) };
+            if (due < today) return { cls: 'text-rose-700 font-extrabold', label: `Überfällig (${formatDateCHWd(due)})` };
             if (due === today) return { cls: 'text-amber-700 font-extrabold', label: 'Heute' };
             if (due === isoAddDays(today, 1)) return { cls: 'text-indigo-700 font-bold', label: 'Morgen' };
-            return { cls: 'text-slate-600 font-semibold', label: formatDateCH(due) };
+            return { cls: 'text-slate-600 font-semibold', label: formatDateCHWd(due) };
         }
         function setStandaloneDueById(id, val) {
             const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
@@ -7416,7 +7422,7 @@ Text:\n${raw.slice(0, 12000)}`;
                                 <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                 <div class="flex flex-col min-w-0">
                                     <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${item.todo.fromMemo ? '🎙️ ' : ''}<span data-todo-text>${escapeHtml(item.todo.text)}</span></span>
-                                    <span class="text-[11px] text-slate-500 mt-0.5"><span class="${b.cls}">${escapeHtml(b.label)}</span> · <button type="button" onclick="openLessonFromYear(${jsArg(item.key)})" class="hover:underline" title="Lektion öffnen">${escapeHtml(formatDateCH(item.isoDate))} (${escapeHtml(item.slot.start || '')})</button> • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
+                                    <span class="text-[11px] text-slate-500 mt-0.5"><span class="${b.cls}">${escapeHtml(b.label)}</span> · <button type="button" onclick="openLessonFromYear(${jsArg(item.key)})" class="hover:underline" title="Lektion öffnen">${escapeHtml(formatDateCHWd(item.isoDate))} (${escapeHtml(item.slot.start || '')})</button> • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0 ml-auto">

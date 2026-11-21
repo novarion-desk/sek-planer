@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 20.5 – 20.11.2026
+- Wischrichtung: neuer Standard «nach links wischen = nächste Woche / nächster Tag» (Tablet, Handy, Trackpad). Gilt auf allen Geräten neu; in den Einstellungen (Zahnrad) weiterhin umstellbar.
+- Pendenzen & Vergessene Abgaben: Datum jetzt mit Wochentag (z. B. «Do, 19.11.2026»), auch bei «Überfällig» und beim Lektionsdatum.
+
 ## Version 20.4 – 19.11.2026
 - «Verschieben…» und «Kopieren» nehmen jetzt alles mit: Titel, Unit, Gefäss, Einstieg/Hauptteil/Schluss, Prüfung, Pendenzen, Sprachmemos, «HA auf heute» (oben) und HA (unten).
 - HA bleiben verknüpft: Die HA unten erscheint als «HA auf heute» in der nächsten Lektion am neuen Ort (auch in der Parallelklasse), mit dem neuen Datum; der alte Eintrag wird entfernt. Beim Verschieben zeigt die Lektion, die die HA oben aufgegeben hat, auf die neue Lektion.
