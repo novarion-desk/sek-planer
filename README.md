@@ -15,6 +15,7 @@ Live-App: https://novarion-desk.github.io/sek-planer/
 
 Jede Version ist sofort direkt aufrufbar (gleiche Daten, gleiches Konto):
 
+- Version 20.7: https://novarion-desk.github.io/sek-planer/versions/v20.7/
 - Version 20.6: https://novarion-desk.github.io/sek-planer/versions/v20.6/
 - Version 20.5: https://novarion-desk.github.io/sek-planer/versions/v20.5/
 - Version 20.4: https://novarion-desk.github.io/sek-planer/versions/v20.4/
@@ -40,3 +41,6 @@ Danach Claude sagen, dass die alte Version wieder zur Hauptversion werden soll.
 - **Lokal:** Kopie im Browser jedes Geräts (getrennt pro Konto).
 - **Automatisch:** Tägliche Cloud-Sicherung, die letzten 30 Tage – in der App unter ⚙️ → «Sicherungen & Backup» mit einem Klick wiederherstellbar. Vor jeder Wiederherstellung und vor jedem Import wird der aktuelle Stand zusätzlich gesichert.
 - **Manuell:** ⚙️ → «Backup herunterladen (.json)» – enthält alle Schuljahre. Empfohlen 1× pro Woche (die App erinnert nach 7 Tagen).
+
+## Feedback
+Der Knopf «💬 Feedback» öffnet ein externes, anonymes Formular bei Tally (Fehler, Wünsche, Inhalte). Nur dann werden Angaben gesendet – zusammen mit App-Name, Version und Gerätetyp. Namen werden nicht abgefragt.

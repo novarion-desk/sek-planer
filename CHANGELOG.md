@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 20.7 – 21.11.2026
+- Neuer Knopf «Feedback» (Computer: Kopfzeile neben Abmelden; Handy/Tablet: Menü): öffnet ein anonymes Formular für Fehler, Inhaltsfehler und Wünsche. Version und Gerät werden automatisch mitgegeben; es werden keine Namen abgefragt.
+
 ## Version 20.6 – 21.11.2026
 - Wischen: Richtung ist fest «nach links wischen = nächste Woche / nächster Tag»; die Auswahl in den Einstellungen entfällt.
 
