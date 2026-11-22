@@ -657,6 +657,7 @@
                             <button type="button" id="aiPhaseEinstieg" onclick="selectAiPhase('einstieg')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white">1. Einstieg</button>
                             <button type="button" id="aiPhaseHauptteil" onclick="selectAiPhase('hauptteil')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">2. Hauptteil</button>
                             <button type="button" id="aiPhaseSchluss" onclick="selectAiPhase('schluss')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">3. Schluss</button>
+                            <button type="button" id="aiPhaseFrei" onclick="selectAiPhase('frei')" title="Freier Auftrag: die KI macht genau das, was du schreibst (z. B. Liste, Spielplan), ohne Unterrichtsphase" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">4. Freier Auftrag</button>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -673,12 +674,16 @@
                         </div>
                         <div id="lessonAiResultEditor" contenteditable="true" class="w-full min-h-[80px] bg-indigo-50/40 border border-indigo-200 rounded-lg p-2.5 text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none"></div>
                         <div class="flex flex-wrap items-center justify-end gap-2">
-                            <button type="button" onclick="insertAiIntoPhase('replace')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertReplaceBtn">
-                                In «1. Einstieg» einsetzen (ersetzen)
-                            </button>
-                            <button type="button" onclick="insertAiIntoPhase('append')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertAppendBtn">
-                                + An «1. Einstieg» anhängen
-                            </button>
+                            <button type="button" onclick="copyAiResult()" class="px-3 py-1.5 bg-white border border-indigo-300 hover:bg-indigo-50 text-indigo-800 rounded-lg text-[11px] font-bold">Kopieren</button>
+                            <label class="flex items-center gap-1 text-[11px] font-bold text-indigo-900">Teil:
+                                <select id="aiInsertTarget" class="bg-white border border-indigo-200 rounded-lg px-1.5 py-1 text-[11px] font-bold">
+                                    <option value="einstieg">1. Einstieg</option>
+                                    <option value="hauptteil">2. Hauptteil</option>
+                                    <option value="schluss">3. Schluss</option>
+                                </select>
+                            </label>
+                            <button type="button" onclick="insertAiIntoPhase('replace')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertReplaceBtn">Ersetzen</button>
+                            <button type="button" onclick="insertAiIntoPhase('append')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold" id="aiInsertAppendBtn">+ Anhängen</button>
                         </div>
                     </div>
                 </div>
@@ -5091,18 +5096,25 @@ HA: ...</pre>
 
         function selectAiPhase(phaseKey) {
             selectedAiPhase = phaseKey;
-            const map = {
-                einstieg: { btn: 'aiPhaseEinstieg', label: '1. Einstieg' },
-                hauptteil: { btn: 'aiPhaseHauptteil', label: '2. Hauptteil' },
-                schluss: { btn: 'aiPhaseSchluss', label: '3. Schluss' }
-            };
-            Object.entries(map).forEach(([k, info]) => {
-                document.getElementById(info.btn).className = k === phaseKey
+            const map = { einstieg: 'aiPhaseEinstieg', hauptteil: 'aiPhaseHauptteil', schluss: 'aiPhaseSchluss', frei: 'aiPhaseFrei' };
+            Object.entries(map).forEach(([k, id]) => {
+                document.getElementById(id).className = k === phaseKey
                     ? "px-2.5 py-1 rounded-md bg-indigo-600 text-white"
                     : "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900";
             });
-            document.getElementById('aiInsertReplaceBtn').innerText = `In «${map[phaseKey].label}» einsetzen (ersetzen)`;
-            document.getElementById('aiInsertAppendBtn').innerText = `+ An «${map[phaseKey].label}» anhängen`;
+            // Einfügeziel vorbelegen (bei «Freier Auftrag» der Hauptteil)
+            document.getElementById('aiInsertTarget').value = phaseKey === 'frei' ? 'hauptteil' : phaseKey;
+            document.getElementById('lessonAiPromptInput').placeholder = phaseKey === 'frei'
+                ? "Freier Auftrag (z. B. Liste 10 Weihnachtstraditionen aus verschiedenen Ländern)..."
+                : "Stichwort / Thema eingeben (z. B. aktivierender Einstieg Present Perfect)...";
+        }
+
+        function copyAiResult() {
+            const txt = htmlToPlainText(document.getElementById('lessonAiResultEditor').innerHTML.trim());
+            if (!txt) return;
+            const done = () => showToast("In die Zwischenablage kopiert.");
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => showToast("Kopieren nicht möglich, bitte Text markieren."));
+            else showToast("Kopieren nicht möglich, bitte Text markieren.");
         }
 
         async function runLessonAiAssistant() {
@@ -5128,7 +5140,9 @@ HA: ...</pre>
                 schluss: "3. Schluss / Sicherung (ca. 5–10 Minuten, Ergebnissicherung, Exit-Ticket oder Ausblick)"
             };
 
-            const prompt = `Aktuelles Fach: ${style.label} (${slot.className})${track ? `, Gefäss/Schwerpunkt: ${track}` : ''}${unit ? `, Einheit/Unit: ${unit}` : ''}.
+            const prompt = selectedAiPhase === 'frei'
+                ? `Erledige genau den folgenden Auftrag einer Lehrperson (Sekundarstufe, Kanton Zürich, Niveau A) und nichts darüber hinaus. Keine Unterrichtsphasen, keine Zusatzideen, keine Einleitung, kein Schlusswort. Nutze **Fettschrift** nur sparsam für Wichtiges. Auftrag: "${topic}"`
+                : `Aktuelles Fach: ${style.label} (${slot.className})${track ? `, Gefäss/Schwerpunkt: ${track}` : ''}${unit ? `, Einheit/Unit: ${unit}` : ''}.
 Gewünschte Unterrichtsphase: ${phaseDescriptions[selectedAiPhase]}.
 Thema / Auftrag: "${topic}".
 Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese Phase (3–5 knappe, klare Stichpunkte mit Sozialform und Materialhinweis, passend für Niveau A im Kanton Zürich). Nutze **Fettschrift** für wichtige Begriffe/Sozialformen. Keine Einleitung, kein Schlusswort.`;
@@ -5155,7 +5169,7 @@ Formuliere einen praxisnahen, sofort umsetzbaren Unterrichtsbaustein für diese 
             const htmlContent = sanitizeRich(document.getElementById('lessonAiResultEditor').innerHTML.trim());
             if (!htmlToPlainText(htmlContent)) return;
             const fieldMap = { einstieg: 'editPhaseEinstieg', hauptteil: 'editPhaseHauptteil', schluss: 'editPhaseSchluss' };
-            const targetEl = document.getElementById(fieldMap[selectedAiPhase]);
+            const targetEl = document.getElementById(fieldMap[document.getElementById('aiInsertTarget').value] || 'editPhaseHauptteil');
             const currentPlain = htmlToPlainText(targetEl.innerHTML);
             targetEl.innerHTML = (mode === 'replace' || !currentPlain) ? htmlContent : `${targetEl.innerHTML}<br>${htmlContent}`;
             updateParallelPreview();
@@ -9597,7 +9611,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'20.9',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.0',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

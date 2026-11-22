@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 21.0 – 22.11.2026
+- Neu: KI-Tutor in der Lektion hat eine vierte Box «4. Freier Auftrag». Die KI erledigt genau deinen Auftrag (z. B. «Liste 10 Weihnachtstraditionen aus verschiedenen Ländern» oder «Spielplan Basketball für 14 Personen») ohne Unterrichtsphase und ohne Zusatzideen.
+- Neu: Ergebnis lässt sich kopieren oder in einen wählbaren Teil (Einstieg, Hauptteil, Schluss) ersetzen oder anhängen.
+
 ## Version 20.9 – 22.11.2026
 - Neu: «📊 Statistik» in der Jahresübersicht: pro Klasse und Fach geplante Lektionen, Lektionen mit Hausaufgabe (Anzahl und Anteil), letzte Hausaufgabe, Anzahl Prüfungen (davon vorbei) und nächste Prüfung. Folgt dem Klassenfilter. Funktioniert auch im Demo-Modus.
 
