@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 21.1 – 22.11.2026
+- Neu: Der Änderungsverlauf wird 90 Tage aufbewahrt (vorher 30), komprimiert gespeichert.
+- Neu: Der Änderungsverlauf zeigt jetzt Details. Bei Pendenzen steht der genaue Text («Pendenz gelöscht: …», «erledigt», «Text geändert»), bei Lektionen Fach, Klasse, Datum, Thema und die geänderten Felder (z. B. Hauptteil, Hausaufgabe), bei Terminen der Name. Gilt auch für ältere Einträge der letzten 30 Tage.
+
 ## Version 21.0 – 22.11.2026
 - Neu: KI-Tutor in der Lektion hat eine vierte Box «4. Freier Auftrag». Die KI erledigt genau deinen Auftrag (z. B. «Liste 10 Weihnachtstraditionen aus verschiedenen Ländern» oder «Spielplan Basketball für 14 Personen») ohne Unterrichtsphase und ohne Zusatzideen.
 - Neu: Ergebnis lässt sich kopieren oder in einen wählbaren Teil (Einstieg, Hauptteil, Schluss) ersetzen oder anhängen.

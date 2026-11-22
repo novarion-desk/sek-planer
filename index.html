@@ -835,7 +835,7 @@
             <div class="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
                 <div>
                     <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-600"></i> Änderungsverlauf</h3>
-                    <div class="text-slate-500 mt-0.5">Letzte 30 Tage · jede Aktion einzeln rückgängig machbar · auf allen Geräten</div>
+                    <div class="text-slate-500 mt-0.5">Letzte 90 Tage · jede Aktion einzeln rückgängig machbar · auf allen Geräten</div>
                 </div>
                 <button type="button" onclick="closeJournalModal()" class="text-slate-400 hover:text-slate-700 font-extrabold text-base" aria-label="Schliessen">✕</button>
             </div>
@@ -8212,10 +8212,12 @@ Memo: """${text}"""`;
         // ÄNDERUNGSVERLAUF & RÜCKGÄNGIG (ab Version 20)
         // Jede Aktion (Bearbeiten, Verschieben, Import, Mehrfachbearbeitung …) wird als Eintrag mit
         // «vorher / nachher» der betroffenen Lektionen festgehalten → einzeln rückgängig machbar.
-        // Gespeichert in <docId>__J (30 Tage), damit es auch nach dem Neuladen und auf allen Geräten gilt.
+        // Gespeichert in <docId>__J (90 Tage, komprimiert), damit es auch nach dem Neuladen und auf allen Geräten gilt.
         // =========================================================================
-        var JOURNAL_DAYS = 30;
-        var JOURNAL_MAX_BYTES = 800 * 1024;
+        var JOURNAL_DAYS = 90;
+        var JOURNAL_MAX_BYTES = 8 * 1024 * 1024;       // Arbeitsspeicher (unkomprimiert)
+        var JOURNAL_CLOUD_MAX_CHARS = 850 * 1024;      // Cloud-Dokument (komprimiert, Limit 1 MB)
+        var JOURNAL_COMPAT_ENTRIES = 15;               // neueste Einträge zusätzlich unkomprimiert (ältere App-Versionen)
         var JOURNAL_MAIN = {
             calendarEvents: { label: 'Jahreskalender', get: () => calendarEvents, set: v => { calendarEvents = v || []; } },
             standaloneNotesStore: { label: 'Pendenzen & Notizen', get: () => standaloneNotesStore, set: v => { standaloneNotesStore = v || []; } },
@@ -8307,6 +8309,57 @@ Memo: """${text}"""`;
             return { date: `${day} ${d.getDate()}.${d.getMonth() + 1}.`, time: slot ? slot.start : '',
                      course: slot ? `${subjectDisplayName(subjectKeyOf(slot))} ${slot.className}` : 'Lektion' };
         }
+        // ---------- Details für Änderungsverlauf: genaue Pendenz, geänderte Felder ----------
+        var JOURNAL_FIELD_LABELS = { unit: 'Einheit', title: 'Titel', einstieg: 'Einstieg', hauptteil: 'Hauptteil', schluss: 'Schluss', notes: 'Notizen', link: 'Link',
+            homework: 'Hausaufgabe', homeworkDueToday: 'HA auf heute', isExam: 'Prüfung', trackOverride: 'Spur', audioClips: 'Sprachmemo', todos: 'Pendenzen' };
+        function jSnip(t, n) { t = String(t == null ? '' : t).replace(/\s+/g, ' ').trim(); n = n || 60; return t.length > n ? t.slice(0, n - 1) + '…' : t; }
+        function jNorm(v) { return (v === undefined || v === null || v === '' || v === false || (Array.isArray(v) && !v.length)) ? '' : journalStr(v); }
+        function journalLessonFields(p) {
+            if (!p.b) return ['neu angelegt'];
+            if (!p.a) return ['gelöscht'];
+            return Object.keys(JOURNAL_FIELD_LABELS).filter(k => jNorm(p.b[k]) !== jNorm(p.a[k])).map(k => JOURNAL_FIELD_LABELS[k]);
+        }
+        // Listen mit Einträgen (Pendenzen, Termine) vergleichen → [{k:'added'|'removed'|'changed', t, w}]
+        function journalListDiff(b, a, textFn) {
+            b = Array.isArray(b) ? b : []; a = Array.isArray(a) ? a : [];
+            const id = x => String(x && x.id != null ? x.id : stableStringify(journalClean(x)));
+            const bm = new Map(b.map(x => [id(x), x])), am = new Map(a.map(x => [id(x), x]));
+            const out = [];
+            bm.forEach((x, k) => { if (!am.has(k)) out.push({ k: 'removed', t: textFn(x) }); });
+            am.forEach((x, k) => {
+                if (!bm.has(k)) { out.push({ k: 'added', t: textFn(x) }); return; }
+                const o = bm.get(k);
+                if (stableStringify(journalClean(o)) === stableStringify(journalClean(x))) return;
+                const w = [];
+                if (!!o.done !== !!x.done) w.push(x.done ? 'erledigt' : 'wieder offen');
+                if (textFn(o) !== textFn(x)) w.push(`Text geändert (vorher: «${jSnip(textFn(o), 40)}»)`);
+                if ((o.due || '') !== (x.due || '')) w.push('Datum geändert');
+                out.push({ k: 'changed', t: textFn(x), w: w.join(', ') || 'geändert' });
+            });
+            return out;
+        }
+        function journalDiffWord(d) { return d.k === 'added' ? 'neu' : d.k === 'removed' ? 'gelöscht' : d.w; }
+        function journalDiffShort(diff, sg, pl) {
+            if (!diff.length) return '';
+            if (diff.length === 1) return `${sg} ${journalDiffWord(diff[0])}: «${jSnip(diff[0].t, 50)}»`;
+            const n = k => diff.filter(d => d.k === k).length;
+            const parts = [];
+            if (n('added')) parts.push(`${n('added')} neu`);
+            if (n('removed')) parts.push(`${n('removed')} gelöscht`);
+            if (n('changed')) parts.push(`${n('changed')} geändert`);
+            return `${diff.length} ${pl}: ${parts.join(', ')}`;
+        }
+        function journalDiffHtml(diff, sg) {
+            return diff.map(d => {
+                const col = d.k === 'removed' ? 'text-rose-700' : d.k === 'added' ? 'text-emerald-700' : 'text-amber-800';
+                return `<div class="py-0.5 ${col}"><span class="font-bold">${escapeHtml(sg)} ${escapeHtml(journalDiffWord(d))}:</span> «${escapeHtml(jSnip(d.t, 140))}»</div>`;
+            }).join('');
+        }
+        function journalMainDiff(f, pair) {
+            if (f === 'standaloneNotesStore') return journalListDiff(pair.b, pair.a, x => x.text || '');
+            if (f === 'calendarEvents') return journalListDiff(pair.b, pair.a, x => x.name || x.title || '');
+            return null;
+        }
         function journalSummary(e) {
             const parts = [];
             const keys = Object.keys(e.l || {}).sort();
@@ -8314,13 +8367,25 @@ Memo: """${text}"""`;
                 const x = journalSlotLabel(keys[0]);
                 const pair = e.l[keys[0]];
                 const topic = lessonTopicLabel(pair.a || pair.b || {}, 50);
-                parts.push(`${x.course} · ${x.date}${topic ? ` · «${topic}»` : ''}`);
+                let line = `${x.course} · ${x.date}${topic ? ` · «${topic}»` : ''}`;
+                const fields = journalLessonFields(pair);
+                const other = fields.filter(f => f !== 'Pendenzen');
+                if (other.length) line += ` · ${other.join(', ')}`;
+                if (fields.includes('Pendenzen')) {
+                    const td = journalDiffShort(journalListDiff(pair.b && pair.b.todos, pair.a && pair.a.todos, t => t.text || ''), 'Pendenz', 'Pendenzen');
+                    line += ` · ${td || 'Pendenzen'}`;
+                }
+                parts.push(line);
             } else if (keys.length > 1) {
                 const courses = [...new Set(keys.map(k => journalSlotLabel(k).course))];
                 const first = journalSlotLabel(keys[0]).date.split(' ')[1], lastD = journalSlotLabel(keys[keys.length - 1]).date.split(' ')[1];
                 parts.push(`${courses.slice(0, 3).join(', ')}${courses.length > 3 ? ' …' : ''} · ${keys.length} Lektionen · ${first === lastD ? first : `${first}–${lastD}`}`);
             }
-            Object.keys(e.m || {}).forEach(f => parts.push(JOURNAL_MAIN[f]?.label || f));
+            Object.keys(e.m || {}).forEach(f => {
+                const d = journalMainDiff(f, e.m[f]);
+                const txt = d && d.length ? (f === 'calendarEvents' ? journalDiffShort(d, 'Termin', 'Termine') : journalDiffShort(d, 'Pendenz', 'Pendenzen')) : '';
+                parts.push(txt || JOURNAL_MAIN[f]?.label || f);
+            });
             return parts.join(' · ');
         }
         function journalPrune() {
@@ -8337,11 +8402,24 @@ Memo: """${text}"""`;
             return [...map.values()].sort((x, y) => (y.at || '').localeCompare(x.at || ''));
         }
         function journalDocId() { return `${getActiveDocId()}__J`; }
+        // Verlauf aus dem Cloud-Dokument lesen (komprimiert ab Version 21.1, sonst Liste)
+        async function journalReadDoc(snap) {
+            if (!snap.exists) return [];
+            const d = snap.data() || {};
+            let out = Array.isArray(d.entries) ? d.entries : [];
+            if (d.data && d.enc) {
+                try {
+                    const packed = JSON.parse(await base64GunzipToString(d.enc, d.data));
+                    if (Array.isArray(packed)) out = journalMerge(out, packed);
+                } catch (e) { console.warn('Änderungsverlauf (komprimiert) nicht lesbar:', e); }
+            }
+            return out;
+        }
         async function loadJournal() {
             if (isDemoMode || !db || !currentUser || !privateSyncKey) return;
             try {
                 const snap = await db.collection('sekSync').doc(journalDocId()).get();
-                const remote = snap.exists && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+                const remote = await journalReadDoc(snap);
                 journal = journalMerge(journal, remote);
                 journalPrune();
                 updateJournalUi();
@@ -8357,10 +8435,19 @@ Memo: """${text}"""`;
             const ref = db.collection('sekSync').doc(journalDocId());
             try {
                 const snap = await ref.get();
-                const remote = snap.exists && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+                const remote = await journalReadDoc(snap);
                 journal = journalMerge(journal, remote);
                 journalPrune();
-                await ref.set({ ownerUid: currentUser.uid, kind: 'journal', parentDoc: getActiveDocId(), entries: journal,
+                // Komprimieren; ist es zu gross fürs Cloud-Dokument, die ältesten Einträge weglassen
+                let list = journal, packed = await gzipToBase64(JSON.stringify(list));
+                let guard = 0;
+                while (packed.data.length > JOURNAL_CLOUD_MAX_CHARS && list.length > 1 && guard++ < 12) {
+                    list = list.slice(0, Math.max(1, Math.floor(list.length * 0.85)));
+                    packed = await gzipToBase64(JSON.stringify(list));
+                }
+                if (list.length < journal.length) journal = list;
+                await ref.set({ ownerUid: currentUser.uid, kind: 'journal', parentDoc: getActiveDocId(),
+                                enc: packed.enc, data: packed.data, entries: journal.slice(0, JOURNAL_COMPAT_ENTRIES),
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
             } catch (e) { console.warn('Änderungsverlauf konnte nicht gespeichert werden:', e); }
         }
@@ -8374,7 +8461,7 @@ Memo: """${text}"""`;
                 const b = document.getElementById(id);
                 if (!b) return;
                 b.disabled = !e;
-                b.title = e ? `Rückgängig: ${e.reason} – ${e.summary || ''}` : 'Nichts rückgängig zu machen';
+                b.title = e ? `Rückgängig: ${e.reason} – ${journalSummary(e) || e.summary || ''}` : 'Nichts rückgängig zu machen';
             });
             if (!document.getElementById('journalModal')?.classList.contains('hidden')) renderJournalList();
         }
@@ -8451,7 +8538,7 @@ Memo: """${text}"""`;
             if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
             if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
             updateJournalUi();
-            const msg = `${e.reason === 'Rückgängig' ? 'Wiederhergestellt' : 'Rückgängig gemacht'}: ${e.reason} · ${e.summary}${skip.size ? ` (${skip.size} ausgelassen)` : ''}`;
+            const msg = `${e.reason === 'Rückgängig' ? 'Wiederhergestellt' : 'Rückgängig gemacht'}: ${e.reason} · ${journalSummary(e) || e.summary}${skip.size ? ` (${skip.size} ausgelassen)` : ''}`;
             if (undoEntry) showUndoToast(msg, () => journalUndo(undoEntry.id, 'all'));
             else showToast(msg, 5000);
             return n;
@@ -8501,12 +8588,21 @@ Memo: """${text}"""`;
                 const x = journalSlotLabel(k), p = e.l[k];
                 const b = p.b ? lessonTopicLabel(p.b, 45) || '(ohne Thema)' : '(leer)';
                 const a = p.a ? lessonTopicLabel(p.a, 45) || '(ohne Thema)' : '(leer)';
+                const fields = journalLessonFields(p);
+                const other = fields.filter(f => f !== 'Pendenzen');
+                const todoHtml = fields.includes('Pendenzen') ? journalDiffHtml(journalListDiff(p.b && p.b.todos, p.a && p.a.todos, t => t.text || ''), 'Pendenz') : '';
+                const fieldHtml = other.length ? `<div class="text-slate-500">Geändert: ${escapeHtml(other.join(', '))}</div>` : '';
                 return `<div class="grid grid-cols-[minmax(0,9rem)_1fr] gap-2 py-0.5 border-t border-slate-100">
                     <span class="font-bold text-slate-600 truncate">${escapeHtml(x.date)} ${escapeHtml(x.time)} <span class="font-semibold text-slate-400">${escapeHtml(x.course)}</span></span>
-                    <span class="min-w-0"><span class="text-slate-500">${escapeHtml(b)}</span> <span class="text-slate-400">→</span> <span class="font-semibold text-slate-800">${escapeHtml(a)}</span></span></div>`;
+                    <span class="min-w-0"><span class="text-slate-500">${escapeHtml(b)}</span> <span class="text-slate-400">→</span> <span class="font-semibold text-slate-800">${escapeHtml(a)}</span>${fieldHtml}${todoHtml}</span></div>`;
             }).join('');
             const more = Object.keys(e.l || {}).length > 60 ? `<div class="text-slate-400 italic pt-1">… und ${Object.keys(e.l).length - 60} weitere</div>` : '';
-            const main = Object.keys(e.m || {}).map(f => `<div class="py-0.5 border-t border-slate-100 font-semibold text-slate-700">${escapeHtml(JOURNAL_MAIN[f]?.label || f)} geändert</div>`).join('');
+            const main = Object.keys(e.m || {}).map(f => {
+                const d = journalMainDiff(f, e.m[f]);
+                const head = `<div class="font-semibold text-slate-700">${escapeHtml(JOURNAL_MAIN[f]?.label || f)} geändert</div>`;
+                const body = d && d.length ? journalDiffHtml(d, f === 'calendarEvents' ? 'Termin' : 'Pendenz') : '';
+                return `<div class="py-0.5 border-t border-slate-100">${head}${body}</div>`;
+            }).join('');
             return rows + more + main;
         }
         function renderJournalList() {
@@ -8535,7 +8631,7 @@ Memo: """${text}"""`;
                     <summary class="cursor-pointer list-none flex items-center gap-2">
                         <span class="font-extrabold text-slate-800 w-10 shrink-0">${escapeHtml(time)}</span>
                         <span class="px-1.5 py-0.5 rounded font-bold text-[10.5px] shrink-0 ${badge}">${escapeHtml(e.reason)}</span>
-                        <span class="flex-1 min-w-0 truncate text-slate-700 ${e.undone ? 'line-through' : ''}">${escapeHtml(e.summary || '')}</span>
+                        <span class="flex-1 min-w-0 truncate text-slate-700 ${e.undone ? 'line-through' : ''}">${escapeHtml(journalSummary(e) || e.summary || '')}</span>
                         <span class="hidden sm:inline text-slate-400 shrink-0">${escapeHtml(e.device || '')}</span>
                         <span onclick="event.preventDefault();event.stopPropagation()">${btn}</span>
                     </summary>
@@ -9611,7 +9707,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.0',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.1',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
