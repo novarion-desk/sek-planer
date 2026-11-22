@@ -1,6 +1,6 @@
 # Änderungen
 
-## Version 21.2 – 22.11.2026 (lokal, noch nicht eingespielt)
+## Version 21.2 – 22.11.2026
 - Neu: «Unterschiede» bei jeder Cloud-Sicherung und «Unterschiede ansehen» bei der Backup-Datei (Einstellungen → Sicherungen & Backup). Zeigt, was in der Sicherung steht, aber jetzt fehlt: freie Pendenzen, Pendenzen in Lektionen, leere Lektionen, Termine, Tagesnotizen. Mit Häkchen wählen und nur das Gewählte dazuholen. Es wird nur ergänzt, nichts überschrieben oder gelöscht; vorher entsteht automatisch eine Sicherung des aktuellen Stands.
 
 ## Version 21.1 – 22.11.2026
