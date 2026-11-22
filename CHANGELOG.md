@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 20.9 – 22.11.2026
+- Neu: «📊 Statistik» in der Jahresübersicht: pro Klasse und Fach geplante Lektionen, Lektionen mit Hausaufgabe (Anzahl und Anteil), letzte Hausaufgabe, Anzahl Prüfungen (davon vorbei) und nächste Prüfung. Folgt dem Klassenfilter. Funktioniert auch im Demo-Modus.
+
 ## Version 20.8 – 21.11.2026
 - Neu: Zurück-Geste / Zurück-Taste (Handy, Tablet) schliesst offene Fenster (Lektion, Suche, Einstellungen, Journal u. a.), statt die App zu schliessen.
 

@@ -548,8 +548,10 @@
                     </select>
                     <button type="button" id="yearPastToggle" onclick="toggleYearPast()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-bold text-slate-700">Vergangenes ausblenden</button>
                     <button type="button" onclick="scrollYearToToday()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-bold text-slate-700">Heute</button>
+                    <button type="button" id="yearStatsBtn" onclick="toggleYearStats()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-bold text-slate-700">📊 Statistik</button>
                     <button type="button" onclick="printYearCalendar()" class="ml-auto px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Drucken / PDF</button>
                 </div>
+                <div id="yearStats" class="no-print hidden bg-white border border-slate-200 rounded-xl p-3.5 overflow-x-auto"></div>
                 <div id="yearPrintTitle" class="hidden text-base font-extrabold text-slate-900"></div>
                 <div id="yearCalendarList" class="flex flex-col gap-3"></div>
             </div>
@@ -7846,6 +7848,52 @@ Memo: """${text}"""`;
             try { localStorage.setItem(accountStorageName('yearHidePast'), yearHidePast() ? '0' : '1'); } catch (e) {}
             renderSpecialDaysTable();
         }
+        // ---------- Statistik: Hausaufgaben und Prüfungen pro Klasse und Fach ----------
+        let yearStatsOpen = false;
+        function toggleYearStats() { yearStatsOpen = !yearStatsOpen; renderYearStats(); }
+        function renderYearStats() {
+            const box = document.getElementById('yearStats');
+            const btn = document.getElementById('yearStatsBtn');
+            if (!box) return;
+            if (btn) btn.className = 'px-3 py-1.5 border rounded-lg font-bold ' + (yearStatsOpen ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700');
+            box.classList.toggle('hidden', !yearStatsOpen);
+            if (!yearStatsOpen) return;
+            const clsSel = document.getElementById('yearClassFilter');
+            const cls = clsSel ? clsSel.value : 'ALL';
+            const { start: syS, end: syE } = schoolYearRange(currentSchoolYear);
+            const todayISO = formatDateISO(new Date());
+            const rows = {};
+            Object.entries(lessonsStore).forEach(([key, l]) => {
+                if (!l) return;
+                const iso = key.split('_')[0];
+                if (iso < syS || iso > syE) return;
+                const slot = slotForLessonKey(key);
+                if (!slot) return;
+                if (cls !== 'ALL' && String(slot.className).toUpperCase() !== cls.toUpperCase()) return;
+                const subj = getStyleForSlot(slot.subject, slot.className).label;
+                const rk = slot.className + '\u0000' + subj;
+                const r = rows[rk] || (rows[rk] = { cls: slot.className, subj, planned: 0, hw: 0, exams: [], lastHw: '' });
+                const hasContent = ['title', 'einstieg', 'hauptteil', 'schluss'].some(f => String(l[f] || '').trim());
+                if (hasContent || l.isExam) r.planned++;
+                if (String(l.homework || '').trim()) { r.hw++; if (iso > r.lastHw) r.lastHw = iso; }
+                if (l.isExam) r.exams.push(iso);
+            });
+            const list = Object.values(rows).sort((a, b) => a.cls.localeCompare(b.cls, 'de', { numeric: true }) || a.subj.localeCompare(b.subj, 'de'));
+            if (!list.length) { box.innerHTML = '<span class="text-slate-500">Noch keine geplanten Lektionen in diesem Schuljahr.</span>'; return; }
+            const fmt = d => d ? formatDateCH(d) : '–';
+            const tr = list.map(r => {
+                r.exams.sort();
+                const done = r.exams.filter(d => d < todayISO).length;
+                const next = r.exams.find(d => d >= todayISO);
+                const pct = r.planned ? Math.round(r.hw / r.planned * 100) : 0;
+                return `<tr class="border-t border-slate-100"><td class="py-1.5 pr-3 font-extrabold">${escapeHtml(r.cls)}</td><td class="pr-3">${escapeHtml(r.subj)}</td>` +
+                    `<td class="pr-3 text-right">${r.planned}</td><td class="pr-3 text-right">${r.hw} <span class="text-slate-400">(${pct}%)</span></td><td class="pr-3">${fmt(r.lastHw)}</td>` +
+                    `<td class="pr-3 text-right">${r.exams.length}${r.exams.length ? ` <span class="text-slate-400">(${done} vorbei)</span>` : ''}</td><td>${fmt(next)}</td></tr>`;
+            }).join('');
+            box.innerHTML = `<div class="font-extrabold text-slate-900 mb-1.5">📊 Statistik Schuljahr ${escapeHtml(String(currentSchoolYear))} <span class="font-normal text-slate-500">(${cls === 'ALL' ? 'alle Klassen' : escapeHtml(cls)})</span></div>` +
+                `<table class="w-full text-[12.5px] text-left"><thead><tr class="text-[11px] uppercase tracking-wide text-slate-500"><th class="pb-1 pr-3">Klasse</th><th class="pr-3">Fach</th><th class="pr-3 text-right">Geplante Lektionen</th><th class="pr-3 text-right">Mit Hausaufgabe</th><th class="pr-3">Letzte HA</th><th class="pr-3 text-right">Prüfungen</th><th>Nächste Prüfung</th></tr></thead><tbody>${tr}</tbody></table>` +
+                `<p class="text-[11px] text-slate-400 mt-2">Gezählt wird, was im Planer eingetragen ist: «Hausaufgaben fürs nächste Mal» und das Häkchen «Prüfung».</p>`;
+        }
         function slotForLessonKey(key) {
             const id = String(key).split('_').slice(1).join('_');
             return weeklyTemplate.find(s => s.id === id) || null;
@@ -7884,6 +7932,7 @@ Memo: """${text}"""`;
             if (!list) return;
             const filterSel = document.getElementById('yearClassFilter');
             const prev = filterSel.value || 'ALL';
+            setTimeout(renderYearStats, 0);
             const classes = getUniqueClasses();
             filterSel.innerHTML = `<option value="ALL">Alle Klassen</option>` + classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
             filterSel.value = classes.includes(prev) ? prev : 'ALL';
@@ -9548,7 +9597,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'20.8',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'20.9',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
