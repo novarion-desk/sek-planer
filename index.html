@@ -8507,6 +8507,86 @@ Memo: """${text}"""`;
             if (!e) { showToast('Nichts mehr rückgängig zu machen.'); return; }
             journalUndo(e.id);
         }
+        // ---------- Rückgängig, aber spätere Änderungen behalten (ab Version 21.3) ----------
+        function jClone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+        function jEq(x, y) { return jNorm(x) === jNorm(y); }
+        function jIdOf(x) { return String(x && x.id != null ? x.id : stableStringify(journalClean(x))); }
+        // Listen mit Einträgen (Pendenzen, Termine, Sprachmemos): nur das zurücknehmen, was dieser Eintrag geändert hat und seither unverändert blieb
+        function jMergeById(curArr, bArr, aArr, labelFn) {
+            const out = Array.isArray(curArr) ? curArr.map(jClone) : [];
+            const b = Array.isArray(bArr) ? bArr : [], a = Array.isArray(aArr) ? aArr : [];
+            const bm = new Map(b.map(x => [jIdOf(x), x])), am = new Map(a.map(x => [jIdOf(x), x]));
+            const find = id => out.findIndex(x => jIdOf(x) === id);
+            const rev = [], kept = [];
+            bm.forEach((bx, id) => {
+                if (am.has(id)) return;                                   // vom Eintrag gelöscht
+                if (find(id) < 0) { out.splice(Math.min(b.indexOf(bx), out.length), 0, jClone(bx)); rev.push(`«${jSnip(labelFn(bx), 40)}» wieder da`); }
+            });
+            am.forEach((ax, id) => {
+                const i = find(id);
+                if (!bm.has(id)) {                                        // vom Eintrag hinzugefügt
+                    if (i < 0) return;
+                    if (jEq(out[i], ax)) { out.splice(i, 1); rev.push(`«${jSnip(labelFn(ax), 40)}» entfernt`); }
+                    else kept.push(`«${jSnip(labelFn(ax), 40)}» (später geändert)`);
+                    return;
+                }
+                const bx = bm.get(id);
+                if (jEq(bx, ax)) return;                                  // vom Eintrag nicht geändert
+                if (i < 0) kept.push(`«${jSnip(labelFn(ax), 40)}» (später gelöscht)`);
+                else if (jEq(out[i], ax)) { out[i] = jClone(bx); rev.push(`«${jSnip(labelFn(ax), 40)}» zurückgesetzt`); }
+                else kept.push(`«${jSnip(labelFn(ax), 40)}» (später geändert)`);
+            });
+            return { list: out, rev, kept };
+        }
+        function jMergeLesson(key, p, apply) {
+            const cur = lessonsStore[key], rev = [], kept = [];
+            if (!p.b || !p.a || !cur) { kept.push('ganze Lektion (später verändert)'); return { rev, kept }; }
+            const nl = jClone(cur);
+            new Set([...Object.keys(p.b), ...Object.keys(p.a)]).forEach(f => {
+                if (f === 'homeworkSourceKey' || jEq(p.b[f], p.a[f])) return;
+                const lab = JOURNAL_FIELD_LABELS[f] || f;
+                if (jEq(cur[f], p.a[f])) {
+                    if (p.b[f] === undefined) delete nl[f]; else nl[f] = jClone(p.b[f]);
+                    rev.push(lab);
+                } else if (f === 'todos' || f === 'audioClips') {
+                    const r = jMergeById(cur[f], p.b[f], p.a[f], t => t.text || t.transcript || '');
+                    if (r.rev.length) { nl[f] = r.list; rev.push(`${lab} (${r.rev.length})`); }
+                    r.kept.forEach(k => kept.push(`${lab}: ${k}`));
+                    if (!r.rev.length && !r.kept.length) kept.push(`${lab} (später geändert)`);
+                } else kept.push(`${lab} (später geändert)`);
+            });
+            if (apply && rev.length) lessonsStore[key] = journalRestoreLesson(nl);
+            return { rev, kept };
+        }
+        function jMergeMain(f, p, apply) {
+            const d = JOURNAL_MAIN[f], cur = d.get(), label = d.label, rev = [], kept = [];
+            if (f === 'standaloneNotesStore' || f === 'calendarEvents') {
+                const r = jMergeById(cur, p.b, p.a, x => x.text || x.name || x.title || '');
+                if (apply && r.rev.length) d.set(r.list);
+                r.rev.forEach(x => rev.push(`${label}: ${x}`)); r.kept.forEach(x => kept.push(`${label}: ${x}`));
+            } else if (f === 'dayNotesStore') {
+                const nc = jClone(cur || {}), b = p.b || {}, a = p.a || {};
+                new Set([...Object.keys(b), ...Object.keys(a)]).forEach(k => {
+                    if ((b[k] || '') === (a[k] || '')) return;
+                    if ((nc[k] || '') === (a[k] || '')) { if (b[k] === undefined) delete nc[k]; else nc[k] = b[k]; rev.push(`Tagesnotiz ${formatDateCH(k)}`); }
+                    else kept.push(`Tagesnotiz ${formatDateCH(k)} (später geändert)`);
+                });
+                if (apply && rev.length) d.set(nc);
+            } else {
+                kept.push(`${label} (später geändert)`);
+            }
+            return { rev, kept };
+        }
+        // Plan (oder Ausführung) für die Einträge, die später nochmals geändert wurden
+        function journalMergeRun(e, conflicts, apply) {
+            const out = { rev: [], kept: [] };
+            conflicts.forEach(k => {
+                const r = k.startsWith('#') ? jMergeMain(k.slice(1), e.m[k.slice(1)], apply) : (() => { const x = jMergeLesson(k, e.l[k], apply); const lab = journalSlotLabel(k); const pre = `${lab.course} ${lab.date}`; return { rev: x.rev.map(t => `${pre}: ${t}`), kept: x.kept.map(t => `${pre}: ${t}`) }; })();
+                out.rev.push(...r.rev); out.kept.push(...r.kept);
+            });
+            return out;
+        }
+
         // mode: undefined = bei Konflikten nachfragen · 'all' = alles zurücksetzen · 'skip' = nachträglich geänderte auslassen
         function journalUndo(id, mode) {
             const e = journal.find(x => x.id === id);
@@ -8518,7 +8598,9 @@ Memo: """${text}"""`;
             journalRecord();   // noch nicht erfasste Änderungen sauber abschliessen
             const conflicts = journalConflicts(e);
             if (conflicts.length && !mode) { showJournalConflict(e, conflicts); return; }
-            const skip = new Set(mode === 'skip' ? conflicts : []);
+            const skip = new Set(mode === 'skip' || mode === 'merge' ? conflicts : []);
+            let merged = null;
+            if (mode === 'merge') merged = journalMergeRun(e, conflicts, true);
             let n = 0;
             Object.entries(e.l || {}).forEach(([k, p]) => {
                 if (skip.has(k)) return;
@@ -8542,7 +8624,7 @@ Memo: """${text}"""`;
             if (!document.getElementById('notesViewSection').classList.contains('hidden')) renderNotesOverview();
             if (!document.getElementById('holidaysViewSection').classList.contains('hidden')) renderSpecialDaysTable();
             updateJournalUi();
-            const msg = `${e.reason === 'Rückgängig' ? 'Wiederhergestellt' : 'Rückgängig gemacht'}: ${e.reason} · ${journalSummary(e) || e.summary}${skip.size ? ` (${skip.size} ausgelassen)` : ''}`;
+            const msg = `${e.reason === 'Rückgängig' ? 'Wiederhergestellt' : 'Rückgängig gemacht'}: ${e.reason} · ${journalSummary(e) || e.summary}${merged ? ` (${merged.rev.length} zurückgenommen, ${merged.kept.length} später geänderte behalten)` : skip.size ? ` (${skip.size} ausgelassen)` : ''}`;
             if (undoEntry) showUndoToast(msg, () => journalUndo(undoEntry.id, 'all'));
             else showToast(msg, 5000);
             return n;
@@ -8558,11 +8640,19 @@ Memo: """${text}"""`;
                 const x = journalSlotLabel(k);
                 return `<li>${escapeHtml(x.course)} · ${escapeHtml(x.date)} ${escapeHtml(x.time)} – jetzt: «${escapeHtml(lessonTopicLabel(lessonsStore[k] || {}, 50) || 'leer')}»</li>`;
             }).join('');
+            const plan = journalMergeRun(e, conflicts, false);
+            const li = arr => arr.slice(0, 8).map(t => `<li>${escapeHtml(t)}</li>`).join('') + (arr.length > 8 ? `<li>… und ${arr.length - 8} weitere</li>` : '');
+            const planHtml = `<div class="mt-2 rounded-lg bg-white/70 border border-amber-200 px-2.5 py-2">
+                <div class="font-bold text-emerald-800">«Nur diese Änderung zurücknehmen» würde:</div>
+                ${plan.rev.length ? `<div class="mt-0.5 text-emerald-900">zurücknehmen:</div><ul class="list-disc pl-5">${li(plan.rev)}</ul>` : '<div class="mt-0.5 text-slate-600">nichts zurücknehmen (alles wurde später nochmals geändert)</div>'}
+                ${plan.kept.length ? `<div class="mt-1 text-slate-700">unverändert lassen:</div><ul class="list-disc pl-5 text-slate-700">${li(plan.kept)}</ul>` : ''}</div>`;
             box.className = 'mx-3 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950';
             box.innerHTML = `<div class="font-extrabold">«${escapeHtml(e.reason)}» rückgängig machen?</div>
                 <div class="mt-1">${conflicts.length} von ${total} Einträgen wurden danach nochmals geändert:</div>
                 <ul class="list-disc pl-5 mt-1 space-y-0.5">${rows}${conflicts.length > 12 ? '<li>…</li>' : ''}</ul>
+                ${planHtml}
                 <div class="flex flex-wrap gap-2 mt-2.5">
+                    <button type="button" onclick="journalUndo(${jsArg(e.id)}, 'merge')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Nur diese Änderung zurücknehmen, Späteres behalten</button>
                     ${conflicts.length < total ? `<button type="button" onclick="journalUndo(${jsArg(e.id)}, 'skip')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Nur die übrigen zurücksetzen</button>` : ''}
                     <button type="button" onclick="journalUndo(${jsArg(e.id)}, 'all')" class="px-3 py-1.5 bg-white border border-amber-400 rounded-lg font-bold text-amber-900">Alle zurücksetzen (spätere Änderungen gehen verloren)</button>
                     <button type="button" onclick="hideJournalConflict()" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-700">Abbrechen</button>
@@ -9847,7 +9937,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.2',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.3',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

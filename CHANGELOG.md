@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 21.3 – 22.11.2026
+- Neu: Im Änderungsverlauf gibt es bei einer Änderung, die später nochmals überarbeitet wurde, den Knopf «Nur diese Änderung zurücknehmen, Späteres behalten». Die App zeigt vorher, was zurückgenommen wird und was bleibt, und arbeitet pro Feld (Titel, Hauptteil, Hausaufgabe …) und pro Pendenz, Termin oder Tagesnotiz. Später geänderte Teile bleiben unverändert. «Alle zurücksetzen» gibt es weiterhin.
+
 ## Version 21.2 – 22.11.2026
 - Neu: «Unterschiede» bei jeder Cloud-Sicherung und «Unterschiede ansehen» bei der Backup-Datei (Einstellungen → Sicherungen & Backup). Zeigt, was in der Sicherung steht, aber jetzt fehlt: freie Pendenzen, Pendenzen in Lektionen, leere Lektionen, Termine, Tagesnotizen. Mit Häkchen wählen und nur das Gewählte dazuholen. Es wird nur ergänzt, nichts überschrieben oder gelöscht; vorher entsteht automatisch eine Sicherung des aktuellen Stands.
 
