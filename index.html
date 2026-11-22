@@ -1358,6 +1358,10 @@ HA: ...</pre>
                             Backup einspielen
                             <input type="file" accept=".json" onchange="importFullBackup(event)" class="hidden">
                         </label>
+                        <label class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold cursor-pointer hover:bg-emerald-50" title="Zeigt, was in der Datei steht, aber im aktuellen Stand fehlt – und holt nur das Gewählte dazu">
+                            Unterschiede ansehen
+                            <input type="file" accept=".json" onchange="openBackupDiffFile(event)" class="hidden">
+                        </label>
                     </div>
                 </div>
             </div>
@@ -8102,7 +8106,7 @@ Memo: """${text}"""`;
         // ---------- Frühere Versionen einer Lektion ----------
         function backupLabelText(label) {
             return ({ daily: 'Tagessicherung', 'before-import': 'vor Import', 'before-restore': 'vor Wiederherstellung',
-                      'before-migration': 'vor Umstellung auf Monats-Dokumente', manual: 'von Hand' })[label] || label;
+                      'before-migration': 'vor Umstellung auf Monats-Dokumente', 'before-merge': 'vor Ergänzen aus Sicherung', manual: 'von Hand' })[label] || label;
         }
         let versionsCtx = null;   // { key, slot, dayDate, entries: [{ source, at, reason, device, data, backupId }] }
         async function openVersionsModal() {
@@ -8226,7 +8230,7 @@ Memo: """${text}"""`;
         };
         // Diese Aktionen werden nie mit einer vorherigen zusammengelegt
         var JOURNAL_NO_MERGE = new Set(['Verschoben', 'Kopiert', 'Angehängt', 'Nachgeschoben', 'Import', 'Chalk-Import', 'Mehrfach bearbeitet',
-            'Rückgängig', 'Wiederholt', 'Backup wiederhergestellt', 'Backup-Datei importiert', 'Version wiederhergestellt']);
+            'Rückgängig', 'Wiederholt', 'Aus Sicherung ergänzt', 'Backup wiederhergestellt', 'Backup-Datei importiert', 'Version wiederhergestellt']);
         var JOURNAL_SESSION = Math.random().toString(36).slice(2, 10);
         var journal = [];            // neueste zuerst
         var journalBase = null;      // letzter bekannter Stand { lessons: {key: string}, main: {feld: string} }
@@ -9509,7 +9513,10 @@ ${listing}`;
                 list.innerHTML = entries.map(e => `
                     <div class="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5">
                         <span><strong>${escapeHtml(formatDateCH(e.date))}</strong> ${escapeHtml(e.time || '')} • ${Number(e.lessons) || 0} Lektionen${e.label !== 'daily' ? ` • <span class="text-amber-800">${e.label === 'before-restore' ? 'vor Wiederherstellung' : e.label === 'before-import' ? 'vor Import' : e.label === 'before-migration' ? 'vor Umstellung auf Monats-Dokumente' : e.label === 'manual' ? 'von Hand' : escapeHtml(e.label)}</span>` : ''}</span>
-                        <button type="button" onclick="restoreCloudBackup(${jsArg(e.id)})" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10.5px] shrink-0">Wiederherstellen</button>
+                        <span class="flex gap-1 shrink-0">
+                            <button type="button" onclick="openBackupDiffCloud(${jsArg(e.id)})" class="px-2 py-0.5 bg-white border border-emerald-400 text-emerald-900 hover:bg-emerald-50 rounded font-bold text-[10.5px]">Unterschiede</button>
+                            <button type="button" onclick="restoreCloudBackup(${jsArg(e.id)})" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10.5px]">Wiederherstellen</button>
+                        </span>
                     </div>`).join('');
             } catch (err) {
                 list.innerHTML = `<div class="text-rose-700 font-semibold">Liste nicht lesbar: ${escapeHtml(err.code || err.message)}</div>`;
@@ -9539,6 +9546,139 @@ ${listing}`;
             } catch (err) {
                 showToast('Wiederherstellung fehlgeschlagen: ' + (err.code || err.message));
             }
+        }
+
+        // ---------- Sicherung vergleichen: nur Fehlendes dazuholen (ab Version 21.2) ----------
+        // Es wird nur ergänzt: nichts wird überschrieben oder gelöscht. Vorher entsteht automatisch eine Sicherung des aktuellen Stands.
+        var bdCtx = null;   // { label, items: [...] }
+        function bdHasContent(l) { return !!l && (hasLessonContent(l) || (l.todos || []).length > 0 || (l.audioClips || []).length > 0); }
+        function bdComputeDiff(st) {
+            const items = [];
+            const curSn = new Set((standaloneNotesStore || []).map(x => String(x.id)));
+            (st.standaloneNotesStore || []).forEach(sn => { if (sn && !curSn.has(String(sn.id))) items.push({ kind: 'sn', sn }); });
+            let differ = 0;
+            Object.entries(st.lessonsStore || {}).forEach(([key, bl]) => {
+                if (!bl) return;
+                const cl = lessonsStore[key];
+                if (!bdHasContent(cl)) {
+                    if (hasLessonContent(bl) || (bl.todos || []).length) items.push({ kind: 'lesson', key, lesson: bl });
+                    return;
+                }
+                const ids = new Set((cl.todos || []).map(t => String(t.id)));
+                (bl.todos || []).forEach(t => { if (t && !ids.has(String(t.id))) items.push({ kind: 'todo', key, todo: t }); });
+                if (hasLessonContent(bl) && journalStr(bl) !== journalStr(cl)) differ++;
+            });
+            const evKey = e => `${e.id || ''}|${e.name || ''}|${e.start || ''}`;
+            const curEv = new Set((calendarEvents || []).map(e => e.id).filter(Boolean));
+            const curEvAlt = new Set((calendarEvents || []).map(e => `${e.name || ''}|${e.start || ''}`));
+            (st.calendarEvents || []).forEach(e => { if (e && !(e.id && curEv.has(e.id)) && !curEvAlt.has(`${e.name || ''}|${e.start || ''}`)) items.push({ kind: 'event', ev: e }); });
+            Object.entries(st.dayNotesStore || {}).forEach(([iso, txt]) => { if ((txt || '').trim() && !((dayNotesStore || {})[iso] || '').trim()) items.push({ kind: 'daynote', iso, text: txt }); });
+            return { items, differ };
+        }
+        function bdItemLabel(it) {
+            if (it.kind === 'sn') return `«${jSnip(it.sn.text, 90)}»${it.sn.done ? ' (erledigt)' : ''}${it.sn.due ? ` · fällig ${formatDateCH(it.sn.due)}` : ''}`;
+            if (it.kind === 'todo') { const x = journalSlotLabel(it.key); return `${x.course} · ${x.date} · «${jSnip(it.todo.text, 80)}»${it.todo.done ? ' (erledigt)' : ''}`; }
+            if (it.kind === 'lesson') { const x = journalSlotLabel(it.key); return `${x.course} · ${x.date} · «${jSnip(lessonTopicLabel(it.lesson, 60), 60)}»`; }
+            if (it.kind === 'event') return `${jSnip(it.ev.name || '(ohne Name)', 60)}${it.ev.start ? ` · ${formatDateCH(it.ev.start)}` : ''}`;
+            return `${formatDateCH(it.iso)} · «${jSnip(it.text, 80)}»`;
+        }
+        const BD_GROUPS = [['sn', 'Freie Pendenzen'], ['todo', 'Pendenzen in Lektionen'], ['lesson', 'Lektionen, die jetzt leer sind'], ['event', 'Termine'], ['daynote', 'Tagesnotizen']];
+        function bdRender() {
+            const box = document.getElementById('bdBody');
+            if (!box || !bdCtx) return;
+            const { items, differ } = bdCtx;
+            let html = `<div class="text-slate-600 text-[11px] leading-snug">Aufgelistet ist, was in dieser Sicherung steht, im aktuellen Stand aber <b>fehlt</b> (auch Dinge, die du bewusst gelöscht hast). Es wird nur ergänzt, nichts überschrieben oder gelöscht.</div>`;
+            if (!items.length) html += `<div class="py-6 text-center text-slate-500 italic">Nichts Fehlendes gefunden. Der aktuelle Stand enthält alles aus dieser Sicherung.</div>`;
+            BD_GROUPS.forEach(([kind, title]) => {
+                const rows = items.map((it, i) => ({ it, i })).filter(r => r.it.kind === kind);
+                if (!rows.length) return;
+                html += `<div class="font-bold text-slate-500 uppercase text-[10.5px] tracking-wide mt-3 flex items-center justify-between"><span>${escapeHtml(title)} (${rows.length})</span>
+                    <label class="normal-case font-semibold text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked onchange="bdToggleGroup('${kind}', this.checked)"> alle</label></div>`;
+                html += rows.map(r => `<label class="flex items-start gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 mt-1 cursor-pointer"><input type="checkbox" data-bd="${r.i}" checked class="mt-0.5" onchange="bdUpdateCount()"><span class="min-w-0 text-slate-800">${escapeHtml(bdItemLabel(r.it))}</span></label>`).join('');
+            });
+            if (differ) html += `<div class="mt-3 text-[11px] text-slate-500">${differ} Lektion${differ === 1 ? '' : 'en'} ${differ === 1 ? 'hat' : 'haben'} in der Sicherung einen anderen Inhalt als jetzt. Diese werden nicht verändert. Frühere Stände einer Lektion findest du dort unter «Frühere Versionen».</div>`;
+            box.innerHTML = html;
+            bdUpdateCount();
+        }
+        function bdToggleGroup(kind, on) {
+            document.querySelectorAll('#bdBody input[data-bd]').forEach(cb => { if (bdCtx.items[Number(cb.dataset.bd)].kind === kind) cb.checked = on; });
+            bdUpdateCount();
+        }
+        function bdSelected() { return [...document.querySelectorAll('#bdBody input[data-bd]:checked')].map(cb => bdCtx.items[Number(cb.dataset.bd)]); }
+        function bdUpdateCount() {
+            const b = document.getElementById('bdApplyBtn');
+            if (!b) return;
+            const n = bdSelected().length;
+            b.disabled = n === 0;
+            b.innerText = n ? `${n} ausgewählte dazuholen` : 'Nichts ausgewählt';
+        }
+        function bdClose() { document.getElementById('bdModal')?.remove(); bdCtx = null; updateBodyScrollLock(); }
+        function bdOpen(label, st) {
+            const { items, differ } = bdComputeDiff(st || {});
+            bdCtx = { label, items, differ };
+            document.getElementById('bdModal')?.remove();
+            const el = document.createElement('div');
+            el.id = 'bdModal';
+            el.className = 'fixed inset-0 z-[80] bg-slate-900/60 flex items-center justify-center p-3';
+            el.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col text-xs">
+                <div class="px-5 py-3 border-b border-slate-200"><div class="text-base font-extrabold text-slate-900">Unterschiede zur Sicherung</div><div class="text-slate-500 mt-0.5">${escapeHtml(label)}</div></div>
+                <div id="bdBody" class="flex-1 overflow-y-auto custom-scroll px-5 py-3"></div>
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2 rounded-b-2xl">
+                    <button type="button" onclick="bdClose()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold">Schliessen</button>
+                    <button type="button" id="bdApplyBtn" onclick="bdApply()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-bold">Dazuholen</button>
+                </div></div>`;
+            document.body.appendChild(el);
+            updateBodyScrollLock();
+            bdRender();
+        }
+        async function bdApply() {
+            const sel = bdSelected();
+            if (!sel.length || !bdCtx) return;
+            const btn = document.getElementById('bdApplyBtn');
+            if (btn) { btn.disabled = true; btn.innerText = 'Sichere aktuellen Stand …'; }
+            try { await createCloudBackup('before-merge'); } catch (e) { console.warn('Sicherung vor Ergänzen fehlgeschlagen:', e); }
+            markChangeReason('Aus Sicherung ergänzt');
+            let n = 0;
+            sel.forEach(it => {
+                if (it.kind === 'sn') { standaloneNotesStore.push(JSON.parse(JSON.stringify(it.sn))); n++; }
+                else if (it.kind === 'lesson') { lessonsStore[it.key] = JSON.parse(JSON.stringify(it.lesson)); n++; }
+                else if (it.kind === 'todo') {
+                    const l = lessonsStore[it.key] || (lessonsStore[it.key] = blankLesson());
+                    if (!Array.isArray(l.todos)) l.todos = [];
+                    if (!l.todos.some(t => String(t.id) === String(it.todo.id))) { l.todos.push(JSON.parse(JSON.stringify(it.todo))); n++; }
+                }
+                else if (it.kind === 'event') { calendarEvents.push(JSON.parse(JSON.stringify(it.ev))); n++; }
+                else if (it.kind === 'daynote') { dayNotesStore[it.iso] = it.text; n++; }
+            });
+            saveAllState();
+            try { await flushPendingSave(); } catch (e) {}
+            refreshViewsAfterSync();
+            updateOpenNotesBadge();
+            bdClose();
+            showToast(n === 1 ? '1 Eintrag aus der Sicherung ergänzt.' : `${n} Einträge aus der Sicherung ergänzt.`);
+        }
+        async function openBackupDiffCloud(id) {
+            try {
+                const snap = await db.collection('sekSync').doc(id).get();
+                if (!snap.exists) { showToast('Sicherung nicht gefunden.'); return; }
+                const d = snap.data();
+                const st = JSON.parse(await base64GunzipToString(d.enc, d.data));
+                bdOpen(`Cloud-Sicherung vom ${formatDateCH(d.date)} (${backupLabelText(d.label)})`, st);
+            } catch (e) { showToast('Sicherung nicht lesbar: ' + (e.code || e.message)); }
+        }
+        async function openBackupDiffFile(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            try {
+                let data = JSON.parse(await file.text());
+                if (data && data.years && typeof data.years === 'object') {
+                    if (data.years[currentSchoolYear]) data = data.years[currentSchoolYear];
+                    else { showToast(`Die Datei enthält kein Schuljahr ${currentSchoolYear}. Bitte oben das passende Schuljahr wählen.`); return; }
+                }
+                if (!data || typeof data !== 'object') throw new Error('format');
+                bdOpen(`Backup-Datei «${file.name}»`, data);
+            } catch (e) { showToast('Ungültige Backup-Datei.'); }
         }
 
         // ---------- Sicherungsstand & Erinnerung ----------
@@ -9707,7 +9847,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.1',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.2',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
