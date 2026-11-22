@@ -609,6 +609,13 @@
                     </div>
                 </div>
 
+                <!-- VORLAGEN -->
+                <div class="flex flex-wrap items-center gap-2 -mt-1">
+                    <span class="font-bold text-slate-600">📋 Vorlagen:</span>
+                    <button type="button" onclick="openTemplatePicker()" class="px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg font-bold text-slate-800">Vorlage einfügen</button>
+                    <button type="button" onclick="saveLessonAsTemplate()" class="px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg font-bold text-slate-800">Diese Lektion als Vorlage speichern</button>
+                </div>
+
                 <!-- UNTERRICHTSVERLAUF -->
                 <div class="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-xs flex flex-col shrink-0">
                     <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between gap-2">
@@ -3215,6 +3222,7 @@ HA: ...</pre>
                     }
                     if (needsPush) await pushToCloud(); else storeBaseline();
                     loadJournal();
+                    loadTemplatesCloud();
                     maybeCreateDailyCloudBackup();
                     refreshBackupStatusUI();
                     maybeShowBackupReminder();
@@ -7273,6 +7281,11 @@ Text:\n${raw.slice(0, 12000)}`;
             } else {
                 badge.classList.add('hidden');
             }
+            try {
+                const dc = pendenzDueCounts();
+                [badge, badgeM].forEach(bd => { if (bd) { bd.classList.toggle('bg-rose-600', dc.overdue > 0); bd.classList.toggle('bg-amber-500', dc.overdue === 0); } });
+                if (count > 0) scheduleDueReminder();
+            } catch (e) {}
         }
 
         function populateNotesClassFilter() {
@@ -9771,6 +9784,159 @@ ${listing}`;
             } catch (e) { showToast('Ungültige Backup-Datei.'); }
         }
 
+        // =========================================================================
+        // LEKTIONS-VORLAGEN (ab Version 21.4)
+        // Eigenes Cloud-Dokument <Basis>__T (kommt nie mit den Planungsdaten in Berührung) plus Kopie im Browser.
+        // Eine Vorlage füllt nur das offene Lektionsfenster; gespeichert wird erst mit «Speichern».
+        // =========================================================================
+        var lessonTemplates = [];
+        function templatesDocId() {
+            return "planer_" + btoa(unescape(encodeURIComponent(privateSyncKey))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 28) + '__T';
+        }
+        function loadTemplatesLocal() {
+            try { lessonTemplates = JSON.parse(localStorage.getItem(accountStorageName('lessonTemplates')) || '[]') || []; } catch (e) { lessonTemplates = []; }
+            if (!Array.isArray(lessonTemplates)) lessonTemplates = [];
+        }
+        async function loadTemplatesCloud() {
+            loadTemplatesLocal();
+            if (isDemoMode || !db || !currentUser || !privateSyncKey) return;
+            try {
+                const snap = await db.collection('sekSync').doc(templatesDocId()).get();
+                if (snap.exists && Array.isArray(snap.data().templates)) {
+                    const map = new Map();
+                    [...lessonTemplates, ...snap.data().templates].forEach(t => { if (t && t.id) map.set(t.id, t); });
+                    lessonTemplates = [...map.values()].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+                    try { localStorage.setItem(accountStorageName('lessonTemplates'), JSON.stringify(lessonTemplates)); } catch (e) {}
+                }
+            } catch (e) { console.warn('Vorlagen nicht lesbar:', e); }
+        }
+        async function persistTemplates() {
+            if (isDemoMode) return;
+            try { localStorage.setItem(accountStorageName('lessonTemplates'), JSON.stringify(lessonTemplates)); } catch (e) {}
+            if (isDemoMode || !db || !currentUser || !privateSyncKey) return;
+            try {
+                await db.collection('sekSync').doc(templatesDocId()).set({ ownerUid: currentUser.uid, kind: 'templates', templates: lessonTemplates,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { console.warn('Vorlagen konnten nicht gespeichert werden:', e); showToast('Vorlage nur auf diesem Gerät gespeichert (Cloud nicht erreichbar).'); }
+        }
+        function saveLessonAsTemplate() {
+            if (!activeLessonKey) return;
+            const title = document.getElementById('editLessonTitle').value.trim();
+            const einstieg = document.getElementById('editPhaseEinstieg').innerHTML;
+            const hauptteil = document.getElementById('editPhaseHauptteil').innerHTML;
+            const schluss = document.getElementById('editPhaseSchluss').innerHTML;
+            const homework = document.getElementById('editLessonHomework').value.trim();
+            const todos = tempLessonTodos.filter(t => (t.text || '').trim()).map(t => ({ text: t.text }));
+            const empty = !htmlToPlainText(einstieg).trim() && !htmlToPlainText(hauptteil).trim() && !htmlToPlainText(schluss).trim() && !homework && !todos.length;
+            if (empty) { showToast('Die Lektion ist noch leer – nichts zum Speichern.'); return; }
+            const name = (prompt('Name der Vorlage:', title || 'Neue Vorlage') || '').trim();
+            if (!name) return;
+            lessonTemplates.unshift({ id: `tpl-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name, createdAt: new Date().toISOString(),
+                title, isExam: document.getElementById('editLessonIsExam').checked, einstieg, hauptteil, schluss, homework, todos });
+            persistTemplates();
+            showToast(`Vorlage «${name}» gespeichert.`);
+        }
+        function openTemplatePicker() {
+            if (!activeLessonKey) return;
+            document.getElementById('tplPicker')?.remove();
+            const el = document.createElement('div');
+            el.id = 'tplPicker';
+            el.className = 'fixed inset-0 z-[85] bg-slate-900/60 flex items-center justify-center p-3';
+            el.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col text-xs">
+                <div class="px-5 py-3 border-b border-slate-200 text-base font-extrabold text-slate-900">Vorlage einfügen</div>
+                <div id="tplList" class="flex-1 overflow-y-auto custom-scroll px-5 py-3 flex flex-col gap-2"></div>
+                <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end rounded-b-2xl"><button type="button" onclick="document.getElementById('tplPicker').remove()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold">Schliessen</button></div></div>`;
+            document.body.appendChild(el);
+            renderTemplateList();
+        }
+        function renderTemplateList() {
+            const box = document.getElementById('tplList');
+            if (!box) return;
+            if (!lessonTemplates.length) { box.innerHTML = `<div class="py-6 text-center text-slate-500 italic">Noch keine Vorlage. Fülle eine Lektion aus und tippe auf «Diese Lektion als Vorlage speichern».</div>`; return; }
+            box.innerHTML = lessonTemplates.map(t => {
+                const prev = jSnip(htmlToPlainText(t.hauptteil || t.einstieg || ''), 110);
+                return `<div class="border border-slate-200 rounded-xl px-3 py-2 flex items-start gap-2">
+                    <div class="min-w-0 flex-1"><div class="font-extrabold text-slate-900">${escapeHtml(t.name)}${t.isExam ? ' <span class="text-rose-700">📝</span>' : ''}</div>
+                    <div class="text-slate-500 truncate">${escapeHtml(t.title || '')}${t.title && prev ? ' · ' : ''}${escapeHtml(prev)}</div>
+                    ${t.todos && t.todos.length ? `<div class="text-amber-800">${t.todos.length} Pendenz${t.todos.length === 1 ? '' : 'en'}</div>` : ''}</div>
+                    <div class="flex flex-col gap-1 shrink-0">
+                        <button type="button" onclick="applyTemplate(${jsArg(t.id)})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">Einfügen</button>
+                        <button type="button" onclick="deleteTemplate(${jsArg(t.id)})" class="px-2.5 py-1 bg-white border border-slate-300 text-slate-600 rounded-lg font-bold">Löschen</button>
+                    </div></div>`;
+            }).join('');
+        }
+        function applyTemplate(id) {
+            const t = lessonTemplates.find(x => x.id === id);
+            if (!t) return;
+            const hasContent = ['editPhaseEinstieg', 'editPhaseHauptteil', 'editPhaseSchluss'].some(i => htmlToPlainText(document.getElementById(i).innerHTML).trim()) || document.getElementById('editLessonTitle').value.trim() || document.getElementById('editLessonHomework').value.trim();
+            if (hasContent && !confirm(`Die Lektion enthält schon Text.\n\nMit der Vorlage «${t.name}» überschreiben? (Erst mit «Speichern» wird es übernommen. Mit «Abbrechen» bleibt alles wie vorher.)`)) return;
+            document.getElementById('editLessonTitle').value = t.title || '';
+            document.getElementById('editPhaseEinstieg').innerHTML = t.einstieg || '';
+            document.getElementById('editPhaseHauptteil').innerHTML = t.hauptteil || '';
+            document.getElementById('editPhaseSchluss').innerHTML = t.schluss || '';
+            document.getElementById('editLessonHomework').value = t.homework || '';
+            document.getElementById('editLessonIsExam').checked = !!t.isExam;
+            (t.todos || []).forEach((x, i) => { if (!tempLessonTodos.some(y => y.text === x.text)) tempLessonTodos.push({ id: Date.now() + i, text: x.text, done: false }); });
+            renderModalTodosList();
+            requestAnimationFrame(() => document.querySelectorAll('#lessonModal [data-autogrow]').forEach(autoGrow));
+            updateParallelPreview();
+            document.getElementById('tplPicker')?.remove();
+            showToast(`Vorlage «${t.name}» eingefügt. Mit «Speichern» übernehmen.`);
+        }
+        function deleteTemplate(id) {
+            const t = lessonTemplates.find(x => x.id === id);
+            if (!t || !confirm(`Vorlage «${t.name}» löschen?\n\nBereits eingefügte Lektionen bleiben unverändert.`)) return;
+            lessonTemplates = lessonTemplates.filter(x => x.id !== id);
+            persistTemplates();
+            renderTemplateList();
+        }
+
+        // =========================================================================
+        // PENDENZ-ERINNERUNG (ab Version 21.4): Hinweis beim Öffnen, wenn Pendenzen fällig oder überfällig sind
+        // =========================================================================
+        function pendenzDueCounts() {
+            const today = formatDateISO(new Date());
+            let overdue = 0, dueToday = 0;
+            const tally = due => { if (due < today) overdue++; else if (due === today) dueToday++; };
+            standaloneNotesStore.forEach(sn => { if (!sn.done) tally(effectiveDue({ isStandalone: true, sn })); });
+            Object.entries(lessonsStore).forEach(([key, lesson]) => {
+                (lesson && Array.isArray(lesson.todos) ? lesson.todos : []).forEach(todo => { if (!todo.done) tally(effectiveDue({ isStandalone: false, todo, isoDate: key.split('_')[0] })); });
+            });
+            return { overdue, dueToday };
+        }
+        var reminderTimer = null, reminderShown = false;
+        function scheduleDueReminder() {
+            if (reminderShown || reminderTimer) return;
+            reminderTimer = setTimeout(() => { reminderTimer = null; showDueReminder(); }, 4000);
+        }
+        function showDueReminder() {
+            if (reminderShown) return;
+            const today = formatDateISO(new Date());
+            try { if (localStorage.getItem(accountStorageName('dueReminderDay')) === today) { reminderShown = true; return; } } catch (e) {}
+            const { overdue, dueToday } = pendenzDueCounts();
+            if (!overdue && !dueToday) return;
+            reminderShown = true;
+            document.getElementById('dueReminder')?.remove();
+            const parts = [];
+            if (dueToday) parts.push(`${dueToday} heute fällig`);
+            if (overdue) parts.push(`${overdue} überfällig`);
+            const el = document.createElement('div');
+            el.id = 'dueReminder';
+            el.className = 'fixed top-3 left-1/2 -translate-x-1/2 z-[75] max-w-[92vw] bg-amber-50 border border-amber-300 text-amber-950 rounded-2xl shadow-lg px-4 py-2.5 text-xs flex items-center gap-3';
+            el.innerHTML = `<span class="font-extrabold">🔔 Pendenzen: ${escapeHtml(parts.join(', '))}</span>
+                <button type="button" onclick="document.getElementById('dueReminder').remove(); showNotesViewFromReminder()" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold whitespace-nowrap">Anzeigen</button>
+                <button type="button" aria-label="Schliessen" onclick="dismissDueReminder()" class="px-1.5 text-amber-900 font-extrabold text-sm">✕</button>`;
+            document.body.appendChild(el);
+        }
+        function dismissDueReminder() {
+            document.getElementById('dueReminder')?.remove();
+            try { localStorage.setItem(accountStorageName('dueReminderDay'), formatDateISO(new Date())); } catch (e) {}
+        }
+        function showNotesViewFromReminder() {
+            try { localStorage.setItem(accountStorageName('dueReminderDay'), formatDateISO(new Date())); } catch (e) {}
+            switchMainTab('notes');
+        }
+
         // ---------- Sicherungsstand & Erinnerung ----------
         let lastManualExportAt = '';
         function daysSince(iso) {
@@ -9937,7 +10103,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.3',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.4',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.4 – 22.11.2026
+- Neu: Pendenz-Erinnerung. Beim Öffnen erscheint ein Hinweis, wenn Pendenzen heute fällig oder überfällig sind (einmal pro Tag, mit «Anzeigen»). Das Abzeichen bei «Pendenzen» wird rot, sobald etwas überfällig ist
+- Neu: Lektions-Vorlagen. Im Lektionsfenster «Diese Lektion als Vorlage speichern» und «Vorlage einfügen». Das Einfügen füllt nur das offene Fenster, übernommen wird erst mit «Speichern». Vorlagen liegen in einem eigenen Cloud-Dokument, getrennt von den Planungsdaten
+- Keine Änderung an den Firebase-Regeln nötig
+
 ## Version 21.3 – 22.11.2026
 - Neu: Im Änderungsverlauf gibt es bei einer Änderung, die später nochmals überarbeitet wurde, den Knopf «Nur diese Änderung zurücknehmen, Späteres behalten». Die App zeigt vorher, was zurückgenommen wird und was bleibt, und arbeitet pro Feld (Titel, Hauptteil, Hausaufgabe …) und pro Pendenz, Termin oder Tagesnotiz. Später geänderte Teile bleiben unverändert. «Alle zurücksetzen» gibt es weiterhin.
 
