@@ -1409,9 +1409,13 @@ HA: ...</pre>
                     <div id="driveBackupBox" class="border-t border-emerald-200 pt-2.5 mt-1 flex flex-col gap-2">
                         <div class="font-bold text-[11px]">Google Drive (Ordner «Teaching Cockpit Backups»):</div>
                         <div id="driveBackupStatus" class="bg-white border border-emerald-200 rounded-lg p-2 text-[11px] font-semibold leading-relaxed whitespace-pre-line">Noch nie in Drive gesichert.</div>
+                        <div id="driveFolderLine" class="text-[11px] font-semibold"></div>
                         <div class="flex flex-wrap gap-2">
                             <button type="button" id="driveBackupBtn" onclick="driveBackupData()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">Jetzt in Drive sichern (Daten, .json)</button>
+                            <button type="button" onclick="chooseDriveFolder()" class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold hover:bg-emerald-50">📁 Ordner wählen</button>
+                            <button type="button" id="driveFolderResetBtn" onclick="resetDriveFolder()" class="hidden px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-bold hover:bg-slate-50">Ordner zurücksetzen</button>
                         </div>
+                        <div id="driveAccountLine" class="text-[10.5px] text-emerald-900/70"></div>
                         <label class="flex items-center gap-2 text-[11px] font-semibold cursor-pointer">
                             <input type="checkbox" id="driveAutoChk" onchange="setDriveAuto(this.checked)" class="w-4 h-4 rounded">
                             <span>Beim Öffnen daran erinnern, höchstens 1× pro Woche (die Sicherung selbst startest du mit einem Klick)</span>
@@ -7915,9 +7919,31 @@ Memo: """${text}"""`;
             const st = document.getElementById('driveBackupStatus'); if (!st) return;
             st.innerText = `☁️ Letzte Drive-Sicherung (Daten): ${describeAgo(driveLast())}` + (driveLastCode() ? `\n🧩 Letzte Drive-Sicherung (Code): ${describeAgo(driveLastCode())}` : '');
             const chk = document.getElementById('driveAutoChk'); if (chk) chk.checked = driveAutoOn();
+            const root = window.DriveBackup ? DriveBackup.getRoot() : null;
+            const fl = document.getElementById('driveFolderLine');
+            if (fl) {
+                const lastUrl = (() => { try { return localStorage.getItem(accountStorageName('lastDriveUrl')) || ''; } catch (e) { return ''; } })();
+                fl.innerHTML = `📁 Zielordner: <b>${escapeHtml(root && root.name ? root.name : 'Teaching Cockpit Backups (Standard, in «Mein Laufwerk»)')}</b>` +
+                    (root && root.url ? ` · <a href="${escapeHtml(root.url)}" target="_blank" rel="noopener" class="underline text-emerald-800">öffnen</a>` : '') +
+                    (lastUrl ? `<br>Letzte Sicherung: <a href="${escapeHtml(lastUrl)}" target="_blank" rel="noopener" class="underline text-emerald-800">Ordner in Drive öffnen</a>` : '');
+            }
+            const rb = document.getElementById('driveFolderResetBtn'); if (rb) rb.classList.toggle('hidden', !(root && root.id));
             const own = document.getElementById('driveOwnerBox');
-            if (own) own.classList.toggle('hidden', !(window.DriveBackup && currentUser && await DriveBackup.isOwner(currentUser.email)));
+            const isOwn = !!(window.DriveBackup && currentUser && await DriveBackup.isOwner(currentUser.email));
+            if (own) own.classList.toggle('hidden', !isOwn);
+            const acc = document.getElementById('driveAccountLine');
+            if (acc) acc.innerText = currentUser && currentUser.email ? `Angemeldet als ${currentUser.email}${isOwn ? ' (Besitzer: Code-Sicherung sichtbar)' : ' (kein Besitzer: nur Daten-Sicherung)'}` : '';
         }
+        async function chooseDriveFolder() {
+            if (isDemoMode) { showToast('Im Demo-Modus nicht verfügbar.'); return; }
+            try {
+                const f = await DriveBackup.pickFolder(); if (!f) return;
+                DriveBackup.setRoot(f);
+                showToast(`Zielordner: ${f.name}`, 4000);
+            } catch (e) { showToast('Ordnerwahl nicht möglich: ' + (e && e.message ? e.message : e), 7000); }
+            refreshDriveUI();
+        }
+        function resetDriveFolder() { DriveBackup.setRoot(null); showToast('Zielordner zurückgesetzt (Standard).'); refreshDriveUI(); }
         async function driveBackupData() {
             if (isDemoMode) { showToast('Im Demo-Modus nicht verfügbar.'); return; }
             const btn = document.getElementById('driveBackupBtn'); if (btn) btn.disabled = true;
@@ -7927,9 +7953,9 @@ Memo: """${text}"""`;
                 const { payload, attachments, wanted } = await buildFullBackup();
                 const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
                 const name = `Sek_Planer_Backup_${formatDateISO(new Date())}_${new Date().toTimeString().slice(0, 5).replace(':', '')}.json`;
-                await DriveBackup.upload('Sek Planer', name, blob, 'application/json');
-                try { localStorage.setItem(accountStorageName('lastDriveBackup'), new Date().toISOString()); } catch (e) {}
-                showToast(`In Drive gesichert: ${name} (${(blob.size / 1048576).toFixed(1)} MB${wanted.size ? `, ${Object.keys(attachments).length} Anhänge` : ''})`, 5000);
+                const up = await DriveBackup.upload('Sek Planer', name, blob, 'application/json');
+                try { localStorage.setItem(accountStorageName('lastDriveBackup'), new Date().toISOString()); localStorage.setItem(accountStorageName('lastDriveUrl'), up.folderUrl || ''); } catch (e) {}
+                showToast(`In Drive gesichert: ${up.rootName} › Sek Planer › ${name} (${(blob.size / 1048576).toFixed(1)} MB${wanted.size ? `, ${Object.keys(attachments).length} Anhänge` : ''})`, 8000);
             } catch (e) { showToast('Drive-Sicherung fehlgeschlagen: ' + (e && e.message ? e.message : e), 7000); }
             finally { if (btn) btn.disabled = false; refreshDriveUI(); }
         }
@@ -7943,11 +7969,12 @@ Memo: """${text}"""`;
                 for (const repo of repos) {
                     const r = await DriveBackup.codeZip(repo, (n, i, t) => { if (st) st.innerText = `${n}: Datei ${i}/${t} …`; });
                     const label = repo === 'novarion-desk.github.io' ? 'Website' : repo;
-                    await DriveBackup.upload('Code', `${label}_${stamp}.zip`, r.zip, 'application/zip');
+                    const up = await DriveBackup.upload('Code', `${label}_${stamp}.zip`, r.zip, 'application/zip');
+                    try { localStorage.setItem(accountStorageName('lastDriveUrl'), up.folderUrl || ''); } catch (e) {}
                     done++; miss += r.missing;
                 }
                 try { localStorage.setItem(accountStorageName('lastDriveCode'), new Date().toISOString()); } catch (e) {}
-                if (st) st.innerText = `✅ ${done} App${done > 1 ? 's' : ''} als ZIP in Drive (Ordner «Code»).` + (miss ? ` ${miss} Datei(en) nicht lesbar.` : '');
+                if (st) st.innerText = `✅ ${done} App${done > 1 ? 's' : ''} als ZIP in Drive (Ordner «Code» im Zielordner).` + (miss ? ` ${miss} Datei(en) nicht lesbar.` : '');
                 showToast(`Code gesichert: ${done} ZIP-Datei${done > 1 ? 'en' : ''} in Drive.`, 5000);
             } catch (e) { if (st) st.innerText = ''; showToast('Code-Sicherung fehlgeschlagen: ' + (e && e.message ? e.message : e), 7000); }
             finally { refreshDriveUI(); }
@@ -10374,7 +10401,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.6',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.7',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

@@ -74,13 +74,28 @@
     folderCache[key] = id; return id;
   }
   // Datei in «Teaching Cockpit Backups / <App>» ablegen
+  var memRoot;   // Zielordner: im Speicher gehalten, zusätzlich im Browser abgelegt
+  function getRoot() {
+    if (memRoot !== undefined) return memRoot;
+    try { memRoot = JSON.parse(localStorage.getItem('tcb_root') || 'null'); } catch (e) { memRoot = null; }
+    return memRoot;
+  }
+  function setRoot(o) {
+    memRoot = o ? { id: o.id, name: o.name, url: o.url } : null;
+    try { if (o) localStorage.setItem('tcb_root', JSON.stringify(memRoot)); else localStorage.removeItem('tcb_root'); } catch (e) {}
+    folderCache = {};
+  }
+  function folderUrl(id) { return 'https://drive.google.com/drive/folders/' + id; }
   async function upload(appName, fileName, blob, mime) {
-    var root = await ensureFolder(CFG.rootFolder);
+    var chosen = getRoot();
+    var root = chosen && chosen.id ? chosen.id : await ensureFolder(CFG.rootFolder);
     var folder = await ensureFolder(appName, root);
     var boundary = 'tcb' + Math.random().toString(36).slice(2);
     var meta = JSON.stringify({ name: fileName, parents: [folder] });
     var body = new Blob(['--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta + '\r\n--' + boundary + '\r\nContent-Type: ' + (mime || 'application/octet-stream') + '\r\n\r\n', blob, '\r\n--' + boundary + '--']);
-    return api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + boundary }, body: body });
+    var res = await api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + boundary }, body: body });
+    res.folderId = folder; res.folderUrl = folderUrl(folder); res.rootName = chosen && chosen.name ? chosen.name : CFG.rootFolder;
+    return res;
   }
 
   // ---- ZIP (ohne Kompression) ----
@@ -149,5 +164,22 @@
     });
   }
 
-  window.DriveBackup = { CFG: CFG, isOwner: isOwner, getToken: getToken, hasToken: hasToken, upload: upload, makeZip: makeZip, codeZip: codeZip, pick: pick, sha256Hex: sha256Hex };
+  // ---- Zielordner wählen (Google Picker, nur Ordner) ----
+  async function pickFolder() {
+    var t = await getToken(true);
+    if (!(window.google && google.picker)) {
+      if (!window.gapi) await loadScript('https://apis.google.com/js/api.js');
+      await new Promise(function (res, rej) { gapi.load('picker', { callback: res, onerror: rej }); });
+    }
+    return new Promise(function (resolve) {
+      var view = new google.picker.DocsView(google.picker.ViewId.FOLDERS).setIncludeFolders(true).setSelectFolderEnabled(true).setMimeTypes('application/vnd.google-apps.folder');
+      new google.picker.PickerBuilder().addView(view).setTitle('Ordner für die Sicherungen wählen').setOAuthToken(t).setDeveloperKey(CFG.apiKey).setAppId(CFG.projectNumber)
+        .setLocale('de').setCallback(function (d) {
+          if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) { var f = d.docs[0]; resolve({ id: f.id, name: f.name, url: f.url || folderUrl(f.id) }); }
+          else if (d.action === google.picker.Action.CANCEL) resolve(null);
+        }).build().setVisible(true);
+    });
+  }
+
+  window.DriveBackup = { getRoot: getRoot, setRoot: setRoot, folderUrl: folderUrl, pickFolder: pickFolder, CFG: CFG, isOwner: isOwner, getToken: getToken, hasToken: hasToken, upload: upload, makeZip: makeZip, codeZip: codeZip, pick: pick, sha256Hex: sha256Hex };
 })();

@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.7 – 23.11.2026
+- Neu: Unter ⚙️ → «Google Drive» kannst du mit «📁 Ordner wählen» einen eigenen Zielordner in Drive wählen oder anlegen. Die App merkt ihn sich («Ordner zurücksetzen» geht zurück zum Standard). Daten und Code werden dort in Unterordnern «Sek Planer» und «Code» abgelegt
+- Neu: Die App zeigt den Zielordner, nach dem Sichern den Pfad und einen Link «Ordner in Drive öffnen»
+- Neu: Unter dem Drive-Bereich steht, mit welcher Adresse du angemeldet bist und ob die Besitzer-Knöpfe (Code sichern) sichtbar sind
+
 ## Version 21.6 – 23.11.2026
 - Neu: «Backup herunterladen» enthält jetzt auch die Anhänge aus «Dateien & Links» (Format sekplaner-backup-v3). Beim Einlesen eines Backups werden fehlende Anhänge in der Cloud ergänzt, bestehende nie überschrieben. Alte Backup-Dateien lassen sich weiterhin einlesen
 - Die Backup-Datei wird mit vielen Anhängen grösser (mehrere MB)
