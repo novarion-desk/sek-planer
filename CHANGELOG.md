@@ -1,5 +1,12 @@
 # Änderungen
 
+## Version 21.5 – 23.11.2026
+- Neu: In der Lektion gibt es «Dateien & Links». Dateien per Drag & Drop (Computer) oder «+ Datei» (iPad/Tablet) hinzufügen, dazu Links (z. B. Google Drive). Klick auf eine Datei öffnet eine Vorschau (Bilder, PDF ganz, andere Typen zum Herunterladen); ein Link öffnet in neuem Tab
+- Bilder werden automatisch verkleinert. Andere Dateien (z. B. PDF) bis ca. 650 KB, grössere bitte als Link
+- Die Dateien liegen in eigenen Cloud-Dokumenten, nicht in den Planungsdaten; in der Lektion steht nur Name und Grösse. In der Wochenkarte erscheint eine Büroklammer
+- Firebase-Regeln: vermutlich keine Änderung nötig (gleiche Art Dokument wie die Vorlagen)
+- Spätere Erweiterung geplant: Firebase Storage für grosse Dateien
+
 ## Version 21.4 – 22.11.2026
 - Neu: Pendenz-Erinnerung. Beim Öffnen erscheint ein Hinweis, wenn Pendenzen heute fällig oder überfällig sind (einmal pro Tag, mit «Anzeigen»). Das Abzeichen bei «Pendenzen» wird rot, sobald etwas überfällig ist
 - Neu: Lektions-Vorlagen. Im Lektionsfenster «Diese Lektion als Vorlage speichern» und «Vorlage einfügen». Das Einfügen füllt nur das offene Fenster, übernommen wird erst mit «Speichern». Vorlagen liegen in einem eigenen Cloud-Dokument, getrennt von den Planungsdaten

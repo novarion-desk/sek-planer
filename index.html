@@ -561,6 +561,20 @@
     <!-- ===================================================================== -->
     <!-- MODAL 1: LEKTIONS-EDITOR (VOLL SCROLLBAR & RESPONSIVE)                -->
     <!-- ===================================================================== -->
+    <div id="filePreviewModal" class="fixed inset-0 hidden flex items-center justify-center p-3" style="z-index:80;background:rgba(15,23,42,.65)" onclick="if(event.target===this)closeFilePreview()">
+        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="width:min(900px,100%);max-height:92dvh">
+            <div class="flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-100 border-b border-slate-200">
+                <span id="filePreviewTitle" class="font-bold text-slate-800 text-xs truncate"></span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <a id="filePreviewOpen" target="_blank" rel="noopener" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-800">Öffnen</a>
+                    <a id="filePreviewDl" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-800">Herunterladen</a>
+                    <button type="button" onclick="closeFilePreview()" class="px-2.5 py-1 bg-slate-800 text-white rounded-lg text-[11px] font-bold">Schliessen</button>
+                </div>
+            </div>
+            <div id="filePreviewBody" class="flex-1 min-h-0 overflow-auto flex items-center justify-center bg-slate-50 p-2" style="min-height:200px"></div>
+        </div>
+    </div>
+
     <div id="lessonModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start md:items-center justify-center p-2 sm:p-4 overflow-y-auto hidden">
         <div class="bg-white rounded-2xl max-w-5xl w-full h-[92dvh] max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden my-auto">
             <!-- Fixierter Kopf -->
@@ -779,6 +793,25 @@
                         </div>
                         <p id="voiceLivePreview" class="hidden text-[11px] text-indigo-800 font-medium bg-white p-2 rounded-lg border border-indigo-200">Höre zu...</p>
                         <div id="audioClipsList" class="flex flex-col gap-1.5"></div>
+                    </div>
+
+                    <div id="lessonFilesPanel" style="grid-column:1/-1" class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col gap-2 shrink-0">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                                <i data-lucide="paperclip" class="w-4 h-4 text-amber-700"></i>
+                                <span>Dateien &amp; Links</span>
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="document.getElementById('lessonFileInput').click()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px]">+ Datei</button>
+                                <input type="file" id="lessonFileInput" multiple class="hidden" onchange="addLessonFiles(this.files); this.value='';">
+                            </div>
+                        </div>
+                        <div id="lessonFileDrop" class="border-2 border-dashed border-amber-300 rounded-lg px-3 py-2 text-[11px] text-amber-900/80 text-center">Dateien hierher ziehen oder «+ Datei» wählen (Bilder, PDF; bis ca. 650 KB, Bilder werden automatisch verkleinert)</div>
+                        <div class="flex gap-1.5">
+                            <input type="url" id="lessonLinkInput" placeholder="Link einfügen (z. B. Google Drive, OneDrive)" onkeydown="if(event.key==='Enter'){event.preventDefault();addLessonLink();}" class="flex-1 min-w-0 bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 text-[11px]">
+                            <button type="button" onclick="addLessonLink()" class="px-2.5 py-1 bg-white border border-amber-300 hover:bg-amber-100 rounded-lg font-bold text-[11px] text-amber-900">Link +</button>
+                        </div>
+                        <div id="lessonFilesList" class="flex flex-col gap-1.5"></div>
                     </div>
                 </div>
             </div>
@@ -1460,6 +1493,7 @@ HA: ...</pre>
         // Esc schliesst das oberste offene Modal
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
+            if (!document.getElementById('filePreviewModal').classList.contains('hidden')) { closeFilePreview(); return; }
             const closers = { quickNoteModal: () => closeQuickNoteModal(), lessonModal: () => closeLessonModal(),
                 universalImportModal: () => closeUniversalImportModal(), scheduleEditorModal: () => closeScheduleEditorModal(),
                 settingsModal: () => closeSettingsModal(), searchModal: () => closeSearchModal(), versionsModal: () => closeVersionsModal(),
@@ -4490,6 +4524,7 @@ HA: ...</pre>
                             </div>
                             <div class="flex items-center gap-1 shrink-0 no-print">
                                 ${data.audioClips && data.audioClips.length > 0 ? `<span title="Sprachmemo" class="text-rose-600"><i data-lucide="mic" class="w-3 h-3"></i></span>` : ''}
+                                ${data.files && data.files.length > 0 ? `<span title="Dateien / Links" class="text-amber-700"><i data-lucide="paperclip" class="w-3 h-3"></i></span>` : ''}
                             </div>
                         </div>
 
@@ -4669,7 +4704,8 @@ HA: ...</pre>
                 document.getElementById('editLessonIsExam').checked,
                 ['editPhaseEinstieg', 'editPhaseHauptteil', 'editPhaseSchluss'].map(id => htmlToPlainText(document.getElementById(id).innerHTML)),
                 tempAudioClips.map(c => [c.id, c.transcript]),
-                tempLessonTodos
+                tempLessonTodos,
+                tempFiles.map(f => f.id)
             ]);
         }
 
@@ -4719,6 +4755,8 @@ HA: ...</pre>
             }
 
             tempAudioClips = Array.isArray(data.audioClips) ? [...data.audioClips] : [];
+            tempFiles = Array.isArray(data.files) ? data.files.map(f => ({ ...f })) : [];
+            renderLessonFiles();
             tempLessonTodos = Array.isArray(data.todos) ? JSON.parse(JSON.stringify(data.todos)) : [];
 
             renderAudioClipsList();
@@ -4931,6 +4969,7 @@ HA: ...</pre>
                 homework,
                 homeworkTargetKey: hwTargetKey,
                 audioClips: tempAudioClips,
+                files: tempFiles.map(f => ({ ...f })),
                 todos: tempLessonTodos
             };
 
@@ -7843,6 +7882,124 @@ Memo: """${text}"""`;
             showToast("Transkription in den Hauptteil übernommen!");
         }
 
+
+        // ===== Dateien & Links in der Lektion (Variante 1: kleine Dateien direkt in der Cloud) =====
+        let tempFiles = [];
+        const fileCache = {};            // id -> dataUrl (Sitzung)
+        const FILE_MAX_BYTES = 650 * 1024;
+        function newFileId() { return 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+        function fileDocId(id) { return templatesDocId().replace(/__T$/, '') + '__F_' + id; }
+        function fmtFileSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+        function fileIcon(f) { return f.kind === 'link' ? '🔗' : /^image\//.test(f.type) ? '🖼️' : f.type === 'application/pdf' ? '📕' : /word|document/.test(f.type) ? '📘' : /sheet|excel/.test(f.type) ? '📗' : '📄'; }
+        function readAsDataUrl(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
+        function shrinkImage(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file); const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    let max = 1600, q = 0.82, out = '';
+                    for (let i = 0; i < 6; i++) {
+                        const k = Math.min(1, max / Math.max(img.width, img.height));
+                        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+                        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+                        out = c.toDataURL('image/jpeg', q);
+                        if (out.length * 0.75 <= FILE_MAX_BYTES) return resolve(out);
+                        max = Math.round(max * 0.8); q = Math.max(0.6, q - 0.05);
+                    }
+                    reject(new Error('zu gross'));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild nicht lesbar')); };
+                img.src = url;
+            });
+        }
+        async function addLessonFiles(fileList) {
+            if (!activeLessonKey) return;
+            for (const file of Array.from(fileList || [])) {
+                try {
+                    let dataUrl, type = file.type || 'application/octet-stream', name = file.name;
+                    if (/^image\/(jpeg|png|webp|gif|bmp)/.test(type) || /^image\//.test(type) && file.size > FILE_MAX_BYTES) {
+                        dataUrl = await shrinkImage(file); type = 'image/jpeg'; name = name.replace(/\.[^.]+$/, '') + '.jpg';
+                    } else {
+                        if (file.size > FILE_MAX_BYTES) { showToast(`«${file.name}» ist mit ${fmtFileSize(file.size)} zu gross (max. ca. 650 KB). Bitte als Link einfügen.`, 5000); continue; }
+                        dataUrl = await readAsDataUrl(file);
+                    }
+                    const f = { id: newFileId(), name, type, size: Math.round(dataUrl.length * 0.75), kind: 'file' };
+                    fileCache[f.id] = dataUrl;
+                    if (!isDemoMode && db && currentUser && privateSyncKey) {
+                        try {
+                            await db.collection('sekSync').doc(fileDocId(f.id)).set({ ownerUid: currentUser.uid, kind: 'file', name, type, dataUrl, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        } catch (e) { console.warn('Datei-Upload:', e); showToast(`«${name}» konnte nicht in die Cloud geladen werden (Verbindung/Berechtigung).`, 5000); delete fileCache[f.id]; continue; }
+                    }
+                    tempFiles.push(f);
+                } catch (e) { showToast(`«${file.name}» konnte nicht hinzugefügt werden.`, 4000); }
+            }
+            renderLessonFiles();
+        }
+        function addLessonLink() {
+            const inp = document.getElementById('lessonLinkInput'); let u = inp.value.trim(); if (!u) return;
+            if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+            try { new URL(u); } catch (e) { showToast('Link nicht gültig.'); return; }
+            let host = ''; try { host = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
+            tempFiles.push({ id: newFileId(), name: host || u, url: u, kind: 'link', type: 'link', size: 0 });
+            inp.value = ''; renderLessonFiles();
+        }
+        function removeLessonFile(i) { tempFiles.splice(i, 1); renderLessonFiles(); }
+        function renderLessonFiles() {
+            const list = document.getElementById('lessonFilesList'); if (!list) return;
+            list.innerHTML = tempFiles.map((f, i) => `
+                <div class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 flex items-center gap-2">
+                    <button type="button" onclick="openLessonFile(${i})" class="flex-1 min-w-0 flex items-center gap-2 text-left">
+                        <span class="text-base">${fileIcon(f)}</span>
+                        <span class="truncate font-semibold text-slate-800 text-[12px]">${escapeHtml(f.name)}</span>
+                        <span class="text-[10px] text-slate-400 shrink-0">${f.kind === 'link' ? 'Link' : fmtFileSize(f.size)}</span>
+                    </button>
+                    <button type="button" onclick="removeLessonFile(${i})" title="Entfernen" class="text-slate-400 hover:text-rose-600 font-bold px-1">✕</button>
+                </div>`).join('');
+        }
+        async function getFileData(f) {
+            if (fileCache[f.id]) return fileCache[f.id];
+            if (isDemoMode || !db || !currentUser) return '';
+            const snap = await db.collection('sekSync').doc(fileDocId(f.id)).get();
+            if (snap.exists && snap.data().dataUrl) { fileCache[f.id] = snap.data().dataUrl; return fileCache[f.id]; }
+            return '';
+        }
+        function dataUrlToBlobUrl(d) {
+            const m = String(d).match(/^data:([^;,]+)[^,]*;base64,(.+)$/); if (!m) return '';
+            const bin = atob(m[2]); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return URL.createObjectURL(new Blob([arr], { type: m[1] }));
+        }
+        let filePreviewUrl = '';
+        async function openLessonFile(i) {
+            const f = tempFiles[i]; if (!f) return;
+            if (f.kind === 'link') { window.open(f.url, '_blank', 'noopener'); return; }
+            const modal = document.getElementById('filePreviewModal'), body = document.getElementById('filePreviewBody');
+            document.getElementById('filePreviewTitle').textContent = f.name;
+            body.innerHTML = '<span class="text-xs text-slate-500">Lädt …</span>'; modal.classList.remove('hidden');
+            let d = ''; try { d = await getFileData(f); } catch (e) {}
+            if (!d) { body.innerHTML = '<span class="text-xs text-rose-700">Datei nicht gefunden (evtl. offline).</span>'; return; }
+            if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+            filePreviewUrl = dataUrlToBlobUrl(d);
+            const open = document.getElementById('filePreviewOpen'), dl = document.getElementById('filePreviewDl');
+            open.href = filePreviewUrl; dl.href = filePreviewUrl; dl.download = f.name;
+            if (/^image\//.test(f.type)) body.innerHTML = `<img src="${filePreviewUrl}" alt="" style="max-width:100%;max-height:78dvh;object-fit:contain">`;
+            else if (f.type === 'application/pdf') body.innerHTML = `<iframe src="${filePreviewUrl}" style="width:100%;height:78dvh;border:0" title="${escapeHtml(f.name)}"></iframe>`;
+            else body.innerHTML = `<div class="text-xs text-slate-600 p-6 text-center">Für diesen Dateityp gibt es keine Vorschau.<br>Mit «Herunterladen» oder «Öffnen» ansehen.</div>`;
+        }
+        function closeFilePreview() {
+            document.getElementById('filePreviewModal').classList.add('hidden');
+            document.getElementById('filePreviewBody').innerHTML = '';
+        }
+        (function initFileDrop() {
+            const attach = () => {
+                const z = document.getElementById('lessonFilesPanel'); if (!z) return;
+                const dz = document.getElementById('lessonFileDrop');
+                ['dragenter', 'dragover'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); dz.style.background = '#fde68a'; }));
+                ['dragleave', 'drop'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); dz.style.background = ''; }));
+                z.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) addLessonFiles(e.dataTransfer.files); });
+            };
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach); else attach();
+        })();
+
         function renderAudioClipsList() {
             const list = document.getElementById('audioClipsList');
             list.innerHTML = tempAudioClips.map((clip, idx) => `
@@ -8328,7 +8485,7 @@ Memo: """${text}"""`;
         }
         // ---------- Details für Änderungsverlauf: genaue Pendenz, geänderte Felder ----------
         var JOURNAL_FIELD_LABELS = { unit: 'Einheit', title: 'Titel', einstieg: 'Einstieg', hauptteil: 'Hauptteil', schluss: 'Schluss', notes: 'Notizen', link: 'Link',
-            homework: 'Hausaufgabe', homeworkDueToday: 'HA auf heute', isExam: 'Prüfung', trackOverride: 'Spur', audioClips: 'Sprachmemo', todos: 'Pendenzen' };
+            homework: 'Hausaufgabe', homeworkDueToday: 'HA auf heute', isExam: 'Prüfung', trackOverride: 'Spur', audioClips: 'Sprachmemo', files: 'Dateien', todos: 'Pendenzen' };
         function jSnip(t, n) { t = String(t == null ? '' : t).replace(/\s+/g, ' ').trim(); n = n || 60; return t.length > n ? t.slice(0, n - 1) + '…' : t; }
         function jNorm(v) { return (v === undefined || v === null || v === '' || v === false || (Array.isArray(v) && !v.length)) ? '' : journalStr(v); }
         function journalLessonFields(p) {
@@ -10103,7 +10260,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.4',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.5',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
