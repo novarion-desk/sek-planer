@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.6 – 23.11.2026
+- Neu: «Backup herunterladen» enthält jetzt auch die Anhänge aus «Dateien & Links» (Format sekplaner-backup-v3). Beim Einlesen eines Backups werden fehlende Anhänge in der Cloud ergänzt, bestehende nie überschrieben. Alte Backup-Dateien lassen sich weiterhin einlesen
+- Die Backup-Datei wird mit vielen Anhängen grösser (mehrere MB)
+- Die tägliche Cloud-Sicherung (30 Tage) enthält weiterhin keine Anhänge
+
 ## Version 21.5 – 23.11.2026
 - Neu: In der Lektion gibt es «Dateien & Links». Dateien per Drag & Drop (Computer) oder «+ Datei» (iPad/Tablet) hinzufügen, dazu Links (z. B. Google Drive). Klick auf eine Datei öffnet eine Vorschau (Bilder, PDF ganz, andere Typen zum Herunterladen); ein Link öffnet in neuem Tab
 - Bilder werden automatisch verkleinert. Andere Dateien (z. B. PDF) bis ca. 650 KB, grössere bitte als Link

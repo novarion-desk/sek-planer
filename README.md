@@ -43,7 +43,7 @@ Danach Claude sagen, dass die alte Version wieder zur Hauptversion werden soll.
 - **Cloud:** Firebase Firestore (Region europe-west6, Zürich) – Sync über alle Geräte.
 - **Lokal:** Kopie im Browser jedes Geräts (getrennt pro Konto).
 - **Automatisch:** Tägliche Cloud-Sicherung, die letzten 30 Tage – in der App unter ⚙️ → «Sicherungen & Backup» mit einem Klick wiederherstellbar. Vor jeder Wiederherstellung und vor jedem Import wird der aktuelle Stand zusätzlich gesichert.
-- **Manuell:** ⚙️ → «Backup herunterladen (.json)» – enthält alle Schuljahre. Empfohlen 1× pro Woche (die App erinnert nach 7 Tagen).
+- **Manuell:** ⚙️ → «Backup herunterladen (.json)» – enthält alle Schuljahre und die Anhänge (Dateien aus «Dateien & Links»). Empfohlen 1× pro Woche (die App erinnert nach 7 Tagen).
 
 ## Feedback
 Der Knopf «💬 Feedback» öffnet ein externes, anonymes Formular bei Tally (Fehler, Wünsche, Inhalte). Nur dann werden Angaben gesendet – zusammen mit App-Name, Version und Gerätetyp. Namen werden nicht abgefragt.

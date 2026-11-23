@@ -10181,8 +10181,18 @@ ${listing}`;
             }
             const cur = years[currentSchoolYear];
             // Oberste Ebene = aktuelles Schuljahr (kompatibel mit älteren Versionen), plus alle Jahre unter «years»
-            const payload = { format: 'sekplaner-backup-v2', schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(),
-                              account: currentUser ? currentUser.email : '', ...cur, years };
+            // Anhänge (Dateien aus «Dateien & Links») mitsichern
+            const attachments = {}; let attMissing = 0, attBytes = 0;
+            const wanted = new Map();
+            Object.values(years).forEach(y => Object.values((y && y.lessonsStore) || {}).forEach(l => (l && Array.isArray(l.files) ? l.files : []).forEach(f => { if (f && f.kind !== 'link' && f.id) wanted.set(f.id, f); })));
+            let att = 0;
+            for (const f of wanted.values()) {
+                att++; if (wanted.size > 3) showToast(`Anhänge werden gesichert … ${att}/${wanted.size}`, 4000);
+                let d = ''; try { d = await getFileData(f); } catch (e) {}
+                if (d) { attachments[f.id] = { name: f.name, type: f.type, dataUrl: d }; attBytes += d.length; } else attMissing++;
+            }
+            const payload = { format: 'sekplaner-backup-v3', schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(),
+                              account: currentUser ? currentUser.email : '', ...cur, years, attachments };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -10191,7 +10201,7 @@ ${listing}`;
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 2000);
             recordManualExport();
-            showToast(`Backup heruntergeladen (${Object.keys(years).length} Schuljahr${Object.keys(years).length > 1 ? 'e' : ''})!`);
+            showToast(`Backup heruntergeladen (${Object.keys(years).length} Schuljahr${Object.keys(years).length > 1 ? 'e' : ''}${wanted.size ? `, ${Object.keys(attachments).length} Anhang/Anhänge, ${(attBytes * 0.75 / 1048576).toFixed(1)} MB` : ''})!` + (attMissing ? ` ${attMissing} Anhang/Anhänge nicht lesbar.` : ''), attMissing ? 7000 : 3000);
         }
 
         async function importFullBackup(event) {
@@ -10200,6 +10210,7 @@ ${listing}`;
             if (!file) return;
             try {
                 let data = JSON.parse(await file.text());
+                const importedAttachments = (data && data.attachments && typeof data.attachments === 'object') ? data.attachments : {};
                 // Neues Format mit allen Schuljahren: Daten des aktuell gewählten Jahres verwenden
                 if (data && data.years && typeof data.years === 'object') {
                     if (data.years[currentSchoolYear]) data = data.years[currentSchoolYear];
@@ -10214,6 +10225,19 @@ ${listing}`;
                     importBusy = false;
                 }
                 markChangeReason('Backup-Datei importiert');
+                // Anhänge: nur ergänzen, was in der Cloud fehlt
+                let attRestored = 0;
+                for (const [fid, a] of Object.entries(importedAttachments)) {
+                    if (!a || !a.dataUrl) continue;
+                    try {
+                        fileCache[fid] = a.dataUrl;
+                        if (!isDemoMode && db && currentUser && privateSyncKey) {
+                            const ref = db.collection('sekSync').doc(fileDocId(fid));
+                            const ex = await ref.get();
+                            if (!ex.exists) { await ref.set({ ownerUid: currentUser.uid, kind: 'file', name: a.name || '', type: a.type || '', dataUrl: a.dataUrl, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); attRestored++; }
+                        }
+                    } catch (e) { console.warn('Anhang nicht wiederhergestellt:', fid, e); }
+                }
                 if (data.lessonsStore) lessonsStore = { ...lessonsStore, ...data.lessonsStore };
                 if (Array.isArray(data.weeklyTemplate) && data.weeklyTemplate.length > 0) weeklyTemplate = data.weeklyTemplate;
                 if (Array.isArray(data.calendarEvents)) calendarEvents = data.calendarEvents;
@@ -10221,7 +10245,7 @@ ${listing}`;
                 if (Array.isArray(data.standaloneNotesStore)) standaloneNotesStore = data.standaloneNotesStore;
                 saveAllState();
                 refreshViewsAfterSync();
-                showToast("Backup zusammengeführt & wiederhergestellt!");
+                showToast("Backup zusammengeführt & wiederhergestellt!" + (attRestored ? ` ${attRestored} Anhang/Anhänge ergänzt.` : ''));
             } catch (e) {
                 showToast("Ungültige Backup-Datei.");
             }
@@ -10260,7 +10284,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.5',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.6',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
