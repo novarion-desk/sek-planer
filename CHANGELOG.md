@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 21.8 – 23.11.2026
+- Neu (nur für den Besitzer): Option «Erinnern, wenn die Code-Sicherung älter als 14 Tage ist» im Drive-Bereich der Einstellungen
+- drive-backup.js enthält jetzt einen fertigen Drive-Bereich für Einstellungen, den auch die anderen Apps nutzen
+
 ## Version 21.7 – 23.11.2026
 - Neu: Unter ⚙️ → «Google Drive» kannst du mit «📁 Ordner wählen» einen eigenen Zielordner in Drive wählen oder anlegen. Die App merkt ihn sich («Ordner zurücksetzen» geht zurück zum Standard). Daten und Code werden dort in Unterordnern «Sek Planer» und «Code» abgelegt
 - Neu: Die App zeigt den Zielordner, nach dem Sichern den Pfad und einen Link «Ordner in Drive öffnen»

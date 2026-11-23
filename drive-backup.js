@@ -181,5 +181,93 @@
     });
   }
 
-  window.DriveBackup = { getRoot: getRoot, setRoot: setRoot, folderUrl: folderUrl, pickFolder: pickFolder, CFG: CFG, isOwner: isOwner, getToken: getToken, hasToken: hasToken, upload: upload, makeZip: makeZip, codeZip: codeZip, pick: pick, sha256Hex: sha256Hex };
+
+  // ---- Fertiger Bereich «Google Drive» für Einstellungen einer App ----
+  // opts: { host: Element, app: 'Sek Zufall', repo: 'sek-zufall', getBackup: async () => ({ blob, name, info }), getEmail: () => string, isDemo: () => bool, toast: fn }
+  function mountSection(o) {
+    var K = function (k) { return 'tcb.' + o.app + '.' + k; };
+    var get = function (k) { try { return localStorage.getItem(K(k)) || ''; } catch (e) { return ''; } };
+    var set = function (k, v) { try { localStorage.setItem(K(k), v); } catch (e) {} };
+    var toast = o.toast || function (m) { try { alert(m); } catch (e) {} };
+    var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var ago = function (iso) { if (!iso) return 'noch nie'; var d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); return d <= 0 ? 'heute' : d === 1 ? 'gestern' : 'vor ' + d + ' Tagen'; };
+    var days = function (iso) { return iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : Infinity; };
+    var box = 'border:1px solid #a7f3d0;background:#ecfdf5;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:11px;color:#064e3b;margin-top:10px';
+    var btn = 'padding:6px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;border:1px solid #6ee7b7;background:#fff;color:#065f46';
+    var btnP = 'padding:6px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;border:0;background:#047857;color:#fff';
+    var id = 'tcb-' + o.app.replace(/\W+/g, '');
+    o.host.insertAdjacentHTML('beforeend',
+      '<div id="' + id + '" style="' + box + '">' +
+      '<div style="font-weight:800;font-size:12px">☁️ Google Drive (Ordner «Teaching Cockpit Backups»)</div>' +
+      '<div data-s="status" style="background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:8px;font-weight:600;line-height:1.5;white-space:pre-line"></div>' +
+      '<div data-s="folder" style="font-weight:600"></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+      '<button type="button" data-a="save" style="' + btnP + '">Jetzt in Drive sichern (Daten, .json)</button>' +
+      '<button type="button" data-a="pick" style="' + btn + '">📁 Ordner wählen</button>' +
+      '<button type="button" data-a="reset" style="' + btn + ';display:none">Ordner zurücksetzen</button></div>' +
+      '<label style="display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer"><input type="checkbox" data-a="remind"> <span>Beim Öffnen daran erinnern, höchstens 1× pro Woche</span></label>' +
+      '<div data-s="owner" style="display:none;flex-direction:column;gap:6px;border-top:1px solid #a7f3d0;padding-top:8px">' +
+      '<div style="font-weight:700">Nur für dich als Besitzer: Code (HTML) sichern</div>' +
+      '<div><button type="button" data-a="code" style="' + btn + '">Code dieser App sichern</button></div>' +
+      '<label style="display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer"><input type="checkbox" data-a="coderemind"> <span>Erinnern, wenn die Code-Sicherung älter als 14 Tage ist</span></label>' +
+      '<div data-s="codestatus" style="opacity:.8"></div></div>' +
+      '<div data-s="acct" style="font-size:10.5px;opacity:.7"></div></div>');
+    var root = document.getElementById(id);
+    var q1 = function (sel) { return root.querySelector(sel); };
+    async function refresh() {
+      var email = o.getEmail ? o.getEmail() : '';
+      var own = await isOwner(email);
+      q1('[data-s=status]').textContent = '☁️ Letzte Drive-Sicherung (Daten): ' + ago(get('last')) + (get('lastcode') ? '\n🧩 Letzte Drive-Sicherung (Code): ' + ago(get('lastcode')) : '');
+      var r = getRoot(), lu = get('url');
+      q1('[data-s=folder]').innerHTML = '📁 Zielordner: <b>' + esc(r && r.name ? r.name : 'Teaching Cockpit Backups (Standard, in «Mein Laufwerk»)') + '</b>' +
+        (r && r.url ? ' · <a href="' + esc(r.url) + '" target="_blank" rel="noopener" style="text-decoration:underline">öffnen</a>' : '') +
+        (lu ? '<br>Letzte Sicherung: <a href="' + esc(lu) + '" target="_blank" rel="noopener" style="text-decoration:underline">Ordner in Drive öffnen</a>' : '');
+      q1('[data-a=reset]').style.display = r && r.id ? '' : 'none';
+      q1('[data-a=remind]').checked = get('remind') === '1';
+      q1('[data-a=coderemind]').checked = get('coderemind') === '1';
+      q1('[data-s=owner]').style.display = own ? 'flex' : 'none';
+      q1('[data-s=acct]').textContent = email ? 'Angemeldet als ' + email + (own ? ' (Besitzer: Code-Sicherung sichtbar)' : ' (kein Besitzer: nur Daten-Sicherung)') : '';
+    }
+    function guard() { if (o.isDemo && o.isDemo()) { toast('Im Demo-Modus nicht verfügbar.'); return false; } return true; }
+    root.addEventListener('change', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (a === 'remind') set('remind', e.target.checked ? '1' : '0');
+      if (a === 'coderemind') set('coderemind', e.target.checked ? '1' : '0');
+    });
+    root.addEventListener('click', async function (e) {
+      var b = e.target.closest && e.target.closest('button[data-a]'); if (!b) return;
+      var a = b.getAttribute('data-a');
+      if (!guard()) return;
+      try {
+        if (a === 'pick') { var f = await pickFolder(); if (f) { setRoot(f); toast('Zielordner: ' + f.name); } }
+        else if (a === 'reset') { setRoot(null); toast('Zielordner zurückgesetzt (Standard).'); }
+        else if (a === 'save') {
+          b.disabled = true; await getToken(true); toast('Backup wird erstellt …');
+          var bk = await o.getBackup(); var up = await upload(o.app, bk.name, bk.blob, 'application/json');
+          set('last', new Date().toISOString()); set('url', up.folderUrl || '');
+          toast('In Drive gesichert: ' + up.rootName + ' › ' + o.app + ' › ' + bk.name + (bk.info ? ' (' + bk.info + ')' : ''));
+        } else if (a === 'code') {
+          var st = q1('[data-s=codestatus]'); b.disabled = true; await getToken(true);
+          var r2 = await codeZip(o.repo, function (n, i, t) { st.textContent = n + ': Datei ' + i + '/' + t + ' …'; });
+          var d = new Date(), stamp = d.toISOString().slice(0, 10) + '_' + d.toTimeString().slice(0, 5).replace(':', '');
+          var up2 = await upload('Code', o.repo + '_' + stamp + '.zip', r2.zip, 'application/zip');
+          set('lastcode', new Date().toISOString()); set('url', up2.folderUrl || '');
+          st.textContent = '✅ ZIP in Drive (Ordner «Code» im Zielordner)' + (r2.missing ? ', ' + r2.missing + ' Datei(en) nicht lesbar' : '') + '.';
+          toast('Code gesichert (' + r2.count + ' Dateien).');
+        }
+      } catch (err) { toast('Drive: ' + (err && err.message ? err.message : err)); }
+      finally { b.disabled = false; refresh(); }
+    });
+    refresh();
+    // Erinnerungen (höchstens einmal pro Tag)
+    (async function () {
+      if (o.isDemo && o.isDemo()) return;
+      var today = new Date().toISOString().slice(0, 10);
+      if (get('remind') === '1' && days(get('last')) > 7 && get('shown') !== today) { set('shown', today); setTimeout(function () { toast('☁️ Letzte Drive-Sicherung: ' + ago(get('last')) + ' – unter den Einstellungen «Jetzt in Drive sichern».'); }, 5000); }
+      if (get('coderemind') === '1' && days(get('lastcode')) > 14 && get('shownc') !== today && await isOwner(o.getEmail ? o.getEmail() : '')) { set('shownc', today); setTimeout(function () { toast('🧩 Code-Sicherung (HTML): ' + (get('lastcode') ? ago(get('lastcode')) : 'noch nie') + ' – in den Einstellungen sichern.'); }, 9000); }
+    })();
+    return { refresh: refresh };
+  }
+
+  window.DriveBackup = { mountSection: mountSection, getRoot: getRoot, setRoot: setRoot, folderUrl: folderUrl, pickFolder: pickFolder, CFG: CFG, isOwner: isOwner, getToken: getToken, hasToken: hasToken, upload: upload, makeZip: makeZip, codeZip: codeZip, pick: pick, sha256Hex: sha256Hex };
 })();

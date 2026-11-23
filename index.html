@@ -1426,6 +1426,10 @@ HA: ...</pre>
                                 <button type="button" onclick="driveBackupCode(['sek-planer'])" class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold hover:bg-emerald-50">Code dieser App sichern</button>
                                 <button type="button" onclick="driveBackupCode(DriveBackup.CFG.repos)" class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold hover:bg-emerald-50">Code aller Apps sichern</button>
                             </div>
+                            <label class="flex items-center gap-2 text-[11px] font-semibold cursor-pointer">
+                                <input type="checkbox" id="driveCodeRemindChk" onchange="setDriveCodeRemind(this.checked)" class="w-4 h-4 rounded">
+                                <span>Erinnern, wenn die Code-Sicherung älter als 14 Tage ist</span>
+                            </label>
                             <div id="driveCodeStatus" class="text-[11px] text-emerald-900/80"></div>
                         </div>
                     </div>
@@ -7919,6 +7923,7 @@ Memo: """${text}"""`;
             const st = document.getElementById('driveBackupStatus'); if (!st) return;
             st.innerText = `☁️ Letzte Drive-Sicherung (Daten): ${describeAgo(driveLast())}` + (driveLastCode() ? `\n🧩 Letzte Drive-Sicherung (Code): ${describeAgo(driveLastCode())}` : '');
             const chk = document.getElementById('driveAutoChk'); if (chk) chk.checked = driveAutoOn();
+            const chk2 = document.getElementById('driveCodeRemindChk'); if (chk2) chk2.checked = driveCodeRemindOn();
             const root = window.DriveBackup ? DriveBackup.getRoot() : null;
             const fl = document.getElementById('driveFolderLine');
             if (fl) {
@@ -7979,11 +7984,21 @@ Memo: """${text}"""`;
             } catch (e) { if (st) st.innerText = ''; showToast('Code-Sicherung fehlgeschlagen: ' + (e && e.message ? e.message : e), 7000); }
             finally { refreshDriveUI(); }
         }
-        function maybeDriveReminder() {
-            if (isDemoMode || !driveAutoOn() || daysSince(driveLast()) <= 7) return;
-            const key = accountStorageName('driveReminderShown'), today = formatDateISO(new Date());
-            try { if (localStorage.getItem(key) === today) return; localStorage.setItem(key, today); } catch (e) {}
-            setTimeout(() => showToast(`☁️ Letzte Drive-Sicherung: ${describeAgo(driveLast())} – unter ⚙️ «Jetzt in Drive sichern».`, 6000), 4500);
+        function driveCodeRemindOn() { try { return localStorage.getItem(accountStorageName('driveCodeRemind')) === '1'; } catch (e) { return false; } }
+        function setDriveCodeRemind(on) { try { localStorage.setItem(accountStorageName('driveCodeRemind'), on ? '1' : '0'); } catch (e) {} }
+        async function maybeDriveReminder() {
+            if (isDemoMode) return;
+            const today = formatDateISO(new Date());
+            if (driveAutoOn() && daysSince(driveLast()) > 7) {
+                const key = accountStorageName('driveReminderShown');
+                let seen = false; try { seen = localStorage.getItem(key) === today; if (!seen) localStorage.setItem(key, today); } catch (e) {}
+                if (!seen) setTimeout(() => showToast(`☁️ Letzte Drive-Sicherung: ${describeAgo(driveLast())} – unter ⚙️ «Jetzt in Drive sichern».`, 6000), 4500);
+            }
+            if (driveCodeRemindOn() && daysSince(driveLastCode()) > 14 && window.DriveBackup && currentUser && await DriveBackup.isOwner(currentUser.email)) {
+                const key2 = accountStorageName('driveCodeReminderShown');
+                let seen2 = false; try { seen2 = localStorage.getItem(key2) === today; if (!seen2) localStorage.setItem(key2, today); } catch (e) {}
+                if (!seen2) setTimeout(() => showToast(`🧩 Code-Sicherung (HTML): ${driveLastCode() ? describeAgo(driveLastCode()) : 'noch nie'} – unter ⚙️ «Code aller Apps sichern».`, 7000), 9000);
+            }
         }
         async function addDriveFileToLesson() {
             if (isDemoMode) { showToast('Im Demo-Modus nicht verfügbar.'); return; }
@@ -10401,7 +10416,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.7',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.8',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
