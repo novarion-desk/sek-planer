@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 21.9 – 23.11.2026
+- Neu: Gemeinsamer KI-Zugang (Mistral). Wer angemeldet ist und keinen eigenen KI-Schlüssel eingetragen hat, kann die KI trotzdem nutzen (mit Tageslimit). Der Schlüssel liegt nur im Cloudflare-Worker, nicht in der App. Eigene Schlüssel haben Vorrang
+- Registrierung geschlossen: «Konto anfragen» statt Code-Eingabe. Konten legt Kevin an
+
 ## Version 21.8 – 23.11.2026
 - Neu (nur für den Besitzer): Option «Erinnern, wenn die Code-Sicherung älter als 14 Tage ist» im Drive-Bereich der Einstellungen
 - drive-backup.js enthält jetzt einen fertigen Drive-Bereich für Einstellungen, den auch die anderen Apps nutzen

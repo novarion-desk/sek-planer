@@ -23,6 +23,7 @@
     <script src="vendor/firebase-auth-compat.js"></script>
     <script src="vendor/firebase-firestore-compat.js"></script>
     <script src="drive-backup.js"></script>
+    <script src="shared-ki.js"></script>
     <script src="vendor/purify.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -123,7 +124,7 @@
 
             <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
                 <button type="button" id="authTabLoginBtn" onclick="switchAuthMode('login')" class="py-1.5 rounded-lg bg-white text-slate-900 shadow-2xs">Anmelden</button>
-                <button type="button" id="authTabRegisterBtn" onclick="switchAuthMode('register')" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900">Konto erstellen</button>
+                <button type="button" id="authTabRegisterBtn" onclick="switchAuthMode('register')" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900">Konto anfragen</button>
             </div>
 
             <form id="loginForm" onsubmit="handleFirebaseLogin(event)" class="flex flex-col gap-3 text-xs">
@@ -145,23 +146,10 @@
                 </button>
             </form>
 
-            <form id="registerForm" onsubmit="handleFirebaseRegister(event)" class="hidden flex flex-col gap-3 text-xs">
-                <div>
-                    <label class="block font-bold text-slate-700 mb-1">E-Mail-Adresse</label>
-                    <input type="email" id="regEmailInput" required autocomplete="email" placeholder="name@schule.ch" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label class="block font-bold text-slate-700 mb-1">Passwort (mind. 6 Zeichen)</label>
-                    <input type="password" id="regPasswordInput" required minlength="6" autocomplete="new-password" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label class="block font-bold text-indigo-900 mb-1">Schul- / Zugangscode</label>
-                    <input type="password" id="regInviteCodeInput" required autocomplete="off" placeholder="Zugangscode eingeben" class="w-full bg-indigo-50/60 border border-indigo-200 rounded-xl px-3 py-2 font-mono font-bold text-indigo-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <button type="submit" id="registerSubmitBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs transition-colors mt-1">
-                    Konto registrieren &amp; starten
-                </button>
-            </form>
+            <div id="registerForm" class="hidden flex flex-col gap-2 text-xs bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 text-indigo-950 leading-snug">
+                <div class="font-extrabold">Konto auf Anfrage</div>
+                <div>Der Zugang ist zurzeit geschlossen. Du möchtest den Sek Planer testen? Melde dich bei Kevin: Du bekommst ein Konto per E-Mail, mit einem Link, über den du dein Passwort selber festlegst.</div>
+            </div>
 
             <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5 text-[11px] font-semibold"></div>
             <div id="loginInfoBox" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-lg p-2.5 text-[11px] font-semibold"></div>
@@ -1336,6 +1324,7 @@ HA: ...</pre>
                 <!-- KI KEYS -->
                 <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 flex flex-col gap-2">
                     <label class="font-extrabold text-indigo-950">KI-Schlüssel</label>
+                    <span class="text-[11px] text-emerald-800 leading-snug font-bold" id="sharedKiNote">Ohne eigenen Schlüssel nutzt du automatisch den gemeinsamen KI-Zugang (Mistral, mit Tageslimit).</span>
                     <span class="text-[11px] text-indigo-900/90 leading-snug">Schlüssel von Gemini, Claude, ChatGPT oder Mistral einfügen – der Anbieter wird erkannt und der Schlüssel vor dem Speichern getestet.</span>
                     <div class="flex gap-2">
                         <input type="password" id="aiKeyInput" autocomplete="off" placeholder="API-Schlüssel einfügen" oninput="updateAiKeyDetect()" onkeydown="if(event.key==='Enter'){event.preventDefault();addAiKeyFromInput();}" class="flex-1 min-w-0 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono text-slate-900">
@@ -1982,13 +1971,28 @@ HA: ...</pre>
             const mKey = cleanKey(mistralApiKey);
             const { extraParts = null, geminiOnly = false, systemPrompt = TEACHER_SYSTEM_PROMPT, onChunk = null, forceProvider = null } = options;
 
-            if (!key && (geminiOnly || (!cKey && !oKey && !mKey))) {
+            const noOwnKeys = !key && !cKey && !oKey && !mKey;
+            const sharedOk = noOwnKeys && !geminiOnly && !extraParts && window.SharedKI && SharedKI.available();
+            if (!key && !sharedOk && (geminiOnly || (!cKey && !oKey && !mKey))) {
                 throw new Error(geminiOnly
                     ? "Für diese Funktion wird ein Gemini-Schlüssel benötigt (Einstellungen → Zahnrad)."
                     : "Kein KI-Schlüssel hinterlegt. Bitte oben rechts unter Einstellungen (Zahnrad) einen Schlüssel von Gemini, Claude, ChatGPT oder Mistral eingeben.");
             }
 
             const errorDetails = [];
+
+            // Gemeinsamer KI-Zugang (Mistral über den Worker): nur, wenn kein eigener Schlüssel eingetragen ist
+            const trySharedKi = async () => {
+                const msgs = conversationHistory && conversationHistory.length > 0
+                    ? conversationHistory.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text }))
+                    : [{ role: 'user', content: userPrompt }];
+                try {
+                    const r = await SharedKI.ask({ system: systemPrompt, messages: msgs, maxTokens: 2500 });
+                    try { localStorage.setItem(accountStorageName('lastAiModel'), 'Mistral (gemeinsam)'); } catch (e) {}
+                    if (onChunk) { try { onChunk(r.answer); } catch (e) {} }
+                    return r.answer;
+                } catch (e) { errorDetails.push(e.message); return null; }
+            };
 
             const tryGemini = async () => {
                 if (!key) return null;
@@ -2073,6 +2077,7 @@ HA: ...</pre>
                 const result = await runners[provider]();
                 if (result) return result;
             }
+            if (sharedOk) { const shared = await trySharedKi(); if (shared) return shared; }
 
             throw new Error(errorDetails.length > 0 ? errorDetails.join("\n") : "Keine Antwort von der KI-Schnittstelle.");
         }
@@ -7524,7 +7529,7 @@ Text:\n${raw.slice(0, 12000)}`;
         // ---------- KI: Pendenzen aus Liste/Text erstellen ----------
         let pendingAiTodos = [];
         function hasAnyAiKey() {
-            return AI_PROVIDERS.some(p => aiKeyOf(p));
+            return AI_PROVIDERS.some(p => aiKeyOf(p)) || !!(window.SharedKI && SharedKI.available());
         }
         function toggleTodoAiBox(force) {
             const box = document.getElementById('todoAiBox');
@@ -10416,7 +10421,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.8',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.9',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
