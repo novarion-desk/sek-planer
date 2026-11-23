@@ -4,6 +4,10 @@
 - Neu: «Backup herunterladen» enthält jetzt auch die Anhänge aus «Dateien & Links» (Format sekplaner-backup-v3). Beim Einlesen eines Backups werden fehlende Anhänge in der Cloud ergänzt, bestehende nie überschrieben. Alte Backup-Dateien lassen sich weiterhin einlesen
 - Die Backup-Datei wird mit vielen Anhängen grösser (mehrere MB)
 - Die tägliche Cloud-Sicherung (30 Tage) enthält weiterhin keine Anhänge
+- Neu: Google Drive. Unter ⚙️ → «Sicherungen & Backup» gibt es «Jetzt in Drive sichern (Daten, .json)». Die Datei landet im Drive-Ordner «Teaching Cockpit Backups / Sek Planer» (nur Berechtigung «drive.file»). Optional eine Erinnerung beim Öffnen, höchstens 1× pro Woche
+- Neu, nur für den Besitzer sichtbar: «Code dieser App sichern» und «Code aller Apps sichern» (ZIP pro App im Drive-Ordner «Code»)
+- Neu: In der Lektion bei «Dateien & Links» gibt es «+ Aus Drive» (Google-Dateiauswahl). Die gewählte Datei wird als Link gespeichert
+- Neue Datei drive-backup.js (gemeinsamer Baustein für alle Apps)
 
 ## Version 21.5 – 23.11.2026
 - Neu: In der Lektion gibt es «Dateien & Links». Dateien per Drag & Drop (Computer) oder «+ Datei» (iPad/Tablet) hinzufügen, dazu Links (z. B. Google Drive). Klick auf eine Datei öffnet eine Vorschau (Bilder, PDF ganz, andere Typen zum Herunterladen); ein Link öffnet in neuem Tab

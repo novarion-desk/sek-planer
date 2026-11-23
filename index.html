@@ -22,6 +22,7 @@
     <script src="vendor/firebase-app-compat.js"></script>
     <script src="vendor/firebase-auth-compat.js"></script>
     <script src="vendor/firebase-firestore-compat.js"></script>
+    <script src="drive-backup.js"></script>
     <script src="vendor/purify.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -802,6 +803,7 @@
                                 <span>Dateien &amp; Links</span>
                             </span>
                             <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="addDriveFileToLesson()" class="px-2.5 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 rounded-lg font-bold text-[11px]">+ Aus Drive</button>
                                 <button type="button" onclick="document.getElementById('lessonFileInput').click()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px]">+ Datei</button>
                                 <input type="file" id="lessonFileInput" multiple class="hidden" onchange="addLessonFiles(this.files); this.value='';">
                             </div>
@@ -1402,6 +1404,26 @@ HA: ...</pre>
                             Unterschiede ansehen
                             <input type="file" accept=".json" onchange="openBackupDiffFile(event)" class="hidden">
                         </label>
+                    </div>
+
+                    <div id="driveBackupBox" class="border-t border-emerald-200 pt-2.5 mt-1 flex flex-col gap-2">
+                        <div class="font-bold text-[11px]">Google Drive (Ordner «Teaching Cockpit Backups»):</div>
+                        <div id="driveBackupStatus" class="bg-white border border-emerald-200 rounded-lg p-2 text-[11px] font-semibold leading-relaxed whitespace-pre-line">Noch nie in Drive gesichert.</div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" id="driveBackupBtn" onclick="driveBackupData()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">Jetzt in Drive sichern (Daten, .json)</button>
+                        </div>
+                        <label class="flex items-center gap-2 text-[11px] font-semibold cursor-pointer">
+                            <input type="checkbox" id="driveAutoChk" onchange="setDriveAuto(this.checked)" class="w-4 h-4 rounded">
+                            <span>Beim Öffnen daran erinnern, höchstens 1× pro Woche (die Sicherung selbst startest du mit einem Klick)</span>
+                        </label>
+                        <div id="driveOwnerBox" class="hidden flex flex-col gap-1.5 border-t border-emerald-200 pt-2">
+                            <div class="font-bold text-[11px]">Nur für dich als Besitzer: Code (HTML) sichern</div>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="driveBackupCode(['sek-planer'])" class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold hover:bg-emerald-50">Code dieser App sichern</button>
+                                <button type="button" onclick="driveBackupCode(DriveBackup.CFG.repos)" class="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-900 rounded-lg font-bold hover:bg-emerald-50">Code aller Apps sichern</button>
+                            </div>
+                            <div id="driveCodeStatus" class="text-[11px] text-emerald-900/80"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7883,6 +7905,68 @@ Memo: """${text}"""`;
         }
 
 
+
+        // ===== Google Drive: Sicherung (ab Version 21.6) =====
+        function driveLast() { try { return localStorage.getItem(accountStorageName('lastDriveBackup')) || ''; } catch (e) { return ''; } }
+        function driveLastCode() { try { return localStorage.getItem(accountStorageName('lastDriveCode')) || ''; } catch (e) { return ''; } }
+        function driveAutoOn() { try { return localStorage.getItem(accountStorageName('driveAuto')) === '1'; } catch (e) { return false; } }
+        function setDriveAuto(on) { try { localStorage.setItem(accountStorageName('driveAuto'), on ? '1' : '0'); } catch (e) {} }
+        async function refreshDriveUI() {
+            const st = document.getElementById('driveBackupStatus'); if (!st) return;
+            st.innerText = `☁️ Letzte Drive-Sicherung (Daten): ${describeAgo(driveLast())}` + (driveLastCode() ? `\n🧩 Letzte Drive-Sicherung (Code): ${describeAgo(driveLastCode())}` : '');
+            const chk = document.getElementById('driveAutoChk'); if (chk) chk.checked = driveAutoOn();
+            const own = document.getElementById('driveOwnerBox');
+            if (own) own.classList.toggle('hidden', !(window.DriveBackup && currentUser && await DriveBackup.isOwner(currentUser.email)));
+        }
+        async function driveBackupData() {
+            if (isDemoMode) { showToast('Im Demo-Modus nicht verfügbar.'); return; }
+            const btn = document.getElementById('driveBackupBtn'); if (btn) btn.disabled = true;
+            try {
+                await DriveBackup.getToken(true);
+                showToast('Backup wird erstellt …', 4000);
+                const { payload, attachments, wanted } = await buildFullBackup();
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                const name = `Sek_Planer_Backup_${formatDateISO(new Date())}_${new Date().toTimeString().slice(0, 5).replace(':', '')}.json`;
+                await DriveBackup.upload('Sek Planer', name, blob, 'application/json');
+                try { localStorage.setItem(accountStorageName('lastDriveBackup'), new Date().toISOString()); } catch (e) {}
+                showToast(`In Drive gesichert: ${name} (${(blob.size / 1048576).toFixed(1)} MB${wanted.size ? `, ${Object.keys(attachments).length} Anhänge` : ''})`, 5000);
+            } catch (e) { showToast('Drive-Sicherung fehlgeschlagen: ' + (e && e.message ? e.message : e), 7000); }
+            finally { if (btn) btn.disabled = false; refreshDriveUI(); }
+        }
+        async function driveBackupCode(repos) {
+            if (isDemoMode) { showToast('Im Demo-Modus nicht verfügbar.'); return; }
+            const st = document.getElementById('driveCodeStatus');
+            try {
+                await DriveBackup.getToken(true);
+                const stamp = `${formatDateISO(new Date())}_${new Date().toTimeString().slice(0, 5).replace(':', '')}`;
+                let done = 0, miss = 0;
+                for (const repo of repos) {
+                    const r = await DriveBackup.codeZip(repo, (n, i, t) => { if (st) st.innerText = `${n}: Datei ${i}/${t} …`; });
+                    const label = repo === 'novarion-desk.github.io' ? 'Website' : repo;
+                    await DriveBackup.upload('Code', `${label}_${stamp}.zip`, r.zip, 'application/zip');
+                    done++; miss += r.missing;
+                }
+                try { localStorage.setItem(accountStorageName('lastDriveCode'), new Date().toISOString()); } catch (e) {}
+                if (st) st.innerText = `✅ ${done} App${done > 1 ? 's' : ''} als ZIP in Drive (Ordner «Code»).` + (miss ? ` ${miss} Datei(en) nicht lesbar.` : '');
+                showToast(`Code gesichert: ${done} ZIP-Datei${done > 1 ? 'en' : ''} in Drive.`, 5000);
+            } catch (e) { if (st) st.innerText = ''; showToast('Code-Sicherung fehlgeschlagen: ' + (e && e.message ? e.message : e), 7000); }
+            finally { refreshDriveUI(); }
+        }
+        function maybeDriveReminder() {
+            if (isDemoMode || !driveAutoOn() || daysSince(driveLast()) <= 7) return;
+            const key = accountStorageName('driveReminderShown'), today = formatDateISO(new Date());
+            try { if (localStorage.getItem(key) === today) return; localStorage.setItem(key, today); } catch (e) {}
+            setTimeout(() => showToast(`☁️ Letzte Drive-Sicherung: ${describeAgo(driveLast())} – unter ⚙️ «Jetzt in Drive sichern».`, 6000), 4500);
+        }
+        async function addDriveFileToLesson() {
+            if (isDemoMode) { showToast('Im Demo-Modus nicht verfügbar.'); return; }
+            try {
+                const f = await DriveBackup.pick(); if (!f) return;
+                tempFiles.push({ id: newFileId(), name: f.name, url: f.url, kind: 'link', type: 'link', size: 0, drive: true });
+                renderLessonFiles();
+            } catch (e) { showToast('Drive-Auswahl nicht möglich: ' + (e && e.message ? e.message : e), 6000); }
+        }
+
         // ===== Dateien & Links in der Lektion (Variante 1: kleine Dateien direkt in der Cloud) =====
         let tempFiles = [];
         const fileCache = {};            // id -> dataUrl (Sitzung)
@@ -7890,7 +7974,7 @@ Memo: """${text}"""`;
         function newFileId() { return 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
         function fileDocId(id) { return templatesDocId().replace(/__T$/, '') + '__F_' + id; }
         function fmtFileSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
-        function fileIcon(f) { return f.kind === 'link' ? '🔗' : /^image\//.test(f.type) ? '🖼️' : f.type === 'application/pdf' ? '📕' : /word|document/.test(f.type) ? '📘' : /sheet|excel/.test(f.type) ? '📗' : '📄'; }
+        function fileIcon(f) { return f.drive ? '📁' : f.kind === 'link' ? '🔗' : /^image\//.test(f.type) ? '🖼️' : f.type === 'application/pdf' ? '📕' : /word|document/.test(f.type) ? '📘' : /sheet|excel/.test(f.type) ? '📗' : '📄'; }
         function readAsDataUrl(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
         function shrinkImage(file) {
             return new Promise((resolve, reject) => {
@@ -10123,8 +10207,10 @@ ${listing}`;
                 btn.classList.toggle('ring-amber-400', manualDays > 7);
                 btn.title = `Cloud-Diagnose, API-Key & Backup – letzte Backup-Datei: ${describeAgo(lastManualExportAt)}`;
             }
+            refreshDriveUI();
         }
         function maybeShowBackupReminder() {
+            maybeDriveReminder();
             if (daysSince(lastManualExportAt) <= 7) return;
             const key = accountStorageName('backupReminderShown');
             const today = formatDateISO(new Date());
@@ -10142,7 +10228,7 @@ ${listing}`;
         }
 
         // Backup-Datei mit ALLEN Schuljahren (aktuelles aus dem Speicher, die anderen aus der Cloud bzw. lokal)
-        async function exportFullBackup() {
+        async function buildFullBackup() {
             await flushPendingSave();
             const years = {};
             years[currentSchoolYear] = currentStateSnapshot();
@@ -10193,6 +10279,10 @@ ${listing}`;
             }
             const payload = { format: 'sekplaner-backup-v3', schoolYear: currentSchoolYear, exportedAt: new Date().toISOString(),
                               account: currentUser ? currentUser.email : '', ...cur, years, attachments };
+            return { payload, years, attachments, attMissing, attBytes, wanted };
+        }
+        async function exportFullBackup() {
+            const { payload, years, attachments, attMissing, attBytes, wanted } = await buildFullBackup();
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
