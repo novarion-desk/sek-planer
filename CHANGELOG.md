@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 21.11 – 24.11.2026
+- Aufgeräumt: Alter Einladungscode samt Registrierfunktion aus dem Programmcode entfernt (Registrierung ist seit 21.9 geschlossen)
+- Drive-Auswahl (drive-backup.js): Dateiauswahl startet in «Meine Ablage» mit Ordneransicht, Zuletzt-gewählt und Freigegebene; Esc/Abbrechen schliesst sauber. Bleibt das Google-Fenster leer (z. B. blockierte Drittanbieter-Cookies), erscheint nach 12 Sekunden ein Hinweis mit Alternativen
+
 ## Version 21.10 – 24.11.2026
 - Neu: Pendenzen sind nach Fälligkeit farbig gruppiert (Überfällig rot, Heute orange, Morgen blau, Diese Woche grün, Später grau, Erledigt blass), mit Zähler, farbigem Streifen und Datums-Plättchen mit Wort
 - Das Pendenz-Plättchen im Wochenplan und Jahreskalender hat die Farbe der dringendsten offenen Pendenz

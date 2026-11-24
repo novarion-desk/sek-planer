@@ -153,14 +153,32 @@
       if (!window.gapi) await loadScript('https://apis.google.com/js/api.js');
       await new Promise(function (res, rej) { gapi.load('picker', { callback: res, onerror: rej }); });
     }
-    return new Promise(function (resolve) {
-      var view = new google.picker.DocsView().setIncludeFolders(false).setSelectFolderEnabled(false);
-      new google.picker.PickerBuilder().addView(view).setOAuthToken(t).setDeveloperKey(CFG.apiKey).setAppId(CFG.projectNumber)
+    return new Promise(function (resolve, reject) {
+      var P = google.picker, GRID = P.DocsViewMode.GRID;
+      var mine = new P.DocsView(P.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false).setMode(GRID).setParent('root');
+      var b = new P.PickerBuilder().addView(mine);
+      try { b.addView(new P.View(P.ViewId.RECENTLY_PICKED)); } catch (e) {}
+      try { b.addView(new P.DocsView(P.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false).setOwnedByMe(false).setMode(GRID)); } catch (e) {}
+      try { if (P.Feature && P.Feature.SUPPORT_DRIVES) { mine.setEnableDrives(true); b.enableFeature(P.Feature.SUPPORT_DRIVES); } } catch (e) {}
+      b.setOAuthToken(t).setDeveloperKey(CFG.apiKey).setAppId(CFG.projectNumber)
         .setLocale('de').setCallback(function (d) {
-          if (d.action === google.picker.Action.PICKED && d.docs && d.docs[0]) {
-            var f = d.docs[0]; resolve({ id: f.id, name: f.name, url: f.url, mimeType: f.mimeType, sizeBytes: f.sizeBytes || 0 });
-          } else if (d.action === google.picker.Action.CANCEL) resolve(null);
-        }).build().setVisible(true);
+          var A = google.picker.Action;
+          if (d.action === A.LOADED) { loaded = true; clearTimeout(timer); return; }
+          if (d.action === A.PICKED && d.docs && d.docs[0]) {
+            var f = d.docs[0]; done(); resolve({ id: f.id, name: f.name, url: f.url, mimeType: f.mimeType, sizeBytes: f.sizeBytes || 0 });
+          } else if (d.action === A.CANCEL) { done(); resolve(null); }
+        });
+      var loaded = false, picker = null, timer = 0, finished = false;
+      function done() { finished = true; clearTimeout(timer); document.removeEventListener('keydown', onKey, true); try { picker && picker.dispose(); } catch (e) {} killOverlay(); }
+      function killOverlay() { try { document.querySelectorAll('.picker-dialog-bg, .picker-dialog').forEach(function (n) { n.remove(); }); } catch (e) {} }
+      function onKey(e) { if (e.key === 'Escape' && !finished) { done(); resolve(null); } }
+      killOverlay();
+      document.addEventListener('keydown', onKey, true);
+      picker = b.build(); picker.setVisible(true);
+      timer = setTimeout(function () {
+        if (loaded || finished) return;
+        done(); reject(new Error('Das Google-Fenster konnte nicht geladen werden. Mögliche Ursache: Drittanbieter-Cookies sind im Browser blockiert. Nimm «Link einfügen» oder «Datei vom Gerät».'));
+      }, 12000);
     });
   }
 

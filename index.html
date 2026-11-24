@@ -2330,13 +2330,6 @@ HA: ...</pre>
         // =========================================================================
         // 2. FIREBASE AUTHENTICATION & REGISTRIERUNG
         // =========================================================================
-        const INVITE_CODE_HASH = "e5b88488c1e4ef1df278ef24829fd8a68fd31d371989b4125f2c2cc28479cc44";
-
-        async function sha256Hex(str) {
-            const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-        }
-
         const firebaseConfig = {
             apiKey: "AIzaSyBHHhgjAvY0D0trm2IMxauhFp-ssw9ooz4",
             authDomain: "zufallsgenerator-209f3.firebaseapp.com",
@@ -2402,41 +2395,6 @@ HA: ...</pre>
                 errBox.classList.remove('hidden');
             } finally {
                 btn.innerText = "Anmelden";
-                btn.disabled = false;
-            }
-        }
-
-        async function handleFirebaseRegister(event) {
-            event.preventDefault();
-            if (!auth) return;
-            const email = document.getElementById('regEmailInput').value.trim();
-            const password = document.getElementById('regPasswordInput').value;
-            const inviteCode = document.getElementById('regInviteCodeInput').value.trim().toUpperCase();
-            const errBox = document.getElementById('loginErrorBox');
-            const infoBox = document.getElementById('loginInfoBox');
-            const btn = document.getElementById('registerSubmitBtn');
-
-            errBox.classList.add('hidden');
-            infoBox.classList.add('hidden');
-
-            const enteredHash = await sha256Hex(inviteCode);
-            if (enteredHash !== INVITE_CODE_HASH) {
-                errBox.innerText = "Ungültiger Schul-/Zugangscode. Bitte wende dich an die Administration.";
-                errBox.classList.remove('hidden');
-                return;
-            }
-
-            btn.innerText = "Konto wird erstellt...";
-            btn.disabled = true;
-
-            try {
-                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-                await auth.createUserWithEmailAndPassword(email, password);
-            } catch (err) {
-                errBox.innerText = "Registrierung fehlgeschlagen: " + (err.message || "E-Mail bereits vergeben oder Passwort zu kurz.");
-                errBox.classList.remove('hidden');
-            } finally {
-                btn.innerText = "Konto registrieren & starten";
                 btn.disabled = false;
             }
         }
@@ -10453,7 +10411,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.10',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.11',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
