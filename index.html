@@ -26,6 +26,12 @@
     <script src="shared-ki.js"></script>
     <script src="vendor/purify.min.js"></script>
     <style>
+        /* Pendenzen: Farben nach Fälligkeit (Streifen, Plättchen, Gruppen) */
+        .tone-over{--tc:#e11d48;--tb:#fff1f2}.tone-today{--tc:#ea580c;--tb:#fff7ed}.tone-tomorrow{--tc:#2563eb;--tb:#eff6ff}.tone-week{--tc:#059669;--tb:#ecfdf5}.tone-later{--tc:#64748b;--tb:#f8fafc}.tone-done{--tc:#94a3b8;--tb:#f8fafc}
+        .td-card{border-color:var(--tc)!important;border-left-width:6px!important;background:var(--tb)!important}.td-card.tone-done{opacity:.65}
+        .td-pill{display:inline-block;background:var(--tc);color:#fff;border-radius:999px;padding:1px 9px;font-weight:800;font-size:10.5px;line-height:1.5}
+        .td-head{display:flex;align-items:center;gap:8px;margin:14px 0 2px;font-weight:800;font-size:12px;color:var(--tc);text-transform:uppercase;letter-spacing:.04em}.td-head::after{content:"";flex:1;height:2px;background:var(--tc);opacity:.25;border-radius:2px}.td-head .n{background:var(--tc);color:#fff;border-radius:999px;padding:0 8px;font-size:11px}
+        @media print{.td-card{background:#fff!important}}
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         .lesson-card-body { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
@@ -2721,7 +2727,10 @@ HA: ...</pre>
                 notes: [
                     { id: 1, text: 'Elternbrief Exkursion verteilen', done: false, createdAt: formatDateCH(today), due: iso(4) },
                     { id: 2, text: 'Noten Vortrag eintragen', done: false, createdAt: formatDateCH(today), due: today },
-                    { id: 3, text: 'Kopierpapier bestellen', done: false, createdAt: formatDateCH(today), due: iso(8) }
+                    { id: 3, text: 'Kopierpapier bestellen', done: false, createdAt: formatDateCH(today), due: iso(8) },
+                    { id: 4, text: 'Elternbrief Skilager einsammeln', done: false, createdAt: formatDateCH(today), due: isoAddDays(today, -3) },
+                    { id: 5, text: 'Material für Gruppenarbeit bereitlegen', done: false, createdAt: formatDateCH(today), due: isoAddDays(today, 1) },
+                    { id: 6, text: 'Klassenliste aktualisieren', done: true, createdAt: formatDateCH(today), due: isoAddDays(today, -1) }
                 ]
             };
         }
@@ -4264,6 +4273,7 @@ HA: ...</pre>
                 const ehs = [['E', l.einstieg], ['H', l.hauptteil || l.notes], ['S', l.schluss]]
                     .map(([k, v]) => v && htmlToPlainText(v).trim() ? `<span class="font-extrabold text-indigo-700">${k}:</span> ${escapeHtml(plainSnippet(v, 70))}` : '').filter(Boolean).join(' ');
                 const openTodos = (l.todos || []).filter(t => !t.done).length;
+                const lt = lessonTodoTone(l, x.iso);
                 const tr = getEffectiveTrack(l, x.slot);
                 return `<button type="button" ${clickAttr(x)} class="w-full text-left rounded-lg border bg-white px-2.5 py-2 shadow-2xs hover:border-indigo-400 hover:shadow-xs ${isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : l.isExam ? 'border-rose-300' : 'border-slate-200'} ${past ? 'opacity-60' : ''} ${selRing(x)}">
                         ${head}${chips}
@@ -4271,7 +4281,7 @@ HA: ...</pre>
                             ${l.isExam ? '<span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9.5px] font-extrabold">PRÜFUNG</span>' : ''}
                             ${tr ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold ${trackChipClass(tr)}">${escapeHtml(plainSnippet(tr, 30))}</span>` : ''}
                             ${l.unit ? `<span class="text-slate-500 text-[10.5px] font-semibold truncate max-w-full">${escapeHtml(plainSnippet(l.unit, 50))}</span>` : ''}
-                            ${openTodos ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">${openTodos} Pendenz${openTodos > 1 ? 'en' : ''}</span>` : ''}
+                            ${openTodos ? `<span class="td-pill tone-${lt ? lt.k : 'week'}" title="${lt ? TONE_LABEL[lt.k] : ''}">${openTodos} Pendenz${openTodos > 1 ? 'en' : ''}</span>` : ''}
                         </div>
                         ${l.title ? `<div class="text-[12px] font-extrabold text-slate-900 mt-1 leading-snug">${escapeHtml(plainSnippet(l.title, 90))}</div>` : ''}
                         ${ehs ? `<div class="text-[11px] text-slate-600 mt-0.5 leading-snug line-clamp-3">${ehs}</div>` : ''}
@@ -4524,6 +4534,7 @@ HA: ...</pre>
                     const data = lessonsStore[key] || { homeworkDueToday: "", isExam: false, trackOverride: "", unit: "", title: "", einstieg: "", hauptteil: "", schluss: "", notes: "", homework: "", link: "", audioClips: [], todos: [] };
                     const style = getStyleForSlot(slot.subject, slot.className);
                     const openTodos = (data.todos || []).filter(t => !t.done).length;
+                    const ltn = lessonTodoTone(data, iso);
                     const ehsHtml = buildCompactEHSHtml(data);
                     const activeTrack = getEffectiveTrack(data, slot);
                     const slotEvents = eventsForSlot(iso, slot);
@@ -4548,7 +4559,7 @@ HA: ...</pre>
                                 <button type="button" onclick="event.stopPropagation(); openQuickNoteModal(${jsArg(key)}, ${jsArg(`${style.label} ${slot.className}`)})" class="px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px]" title="Schnell-Pendenz für diese Lektion merken">
                                     + Notiz
                                 </button>
-                                ${openTodos > 0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-amber-950 font-extrabold text-[10px]" title="Offene Pendenzen">${openTodos}</span>` : ''}
+                                ${openTodos > 0 ? `<span class="td-pill tone-${ltn ? ltn.k : 'week'}" title="Offene Pendenzen${ltn ? ' (' + TONE_LABEL[ltn.k] + ')' : ''}">${openTodos}</span>` : ''}
                             </div>
                         </div>
 
@@ -7437,6 +7448,22 @@ Text:\n${raw.slice(0, 12000)}`;
             if (due === isoAddDays(today, 1)) return { cls: 'text-indigo-700 font-bold', label: 'Morgen' };
             return { cls: 'text-slate-600 font-semibold', label: formatDateCHWd(due) };
         }
+        const TONE_LABEL = { over: 'Überfällig', today: 'Heute', tomorrow: 'Morgen', week: 'Diese Woche', later: 'Später', done: 'Erledigt' };
+        function dueTone(due, done) {
+            const today = formatDateISO(new Date());
+            if (done) return { k: 'done' };
+            if (due < today) return { k: 'over' };
+            if (due === today) return { k: 'today' };
+            if (due === isoAddDays(today, 1)) return { k: 'tomorrow' };
+            const dow = (new Date(`${today}T12:00:00`).getDay() + 6) % 7;
+            return { k: due <= isoAddDays(today, 6 - dow) ? 'week' : 'later' };
+        }
+        function lessonTodoTone(l, iso) {
+            const open = ((l && l.todos) || []).filter(t => !t.done);
+            if (!open.length) return null;
+            const dues = open.map(t => isISODate(t.due) ? t.due : iso).sort();
+            return dueTone(dues[0], false);
+        }
         function setStandaloneDueById(id, val) {
             const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
             if (!sn || !isISODate(val)) return;
@@ -7484,20 +7511,25 @@ Text:\n${raw.slice(0, 12000)}`;
 
             const dateInput = (due, onchange) => `<input type="date" value="${escapeHtml(due)}" onchange="${onchange}" title="Fälligkeitsdatum ändern" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10.5px] font-semibold text-slate-700 w-[118px]">`;
 
+            const toneCount = {};
+            todoEntries.forEach(e => { const k = dueTone(e.due, e.done).k; toneCount[k] = (toneCount[k] || 0) + 1; });
+            let lastTone = '';
             list.innerHTML = todoEntries.length === 0
                 ? `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Pendenzen für diese Auswahl.</div>`
                 : todoEntries.map(item => {
                     const b = dueBadge(item.due, item.done);
-                    const overdue = !item.done && item.due < formatDateISO(new Date());
-                    const frame = item.done ? 'bg-slate-50 border-slate-200 opacity-65' : (overdue ? 'bg-rose-50/40 border-rose-300 shadow-2xs' : 'bg-white border-amber-300 shadow-2xs');
+                    const tone = dueTone(item.due, item.done);
+                    const frame = 'td-card tone-' + tone.k;
+                    const groupHead = tone.k !== lastTone ? `<div class="td-head tone-${tone.k}">${TONE_LABEL[tone.k]} <span class="n">${toneCount[tone.k]}</span></div>` : '';
+                    lastTone = tone.k;
                     if (item.isStandalone) {
-                        return `
+                        return `${groupHead}
                             <div data-todo-row class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                                 <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                     <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodoById(${jsArg(item.sn.id)})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                     <div class="flex flex-col min-w-0">
                                         <span data-todo-text class="${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${escapeHtml(item.sn.text)}</span>
-                                        <span class="text-[11px] mt-0.5"><span class="${b.cls}">${escapeHtml(b.label)}</span> <span class="text-amber-800 font-semibold">· Allgemeine Pendenz</span></span>
+                                        <span class="text-[11px] mt-0.5"><span class="td-pill tone-${tone.k}">${escapeHtml(b.label)}</span> <span class="text-amber-800 font-semibold">· Allgemeine Pendenz</span></span>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0 ml-auto">
@@ -7508,13 +7540,13 @@ Text:\n${raw.slice(0, 12000)}`;
                             </div>`;
                     }
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
-                    return `
+                    return `${groupHead}
                         <div data-todo-row class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                             <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                 <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                 <div class="flex flex-col min-w-0">
                                     <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${item.todo.fromMemo ? '🎙️ ' : ''}<span data-todo-text>${escapeHtml(item.todo.text)}</span></span>
-                                    <span class="text-[11px] text-slate-500 mt-0.5"><span class="${b.cls}">${escapeHtml(b.label)}</span> · <button type="button" onclick="openLessonFromYear(${jsArg(item.key)})" class="hover:underline" title="Lektion öffnen">${escapeHtml(formatDateCHWd(item.isoDate))} (${escapeHtml(item.slot.start || '')})</button> • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
+                                    <span class="text-[11px] text-slate-500 mt-0.5"><span class="td-pill tone-${tone.k}">${escapeHtml(b.label)}</span> · <button type="button" onclick="openLessonFromYear(${jsArg(item.key)})" class="hover:underline" title="Lektion öffnen">${escapeHtml(formatDateCHWd(item.isoDate))} (${escapeHtml(item.slot.start || '')})</button> • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0 ml-auto">
@@ -10421,7 +10453,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.9',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.10',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

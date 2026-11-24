@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.10 – 24.11.2026
+- Neu: Pendenzen sind nach Fälligkeit farbig gruppiert (Überfällig rot, Heute orange, Morgen blau, Diese Woche grün, Später grau, Erledigt blass), mit Zähler, farbigem Streifen und Datums-Plättchen mit Wort
+- Das Pendenz-Plättchen im Wochenplan und Jahreskalender hat die Farbe der dringendsten offenen Pendenz
+- Demo: drei zusätzliche Beispiel-Pendenzen
+
 ## Version 21.9 – 23.11.2026
 - Neu: Gemeinsamer KI-Zugang (Mistral). Wer angemeldet ist und keinen eigenen KI-Schlüssel eingetragen hat, kann die KI trotzdem nutzen (mit Tageslimit). Der Schlüssel liegt nur im Cloudflare-Worker, nicht in der App. Eigene Schlüssel haben Vorrang
 - Registrierung geschlossen: «Konto anfragen» statt Code-Eingabe. Konten legt Kevin an
