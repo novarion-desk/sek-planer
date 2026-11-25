@@ -33,6 +33,21 @@
         .td-pill{display:inline-block;background:var(--tc);color:#fff;border-radius:999px;padding:1px 9px;font-weight:800;font-size:10.5px;line-height:1.5}
         .td-head{display:flex;align-items:center;gap:8px;margin:14px 0 2px;font-weight:800;font-size:12px;color:var(--tc);text-transform:uppercase;letter-spacing:.04em}.td-head::after{content:"";flex:1;height:2px;background:var(--tc);opacity:.25;border-radius:2px}.td-head .n{background:var(--tc);color:#fff;border-radius:999px;padding:0 8px;font-size:11px}
         @media print{.td-card{background:#fff!important}}
+        /* Pendenzen: «Irgendwann», ausklappbarer Text, Formatierleiste */
+        .sd-box{margin-top:18px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc;padding:4px 12px 12px}
+        .sd-sum{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:10px 0 6px;font-weight:800;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.04em}
+        .sd-sum::-webkit-details-marker{display:none}.sd-sum::before{content:"▸";font-size:13px;transition:transform .15s}.sd-box[open]>.sd-sum::before{transform:rotate(90deg)}
+        .sd-sum .n{background:#64748b;color:#fff;border-radius:999px;padding:0 8px;font-size:11px}
+        .sd-hint{font-size:11px;color:#64748b;margin:0 0 4px;text-transform:none;font-weight:600;letter-spacing:0}
+        .sd-row{background:#fff;border:1px solid #cbd5e1;border-left:6px solid #94a3b8;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;cursor:pointer}
+        .sd-row.done{opacity:.65}
+        .sd-mini{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}.sd-mini:hover{background:#f1f5f9}.sd-mini.on{background:#eef2ff;border-color:#a5b4fc;color:#3730a3}
+        .sd-body{margin:-2px 0 4px 18px;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 12px 12px;font-size:13px;line-height:1.55;color:#0f172a;word-break:break-word}
+        .sd-body p{margin:2px 0;min-height:1em}.sd-body ul{margin:4px 0 4px 20px;list-style:disc}.sd-body .sd-cl{display:flex;gap:7px;align-items:flex-start;margin:2px 0}.sd-body .sd-cl input{width:16px;height:16px;margin-top:3px;flex:none;cursor:pointer}.sd-body .sd-cl.on span{text-decoration:line-through;color:#94a3b8}
+        .sd-empty{color:#94a3b8;font-style:italic}
+        .sd-tool{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}.sd-tool button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;min-width:36px;padding:5px 9px;font-size:13px;font-weight:800;cursor:pointer}.sd-tool button:hover{background:#eef2ff}
+        .sd-ta{width:100%;min-height:130px;border:1px solid #a5b4fc;border-radius:10px;padding:9px 10px;font:inherit;font-size:14px;line-height:1.5;resize:vertical;color:#0f172a;background:#fff}
+        .sd-act{display:flex;gap:8px;margin-top:8px}.sd-act .ok{background:#4f46e5;color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer}.sd-act .no{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:7px 12px;font-weight:700;font-size:12px;cursor:pointer}
         @font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('vendor/fonts/inter-latin-wght-normal.woff2') format('woff2-variations'), url('vendor/fonts/inter-latin-wght-normal.woff2') format('woff2'); }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         .lesson-card-body { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
@@ -426,11 +441,12 @@
 
                     <form onsubmit="addStandaloneNote(event)" class="flex flex-wrap gap-2 bg-amber-50/60 border border-amber-200 rounded-xl p-2.5">
                         <input type="text" id="standaloneNoteInput" required placeholder="+ Allgemeine Pendenz (z. B. Kopierpapier bestellen, Elternbrief)..." class="flex-1 min-w-[180px] bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
                             <label for="standaloneNoteDue" class="text-[11px] font-bold text-amber-900">Fällig am</label>
                             <input type="date" id="standaloneNoteDue" class="bg-white border border-amber-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-800">
                             <button type="button" onclick="setStandaloneDue(0)" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Heute</button>
                             <button type="button" onclick="setStandaloneDue(1)" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Morgen</button>
+                            <button type="button" onclick="addStandaloneSomeday()" title="Ohne Datum in die Liste «Irgendwann» legen" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Irgendwann</button>
                         </div>
                         <button type="submit" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0">Hinzufügen</button>
                         <button type="button" onclick="toggleTodoAiBox()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Mit KI hinzufügen</button>
@@ -2694,7 +2710,9 @@ HA: ...</pre>
                     { id: 3, text: 'Kopierpapier bestellen', done: false, createdAt: formatDateCH(today), due: iso(8) },
                     { id: 4, text: 'Elternbrief Skilager einsammeln', done: false, createdAt: formatDateCH(today), due: isoAddDays(today, -3) },
                     { id: 5, text: 'Material für Gruppenarbeit bereitlegen', done: false, createdAt: formatDateCH(today), due: isoAddDays(today, 1) },
-                    { id: 6, text: 'Klassenliste aktualisieren', done: true, createdAt: formatDateCH(today), due: isoAddDays(today, -1) }
+                    { id: 6, text: 'Klassenliste aktualisieren', done: true, createdAt: formatDateCH(today), due: isoAddDays(today, -1) },
+                    { id: 7, text: 'Ideen für den Projekttag', done: false, createdAt: formatDateCH(today), someday: true, body: '**Ideen**\n- Zirkus-Workshop anfragen\n- Waldtag mit Klassenlehrpersonen\n\n[ ] Budget klären\n[x] Termin vorschlagen' },
+                    { id: 8, text: 'Neues Lehrmittel anschauen', done: false, createdAt: formatDateCH(today), someday: true }
                 ]
             };
         }
@@ -7362,7 +7380,7 @@ Text:\n${raw.slice(0, 12000)}`;
             Object.values(lessonsStore).forEach(lesson => {
                 if (Array.isArray(lesson.todos)) count += lesson.todos.filter(t => !t.done).length;
             });
-            standaloneNotesStore.forEach(sn => { if (!sn.done) count++; });
+            standaloneNotesStore.forEach(sn => { if (!sn.done && !sn.someday) count++; });
 
             const badgeM = document.getElementById('openNotesBadgeMobile');
             if (badgeM) { badgeM.innerText = count; badgeM.classList.toggle('hidden', count === 0); }
@@ -7498,6 +7516,7 @@ Text:\n${raw.slice(0, 12000)}`;
             const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
             if (!sn || !isISODate(val)) return;
             sn.due = val;
+            delete sn.someday;
             saveAllState();
             renderNotesOverview();
         }
@@ -7510,6 +7529,147 @@ Text:\n${raw.slice(0, 12000)}`;
             renderNotesOverview();
         }
 
+        // ---------- «Irgendwann» (Pendenz ohne Datum) und ausklappbarer Text mit einfacher Formatierung ----------
+        // Text wird als reiner Text gespeichert: **fett**, *kursiv*, «- » = Aufzählung, «[ ] » / «[x] » = Checkliste
+        const openSnBodies = new Set();
+        let editingSn = null;
+        const snDraft = {};
+        function addStandaloneSomeday() {
+            const inp = document.getElementById('standaloneNoteInput');
+            const text = (inp.value || '').trim();
+            if (!text) { showToast('Bitte zuerst einen Text eingeben.'); inp.focus(); return; }
+            standaloneNotesStore.unshift({ id: Date.now(), text, done: false, createdAt: formatDateCH(formatDateISO(new Date())), someday: true });
+            inp.value = '';
+            saveAllState();
+            renderNotesOverview();
+            showToast('In «Irgendwann» gelegt.');
+        }
+        function moveSnSomeday(id) {
+            const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
+            if (!sn) return;
+            sn.someday = true;
+            saveAllState();
+            renderNotesOverview();
+            updateOpenNotesBadge();
+            showToast('In «Irgendwann» gelegt.');
+        }
+        function toggleSnBody(id) {
+            const k = String(id);
+            if (openSnBodies.has(k)) { openSnBodies.delete(k); if (editingSn === k) editingSn = null; } else openSnBodies.add(k);
+            renderNotesOverview();
+        }
+        function fmtInline(t) {
+            return escapeHtml(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, '$1<i>$2</i>');
+        }
+        function fmtSnBody(body, id) {
+            const lines = String(body || '').split('\n');
+            let out = '', inList = false;
+            lines.forEach((ln, i) => {
+                const cl = /^\[( |x|X)\]\s?(.*)$/.exec(ln), bl = /^\s*(?:[-•])\s+(.*)$/.exec(ln);
+                if (bl && !cl) { if (!inList) { out += '<ul>'; inList = true; } out += '<li>' + fmtInline(bl[1]) + '</li>'; return; }
+                if (inList) { out += '</ul>'; inList = false; }
+                if (cl) { const on = cl[1] !== ' '; out += `<div class="sd-cl${on ? ' on' : ''}"><input type="checkbox" ${on ? 'checked' : ''} onchange="toggleSnCheck(${jsArg(id)}, ${i})"><span>${fmtInline(cl[2])}</span></div>`; return; }
+                out += `<p>${fmtInline(ln)}</p>`;
+            });
+            if (inList) out += '</ul>';
+            return out;
+        }
+        function toggleSnCheck(id, lineIdx) {
+            const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
+            if (!sn || typeof sn.body !== 'string') return;
+            const lines = sn.body.split('\n');
+            const m = /^\[( |x|X)\]( ?.*)$/.exec(lines[lineIdx] || '');
+            if (!m) return;
+            lines[lineIdx] = (m[1] === ' ' ? '[x]' : '[ ]') + m[2];
+            sn.body = lines.join('\n');
+            saveAllState();
+            renderNotesOverview();
+        }
+        function startSnEdit(id) {
+            const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
+            if (!sn) return;
+            const k = String(id);
+            openSnBodies.add(k);
+            editingSn = k;
+            if (snDraft[k] === undefined) snDraft[k] = sn.body || '';
+            renderNotesOverview();
+            setTimeout(() => { const ta = document.getElementById('snEditTa'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }, 30);
+        }
+        function snFmt(kind) {
+            const ta = document.getElementById('snEditTa');
+            if (!ta) return;
+            const v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
+            let nv, na, nb;
+            if (kind === 'b' || kind === 'i') {
+                const m = kind === 'b' ? '**' : '*';
+                const sel = v.slice(a, b);
+                nv = v.slice(0, a) + m + sel + m + v.slice(b);
+                na = a + m.length; nb = na + sel.length;
+            } else {
+                const pre = kind === 'ul' ? '- ' : '[ ] ';
+                const ls = v.lastIndexOf('\n', a - 1) + 1;
+                let le = v.indexOf('\n', b); if (le < 0) le = v.length;
+                const block = v.slice(ls, le).split('\n').map(l => (l.startsWith(pre) ? l : pre + l)).join('\n');
+                nv = v.slice(0, ls) + block + v.slice(le);
+                na = ls; nb = ls + block.length;
+            }
+            ta.value = nv;
+            ta.focus();
+            ta.setSelectionRange(na, nb);
+            if (editingSn !== null) snDraft[editingSn] = nv;
+        }
+        function snDraftInput(id, val) { snDraft[String(id)] = val; }
+        function saveSnEdit(id) {
+            const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
+            const k = String(id);
+            if (sn) { sn.body = String(snDraft[k] ?? sn.body ?? '').slice(0, 20000); if (!sn.body.trim()) delete sn.body; saveAllState(); }
+            delete snDraft[k];
+            editingSn = null;
+            renderNotesOverview();
+        }
+        function cancelSnEdit(id) {
+            delete snDraft[String(id)];
+            editingSn = null;
+            renderNotesOverview();
+        }
+        function snBodyBlock(sn) {
+            const k = String(sn.id);
+            if (!openSnBodies.has(k)) return '';
+            if (editingSn === k) {
+                return `<div class="sd-body"><div class="sd-tool">
+                    <button type="button" onclick="snFmt('b')" title="Fett" aria-label="Fett"><b>B</b></button>
+                    <button type="button" onclick="snFmt('i')" title="Kursiv" aria-label="Kursiv"><i>I</i></button>
+                    <button type="button" onclick="snFmt('ul')" title="Aufzählung" aria-label="Aufzählung">• Liste</button>
+                    <button type="button" onclick="snFmt('cl')" title="Checkliste" aria-label="Checkliste">☐ Check</button></div>
+                    <textarea id="snEditTa" class="sd-ta" oninput="snDraftInput(${jsArg(sn.id)}, this.value)" placeholder="Längerer Text, Notizen, Liste …">${escapeHtml(snDraft[k] ?? sn.body ?? '')}</textarea>
+                    <div class="sd-act"><button type="button" class="ok" onclick="saveSnEdit(${jsArg(sn.id)})">Speichern</button><button type="button" class="no" onclick="cancelSnEdit(${jsArg(sn.id)})">Abbrechen</button></div></div>`;
+            }
+            const has = typeof sn.body === 'string' && sn.body.trim();
+            return `<div class="sd-body">${has ? fmtSnBody(sn.body, sn.id) : '<span class="sd-empty">Noch kein Text.</span>'}
+                <div class="sd-act"><button type="button" class="no" onclick="startSnEdit(${jsArg(sn.id)})">${has ? 'Text bearbeiten' : 'Text schreiben'}</button></div></div>`;
+        }
+        function snBodyBtn(sn) {
+            const open = openSnBodies.has(String(sn.id)), has = typeof sn.body === 'string' && sn.body.trim();
+            return `<button type="button" onclick="toggleSnBody(${jsArg(sn.id)})" title="Text ein-/ausklappen" class="sd-mini ${open ? 'on' : ''}">${open ? '▾' : '▸'} ${has ? '📝 Text' : '+ Text'}</button>`;
+        }
+        function somedayBox(list, showDone) {
+            if (!list.length) return '';
+            const openAttr = (() => { try { return localStorage.getItem('sekplaner_somedayOpen') === '0' ? '' : ' open'; } catch (e) { return ' open'; } })();
+            const rows = list.map(sn => `
+                <div data-todo-row onclick="if(!event.target.closest('input,button,textarea,select,a'))this.querySelector('[data-todo-text]')?.click()" class="sd-row ${sn.done ? 'done' : ''}">
+                    <div class="flex items-center gap-3 flex-1 min-w-[200px]">
+                        <input type="checkbox" ${sn.done ? 'checked' : ''} onchange="toggleStandaloneTodoById(${jsArg(sn.id)})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
+                        <span data-todo-text onclick="startTodoEdit(this, 'sn', ${jsArg(sn.id)})" title="Zum Bearbeiten anklicken" class="cursor-text ${sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${escapeHtml(sn.text)}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0 ml-auto flex-wrap">
+                        ${snBodyBtn(sn)}
+                        <input type="date" value="" onchange="setStandaloneDueById(${jsArg(sn.id)}, this.value)" onclick="try{this.showPicker()}catch(e){}" title="Datum geben (dann erscheint die Pendenz oben)" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10.5px] font-semibold text-slate-700 w-[118px] cursor-pointer">
+                        <button type="button" onclick="deleteStandaloneTodoById(${jsArg(sn.id)})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
+                    </div>
+                </div>${snBodyBlock(sn)}`).join('');
+            return `<details class="sd-box"${openAttr} ontoggle="try{localStorage.setItem('sekplaner_somedayOpen',this.open?'1':'0')}catch(e){}"><summary class="sd-sum">Irgendwann <span class="n">${list.length}</span></summary><p class="sd-hint">Ohne Datum, ohne Erinnerung. Mit einem Datum wandert die Pendenz nach oben.</p>${rows}</details>`;
+        }
+
         function renderNotesOverview() {
             const list = document.getElementById('aggregatedNotesList');
             const showDone = document.getElementById('showDoneNotesCheck').checked;
@@ -7518,9 +7678,11 @@ Text:\n${raw.slice(0, 12000)}`;
             if (dueInput && !dueInput.value) dueInput.value = formatDateISO(new Date());
             const todoEntries = [];
 
+            const somedayEntries = [];
             standaloneNotesStore.forEach((sn, snIdx) => {
                 if (!showDone && sn.done) return;
                 if (classFilter !== 'ALL') return;
+                if (sn.someday) { somedayEntries.push(sn); return; }
                 todoEntries.push({ isStandalone: true, sn, snIdx });
             });
 
@@ -7549,8 +7711,8 @@ Text:\n${raw.slice(0, 12000)}`;
             const toneCount = {};
             todoEntries.forEach(e => { const k = dueTone(e.due, e.done).k; toneCount[k] = (toneCount[k] || 0) + 1; });
             let lastTone = '';
-            list.innerHTML = todoEntries.length === 0
-                ? `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Pendenzen für diese Auswahl.</div>`
+            list.innerHTML = (todoEntries.length === 0
+                ? (somedayEntries.length ? '' : `<div class="py-8 text-center text-xs text-slate-400 italic">Keine offenen Pendenzen für diese Auswahl.</div>`)
                 : todoEntries.map(item => {
                     const b = dueBadge(item.due, item.done);
                     const tone = dueTone(item.due, item.done);
@@ -7567,11 +7729,13 @@ Text:\n${raw.slice(0, 12000)}`;
                                         <span class="text-[11px] mt-0.5"><span class="td-pill tone-${tone.k}">${escapeHtml(b.label)}</span> <span class="text-amber-800 font-semibold">· Allgemeine Pendenz</span></span>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+                                <div class="flex items-center gap-1.5 ml-auto flex-wrap" style="min-width:0;max-width:100%">
+                                    ${snBodyBtn(item.sn)}
                                     ${dateInput(item.due, `setStandaloneDueById(${jsArg(item.sn.id)}, this.value)`, `bumpStandaloneDue(${jsArg(item.sn.id)})`)}
+                                    <button type="button" onclick="moveSnSomeday(${jsArg(item.sn.id)})" title="Datum entfernen und in «Irgendwann» legen" class="sd-mini">Irgendwann</button>
                                     <button type="button" onclick="deleteStandaloneTodoById(${jsArg(item.sn.id)})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
                                 </div>
-                            </div>`;
+                            </div>${snBodyBlock(item.sn)}`;
                     }
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
                     return `${groupHead}
@@ -7588,7 +7752,7 @@ Text:\n${raw.slice(0, 12000)}`;
                                 <button type="button" onclick="deleteGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
                             </div>
                         </div>`;
-                }).join('');
+                }).join('')) + somedayBox(somedayEntries, showDone);
         }
 
         // ---------- KI: Pendenzen aus Liste/Text erstellen ----------
@@ -10251,7 +10415,7 @@ ${listing}`;
             const today = formatDateISO(new Date());
             let overdue = 0, dueToday = 0;
             const tally = due => { if (due < today) overdue++; else if (due === today) dueToday++; };
-            standaloneNotesStore.forEach(sn => { if (!sn.done) tally(effectiveDue({ isStandalone: true, sn })); });
+            standaloneNotesStore.forEach(sn => { if (!sn.done && !sn.someday) tally(effectiveDue({ isStandalone: true, sn })); });
             Object.entries(lessonsStore).forEach(([key, lesson]) => {
                 (lesson && Array.isArray(lesson.todos) ? lesson.todos : []).forEach(todo => { if (!todo.done) tally(effectiveDue({ isStandalone: false, todo, isoDate: key.split('_')[0] })); });
             });
@@ -10486,7 +10650,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.18',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.19',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

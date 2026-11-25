@@ -39,6 +39,7 @@
     { a: 'Notizen & Memos', t: 'Neue freie Pendenz', s: '#standaloneNoteInput', x: 'Hier schreibst du eine Pendenz, die zu keiner Lektion gehört, z. B. «Kopierpapier bestellen».' },
     { a: 'Notizen & Memos', t: 'Fällig am', s: '#standaloneNoteDue', x: 'Das Datum, an dem die neue Pendenz fällig ist. Ein Tipp öffnet den Kalender.' },
     { a: 'Notizen & Memos', t: 'Heute', s: '[onclick="setStandaloneDue(0)"]', x: 'Setzt das Fälligkeitsdatum der neuen Pendenz auf heute.' },
+    { a: 'Notizen & Memos', t: 'Irgendwann', s: '[onclick="addStandaloneSomeday()"]', x: 'Legt die Pendenz ohne Datum in die Liste «Irgendwann» (ganz unten). Ohne Erinnerung und ohne Zahl am Reiter, ideal als Zwischenspeicher. Mit einem Datum wandert sie nach oben. Jede Pendenz hat einen ausklappbaren Text (Knopf «Text») mit fett, kursiv, Aufzählung und Checkliste.' },
     { a: 'Notizen & Memos', t: 'Morgen', s: '[onclick="setStandaloneDue(1)"]', x: 'Setzt das Fälligkeitsdatum der neuen Pendenz auf morgen.' },
     { a: 'Notizen & Memos', t: 'Hinzufügen', s: '#standaloneNoteInput ~ button[type="submit"], form[onsubmit*="addStandaloneNote"] button[type="submit"]', x: 'Speichert die neue Pendenz.' },
     { a: 'Notizen & Memos', t: 'Mit KI hinzufügen', s: '[onclick*="toggleTodoAiBox"]', x: 'Du fügst eine Liste oder einen Text ein, und die KI macht daraus einzelne Pendenzen mit Datum. Du prüfst sie, bevor sie übernommen werden.' },

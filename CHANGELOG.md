@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.19 – 25.11.2026
+- Pendenzen: Neue Liste **«Irgendwann»** für Pendenzen ohne Datum (Zwischenspeicher). Knopf «Irgendwann» beim Erfassen, oder bei einer bestehenden Pendenz. Die Liste steht ganz unten, ist einklappbar, löst keine Erinnerung aus und zählt nicht in der Zahl am Reiter. Gibst du ihr ein Datum, wandert sie nach oben.
+- Jede freie Pendenz hat einen **ausklappbaren Text** (Knopf «Text») für längere Notizen, mit Formatierleiste: fett, kursiv, Aufzählung, Checkliste (Haken lassen sich direkt setzen). Der Text wird als einfacher Text gespeichert und wie die Pendenzen synchronisiert und gesichert. Bestehende Pendenzen bleiben unverändert.
+- Hilfe: Eintrag zum Knopf «Irgendwann».
+
 ## Version 21.18 – 25.11.2026
 - Hilfeseite: Neuer Knopf **«Frag Marty»**. Du kannst in ganzen Sätzen fragen (z. B. «Wie verschiebe ich eine Lektion?»). Marty antwortet nur aus den Hilfetexten und zeigt die passenden Hilfepunkte darunter. Es werden nur die Frage und die Hilfetexte an die KI geschickt, keine Planer-Daten. Funktioniert mit dem eigenen KI-Schlüssel oder dem gemeinsamen KI-Zugang; in der Demo nicht verfügbar.
 
