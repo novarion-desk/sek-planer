@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.14 – 25.11.2026
+- Notizen: Ein Klick auf den Text einer Pendenz öffnet direkt die Bearbeitung (der Stift ist weg). Abgehakt wird nur über die Box.
+- Notizen: Ein Klick aufs Datum öffnet sofort den Kalender. Rechts neben dem Datum steht der Wochentag.
+- Notizen: Neuer Knopf «Morgen» setzt die Pendenz auf den nächsten Schultag (Wochenenden und Ferien übersprungen). Weiterklicken schiebt Tag für Tag.
+
 ## Version 21.13 – 25.11.2026
 - Neu: **Fach und Klasse im Stundenplan von Hand ändern.** In der Übersicht «Stundenplan» auf eine Lektion klicken, Fach und Klasse anpassen, OK. Die geplanten Inhalte bleiben erhalten (z. B. RZG in 2× Geschichte und 1× Geografie aufteilen).
 

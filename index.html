@@ -7464,6 +7464,29 @@ Text:\n${raw.slice(0, 12000)}`;
             const dues = open.map(t => isISODate(t.due) ? t.due : iso).sort();
             return dueTone(dues[0], false);
         }
+        // «Morgen»: nächster Schultag nach heute bzw. nach dem bisherigen Datum (Wochenenden und Ferien übersprungen); weiterklicken schiebt Tag für Tag
+        function nextSchoolDayAfter(due) {
+            const today = formatDateISO(new Date());
+            let x = isoAddDays(due && due > today ? due : today, 1);
+            for (let i = 0; i < 120; i++) {
+                const wd = new Date(`${x}T12:00:00`).getDay();
+                if (wd !== 0 && wd !== 6 && !isHolidayDate(x)) return x;
+                x = isoAddDays(x, 1);
+            }
+            return x;
+        }
+        function bumpStandaloneDue(id) {
+            const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
+            if (!sn) return;
+            const cur = isISODate(sn.due) ? sn.due : (chDateToIso(sn.createdAt) || formatDateISO(new Date()));
+            setStandaloneDueById(id, nextSchoolDayAfter(cur));
+        }
+        function bumpLessonTodoDue(lessonKey, todoIdx) {
+            const t = lessonsStore[lessonKey]?.todos?.[todoIdx];
+            if (!t) return;
+            const cur = isISODate(t.due) ? t.due : lessonKey.split('_')[0];
+            setLessonTodoDue(lessonKey, todoIdx, nextSchoolDayAfter(cur));
+        }
         function setStandaloneDueById(id, val) {
             const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
             if (!sn || !isISODate(val)) return;
@@ -7509,7 +7532,12 @@ Text:\n${raw.slice(0, 12000)}`;
             todoEntries.forEach(e => { e.due = effectiveDue(e); e.done = e.isStandalone ? Boolean(e.sn.done) : Boolean(e.todo.done); });
             todoEntries.sort((a, b) => (a.done - b.done) || a.due.localeCompare(b.due) || (a.isoDate || '').localeCompare(b.isoDate || ''));
 
-            const dateInput = (due, onchange) => `<input type="date" value="${escapeHtml(due)}" onchange="${onchange}" title="Fälligkeitsdatum ändern" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10.5px] font-semibold text-slate-700 w-[118px]">`;
+            const WD_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+            const dateInput = (due, onchange, morgenCall) => `<span class="inline-flex items-center gap-1">
+                <input type="date" value="${escapeHtml(due)}" onchange="${onchange}" onclick="try{this.showPicker()}catch(e){}" title="Datum wählen" class="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10.5px] font-semibold text-slate-700 w-[118px] cursor-pointer">
+                <span class="text-[10.5px] font-bold text-slate-500 w-4">${isISODate(due) ? WD_SHORT[new Date(`${due}T12:00:00`).getDay()] : ''}</span>
+                <button type="button" onclick="${morgenCall}" title="Auf den nächsten Schultag verschieben" class="px-1.5 py-0.5 rounded border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-[10.5px] font-bold">Morgen</button>
+            </span>`;
 
             const toneCount = {};
             todoEntries.forEach(e => { const k = dueTone(e.due, e.done).k; toneCount[k] = (toneCount[k] || 0) + 1; });
@@ -7528,13 +7556,12 @@ Text:\n${raw.slice(0, 12000)}`;
                                 <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                     <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodoById(${jsArg(item.sn.id)})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                     <div class="flex flex-col min-w-0">
-                                        <span data-todo-text class="${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${escapeHtml(item.sn.text)}</span>
+                                        <span data-todo-text onclick="startTodoEdit(this, 'sn', ${jsArg(item.sn.id)})" title="Zum Bearbeiten anklicken" class="cursor-text ${item.sn.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${escapeHtml(item.sn.text)}</span>
                                         <span class="text-[11px] mt-0.5"><span class="td-pill tone-${tone.k}">${escapeHtml(b.label)}</span> <span class="text-amber-800 font-semibold">· Allgemeine Pendenz</span></span>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0 ml-auto">
-                                    <button type="button" onclick="startTodoEdit(this, 'sn', ${jsArg(item.sn.id)})" title="Text bearbeiten" aria-label="Pendenz bearbeiten" class="p-1.5 rounded-md text-slate-400 hover:text-indigo-700 hover:bg-indigo-50"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-                                    ${dateInput(item.due, `setStandaloneDueById(${jsArg(item.sn.id)}, this.value)`)}
+                                    ${dateInput(item.due, `setStandaloneDueById(${jsArg(item.sn.id)}, this.value)`, `bumpStandaloneDue(${jsArg(item.sn.id)})`)}
                                     <button type="button" onclick="deleteStandaloneTodoById(${jsArg(item.sn.id)})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
                                 </div>
                             </div>`;
@@ -7545,13 +7572,12 @@ Text:\n${raw.slice(0, 12000)}`;
                             <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                 <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                 <div class="flex flex-col min-w-0">
-                                    <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${item.todo.fromMemo ? '🎙️ ' : ''}<span data-todo-text>${escapeHtml(item.todo.text)}</span></span>
+                                    <span class="${item.todo.done ? 'line-through text-slate-400' : 'font-bold text-slate-900'} break-words">${item.todo.fromMemo ? '🎙️ ' : ''}<span data-todo-text onclick="startTodoEdit(this, 'lt', ${jsArg(item.key)}, ${item.todoIdx})" title="Zum Bearbeiten anklicken" class="cursor-text">${escapeHtml(item.todo.text)}</span></span>
                                     <span class="text-[11px] text-slate-500 mt-0.5"><span class="td-pill tone-${tone.k}">${escapeHtml(b.label)}</span> · <button type="button" onclick="openLessonFromYear(${jsArg(item.key)})" class="hover:underline" title="Lektion öffnen">${escapeHtml(formatDateCHWd(item.isoDate))} (${escapeHtml(item.slot.start || '')})</button> • <span class="px-1.5 py-0.2 rounded text-white text-[10px] font-bold ${style.headerBg}">${escapeHtml(style.label)} ${escapeHtml(item.slot.className)}</span></span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0 ml-auto">
-                                <button type="button" onclick="startTodoEdit(this, 'lt', ${jsArg(item.key)}, ${item.todoIdx})" title="Text bearbeiten" aria-label="Pendenz bearbeiten" class="p-1.5 rounded-md text-slate-400 hover:text-indigo-700 hover:bg-indigo-50"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-                                ${dateInput(item.due, `setLessonTodoDue(${jsArg(item.key)}, ${item.todoIdx}, this.value)`)}
+                                ${dateInput(item.due, `setLessonTodoDue(${jsArg(item.key)}, ${item.todoIdx}, this.value)`, `bumpLessonTodoDue(${jsArg(item.key)}, ${item.todoIdx})`)}
                                 <button type="button" onclick="deleteGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="text-slate-400 hover:text-rose-600 text-[11px] font-bold px-1.5 py-1">Löschen</button>
                             </div>
                         </div>`;
@@ -10453,7 +10479,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.13',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.14',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
