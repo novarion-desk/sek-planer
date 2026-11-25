@@ -1,7 +1,7 @@
-// Service Worker Sek Planer (Version 21.17): macht die App installierbar UND offline nutzbar.
+// Service Worker Sek Planer (Version 21.18): macht die App installierbar UND offline nutzbar.
 // Strategie: zuerst Netz (immer frische Version, wenn online), bei Ausfall oder langsamem Netz (4 s) der Zwischenspeicher.
 // Beim Erhöhen der App-Version hier VERSION mitändern, damit der Update-Hinweis erscheint.
-const VERSION = '21.17';
+const VERSION = '21.18';
 const CACHE = 'sekplaner-' + VERSION;
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'drive-backup.js', 'shared-ki.js', 'help.js', 'vendor/tailwind.css', 'vendor/lucide.min.js', 'vendor/mammoth.browser.min.js', 'vendor/xlsx.full.min.js', 'vendor/pdf.min.js', 'vendor/pdf.worker.min.js', 'vendor/purify.min.js', 'vendor/firebase-app-compat.js', 'vendor/firebase-auth-compat.js', 'vendor/firebase-firestore-compat.js', 'vendor/fonts/inter-latin-wght-normal.woff2', 'icons/icon.svg', 'icons/favicon-32.png', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-192.png', 'icons/icon-maskable-512.png'];
 const SCOPE = self.registration.scope;

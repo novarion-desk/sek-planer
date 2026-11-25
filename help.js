@@ -22,7 +22,7 @@
     { a: 'Kopfzeile', t: 'Feedback', s: '[onclick*="openAppFeedback"]', x: 'Öffnet ein Formular, um Fehler zu melden oder Wünsche zu äussern.' },
     { a: 'Kopfzeile', t: 'Abmelden', s: '[onclick*="handleFirebaseLogout"]', x: 'Meldet dich von diesem Gerät ab. Deine Daten bleiben in der Cloud.' },
     { a: 'Kopfzeile', t: 'Menü', s: '[onclick*="toggleMobileMenu"]', x: 'Öffnet das Menü mit Ansicht, Verlauf, Import, Stundenplan, Einstellungen und Hilfe.' },
-    { a: 'Kopfzeile', t: 'Hilfe', s: '#helpBtn, #helpMenu, [data-help-open]', x: 'Hier bist du richtig: «Knopf erklären» erklärt jeden Knopf, den du danach antippst. Die Hilfeseite zeigt alle Erklärungen mit Suche.' },
+    { a: 'Kopfzeile', t: 'Hilfe', s: '#helpBtn, #helpMenu, [data-help-open]', x: 'Hier bist du richtig: «Knopf erklären» erklärt jeden Knopf, den du danach antippst. Die Hilfeseite zeigt alle Erklärungen mit Suche. Mit «Frag Marty» kannst du auch in ganzen Sätzen fragen.' },
 
     // ---------- Wochenplan ----------
     { a: 'Wochenplan', t: 'Heute', s: '[onclick*="jumpToCurrentWeek"], [onclick*="mobileGoToday"]', x: 'Springt zur aktuellen Woche bzw. zum heutigen Tag.' },
@@ -158,7 +158,16 @@
   #helpModal .hm-head h3 { margin: 0; font: 800 15px Inter, system-ui, sans-serif; flex: 1; }
   #helpModal .hm-head button { border: 0; background: #eef2ff; color: #3730a3; border-radius: 8px; padding: 6px 10px; font: 700 12px Inter, system-ui, sans-serif; cursor: pointer; }
   #helpModal .hm-head .hm-close { background: transparent; color: #64748b; font-size: 20px; padding: 2px 8px; }
-  #helpModal input[type=search] { margin: 10px 14px 4px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 10px; font: 500 14px Inter, system-ui, sans-serif; width: calc(100% - 28px); box-sizing: border-box; }
+  #helpModal .hm-row { display: flex; gap: 8px; margin: 10px 14px 4px; }
+  #helpModal input[type=search] { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 10px; font: 500 14px Inter, system-ui, sans-serif; box-sizing: border-box; }
+  #helpModal #helpAskBtn { border: 0; background: #4f46e5; color: #fff; border-radius: 10px; padding: 8px 12px; font: 700 13px Inter, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+  #helpModal #helpAskBtn:disabled { opacity: .6; cursor: default; }
+  #helpModal .hm-ans { display: none; margin: 6px 14px 0; padding: 10px 12px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; }
+  #helpModal .hm-ans .hm-ans-t { white-space: pre-wrap; }
+  #helpModal .hm-ans .hm-ans-q { font-weight: 800; color: #3730a3; margin-bottom: 4px; }
+  #helpModal .hm-ans .hm-ans-err { color: #b91c1c; }
+  #helpModal .hm-ans .hm-ans-src { margin-top: 8px; padding-top: 6px; border-top: 1px solid #c7d2fe; font-size: 12px; color: #334155; }
+  #helpModal .hm-ans .hm-ans-src b { display: block; }
   #helpModal .hm-body { overflow-y: auto; padding: 4px 14px 14px; }
   #helpModal h5 { margin: 14px 0 4px; font: 800 11px Inter, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #4f46e5; }
   #helpModal .hm-item { padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
@@ -175,7 +184,7 @@
   const banner = mk('div', 'helpBanner', '<span>Hilfe: Tippe auf einen Knopf, dann wird er erklärt.</span><button type="button" data-a="all">Alle Hilfen</button><button type="button" class="sec" data-a="end">Beenden</button>');
   const pop = mk('div', 'helpPop', '');
   const menu = mk('div', 'helpMenu', '<button type="button" data-a="mode">❓ Knopf erklären</button><button type="button" data-a="page">📖 Hilfeseite öffnen</button>');
-  const modal = mk('div', 'helpModal', '<div class="hm-box"><div class="hm-head"><h3>Hilfe</h3><button type="button" data-a="mode">Knopf erklären</button><button type="button" class="hm-close" data-a="close" aria-label="Schliessen">✕</button></div><input type="search" id="helpSearch" placeholder="Suchen, z. B. «Pendenz», «Backup», «Stundenplan»" autocomplete="off"><div class="hm-body" id="helpBody"></div></div>');
+  const modal = mk('div', 'helpModal', '<div class="hm-box"><div class="hm-head"><h3>Hilfe</h3><button type="button" data-a="mode">Knopf erklären</button><button type="button" class="hm-close" data-a="close" aria-label="Schliessen">✕</button></div><div class="hm-row"><input type="search" id="helpSearch" placeholder="Suchen oder Frage stellen, z. B. «Wie verschiebe ich eine Lektion?»" autocomplete="off"><button type="button" id="helpAskBtn" data-a="ask">✨ Frag Marty</button></div><div class="hm-ans" id="helpAns"></div><div class="hm-body" id="helpBody"></div></div>');
 
   let active = false;
   let target = null;
@@ -234,17 +243,48 @@
     });
     document.getElementById('helpBody').innerHTML = groups.length
       ? groups.map((g) => '<h5>' + esc(g.a) + '</h5>' + g.items.map((it) => '<div class="hm-item"><b>' + esc(it.t) + '</b>' + esc(it.x) + '</div>').join('')).join('')
-      : '<div class="hm-empty">Nichts gefunden. Schreibe über «Feedback», was fehlt.</div>';
+      : '<div class="hm-empty">' + (needle.includes(' ') ? 'Keine Stichwort-Treffer. Tippe auf «Frag Marty», dann antwortet er auf deine Frage.' : 'Nichts gefunden. Schreibe über «Feedback», was fehlt.') + '</div>';
   }
   function openPage() {
     endMode(); closeMenu();
     try { if (typeof closeMobileMenu === 'function') closeMobileMenu(); } catch (e) {}
     renderPage('');
     document.getElementById('helpSearch').value = '';
+    document.getElementById('helpAns').style.display = 'none';
     modal.style.display = 'flex';
     setTimeout(() => document.getElementById('helpSearch').focus(), 50);
   }
   function closePage() { modal.style.display = 'none'; }
+
+  // ---------- Frag Marty (KI antwortet nur aus den Hilfetexten) ----------
+  async function askMarty() {
+    const inp = document.getElementById('helpSearch');
+    const box = document.getElementById('helpAns');
+    const btn = document.getElementById('helpAskBtn');
+    const q = inp.value.trim();
+    if (q.length < 3) { box.style.display = 'block'; box.innerHTML = '<div class="hm-ans-err">Bitte zuerst eine Frage eingeben.</div>'; return; }
+    box.style.display = 'block';
+    box.innerHTML = '<div class="hm-ans-q">' + esc(q) + '</div><div class="hm-ans-t">Marty überlegt…</div>';
+    btn.disabled = true;
+    try {
+      if (typeof callGeminiUnified !== 'function') throw new Error('KI nicht verfügbar.');
+      const list = HELP_ITEMS.map((it, i) => (i + 1) + '. [' + it.a + '] ' + it.t + ': ' + it.x).join('\n');
+      const sys = 'Du bist Marty, der Hilfe-Assistent des «Sek Planer» (Unterrichtsplaner für Lehrpersonen). '
+        + 'Beantworte die Frage ausschliesslich anhand der folgenden Hilfetexte. Erfinde nichts. '
+        + 'Wenn die Hilfetexte die Frage nicht beantworten, sage das ehrlich in einem Satz und empfehle den Knopf «Feedback». '
+        + 'Antworte auf Hochdeutsch mit Schweizer Rechtschreibung (ss statt ß), kurz und konkret, in höchstens 5 Sätzen. '
+        + 'Nenne Knöpfe und Bereiche so, wie sie in den Hilfetexten heissen. '
+        + 'Schreibe in die allerletzte Zeile genau «PUNKTE: » gefolgt von den Nummern der passenden Hilfetexte, durch Komma getrennt (höchstens 4), oder «PUNKTE: -», wenn keiner passt.\n\nHILFETEXTE:\n' + list;
+      const raw = String(await callGeminiUnified('Frage der Lehrperson: ' + q, null, { systemPrompt: sys }));
+      const m = raw.match(/PUNKTE:\s*([0-9,\s]+|-)\s*$/i);
+      const text = raw.replace(/\n?\s*PUNKTE:[^\n]*$/i, '').trim();
+      const nums = m && m[1] !== '-' ? m[1].split(',').map((n) => parseInt(n, 10)).filter((n) => n >= 1 && n <= HELP_ITEMS.length).slice(0, 4) : [];
+      box.innerHTML = '<div class="hm-ans-q">' + esc(q) + '</div><div class="hm-ans-t">' + esc(text) + '</div>'
+        + (nums.length ? '<div class="hm-ans-src">' + nums.map((n) => '<b>' + esc(HELP_ITEMS[n - 1].t) + '</b>' + esc(HELP_ITEMS[n - 1].x)).join('<div style="height:4px"></div>') + '</div>' : '');
+    } catch (err) {
+      box.innerHTML = '<div class="hm-ans-q">' + esc(q) + '</div><div class="hm-ans-err">' + esc(String(err && err.message || err).split('\n')[0]) + '</div><div class="hm-ans-t">Die normale Suche unten funktioniert trotzdem.</div>';
+    } finally { btn.disabled = false; }
+  }
 
   // ---------- Ereignisse ----------
   const inUi = (t) => t.closest && (t.closest('#helpPop') || t.closest('#helpBanner') || t.closest('#helpMenu') || t.closest('#helpModal'));
@@ -279,7 +319,7 @@
     }
     if (t.closest && t.closest('#helpModal')) {
       const a = t.closest('button') && t.closest('button').dataset.a;
-      if (a === 'close' || t.id === 'helpModal') closePage(); else if (a === 'mode') startMode();
+      if (a === 'close' || t.id === 'helpModal') closePage(); else if (a === 'mode') startMode(); else if (a === 'ask') askMarty();
       return;
     }
     if (t.id === 'helpModal') { closePage(); return; }

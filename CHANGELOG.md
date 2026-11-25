@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 21.18 – 25.11.2026
+- Hilfeseite: Neuer Knopf **«Frag Marty»**. Du kannst in ganzen Sätzen fragen (z. B. «Wie verschiebe ich eine Lektion?»). Marty antwortet nur aus den Hilfetexten und zeigt die passenden Hilfepunkte darunter. Es werden nur die Frage und die Hilfetexte an die KI geschickt, keine Planer-Daten. Funktioniert mit dem eigenen KI-Schlüssel oder dem gemeinsamen KI-Zugang; in der Demo nicht verfügbar.
+
 ## Version 21.17 – 25.11.2026
 - Neu: **Hilfe.** Oben rechts gibt es einen «?»-Knopf (auf dem Handy: Menü → Hilfe). «Knopf erklären»: Danach auf einen beliebigen Knopf tippen, dann wird er erklärt, ohne dass etwas ausgeführt wird. Die **Hilfeseite** zeigt alle Erklärungen mit Suche. Die Texte stehen in `help.js`.
 
