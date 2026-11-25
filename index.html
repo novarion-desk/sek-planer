@@ -444,12 +444,19 @@
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <label for="standaloneNoteDue" class="text-[11px] font-bold text-amber-900">Fällig am</label>
                             <input type="date" id="standaloneNoteDue" class="bg-white border border-amber-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-800">
-                            <button type="button" onclick="setStandaloneDue(0)" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Heute</button>
-                            <button type="button" onclick="setStandaloneDue(1)" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Morgen</button>
-                            <button type="button" onclick="addStandaloneSomeday()" title="Ohne Datum in die Liste «Irgendwann» legen" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Irgendwann</button>
+                            <button type="button" onclick="addStandaloneQuick('today')" title="Pendenz sofort für heute anlegen" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Heute</button>
+                            <button type="button" onclick="addStandaloneQuick('tomorrow')" title="Pendenz sofort für morgen anlegen" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Morgen</button>
+                            <button type="button" onclick="addStandaloneQuick('someday')" title="Sofort ohne Datum in die Liste «Irgendwann» legen" class="px-2 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-900">Irgendwann</button>
                         </div>
                         <button type="submit" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0">Hinzufügen</button>
+                        <button type="button" id="snNewTextBtn" onclick="toggleNewSnText()" title="Längeren Text zur Pendenz schreiben" class="sd-mini" style="padding:7px 10px">+ Text</button>
                         <button type="button" onclick="toggleTodoAiBox()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Mit KI hinzufügen</button>
+                        <div id="snNewBox" class="hidden" style="flex-basis:100%"><div class="sd-tool">
+                            <button type="button" onclick="snFmt('b','snNewTa')" title="Fett" aria-label="Fett"><b>B</b></button>
+                            <button type="button" onclick="snFmt('i','snNewTa')" title="Kursiv" aria-label="Kursiv"><i>I</i></button>
+                            <button type="button" onclick="snFmt('ul','snNewTa')" title="Aufzählung" aria-label="Aufzählung">• Liste</button>
+                            <button type="button" onclick="snFmt('cl','snNewTa')" title="Checkliste" aria-label="Checkliste">☐ Check</button></div>
+                            <textarea id="snNewTa" class="sd-ta" placeholder="Längerer Text, Notizen, Liste …"></textarea></div>
                     </form>
 
                     <div id="todoAiBox" class="hidden bg-indigo-50/80 border border-indigo-200 rounded-xl p-3 flex flex-col gap-2 text-xs">
@@ -7409,17 +7416,41 @@ Text:\n${raw.slice(0, 12000)}`;
 
         function addStandaloneNote(event) {
             event.preventDefault();
-            const inp = document.getElementById('standaloneNoteInput');
-            const text = inp.value.trim();
-            if (!text) return;
             const dueEl = document.getElementById('standaloneNoteDue');
-            const due = isISODate(dueEl?.value) ? dueEl.value : formatDateISO(new Date());
-            standaloneNotesStore.unshift({ id: Date.now(), text, done: false, createdAt: formatDateCH(formatDateISO(new Date())), due });
-            inp.value = "";
+            createStandalone(isISODate(dueEl?.value) ? dueEl.value : formatDateISO(new Date()));
+        }
+        // Heute / Morgen / Irgendwann: Pendenz sofort anlegen (mit Text aus dem Textfeld, falls geöffnet)
+        function addStandaloneQuick(kind) {
+            const today = formatDateISO(new Date());
+            createStandalone(kind === 'someday' ? null : (kind === 'tomorrow' ? isoAddDays(today, 1) : today));
+        }
+        function createStandalone(due) {
+            const inp = document.getElementById('standaloneNoteInput');
+            const text = (inp.value || '').trim();
+            if (!text) { showToast('Bitte zuerst einen Titel eingeben.'); inp.focus(); return; }
+            const body = (document.getElementById('snNewTa')?.value || '').trim().slice(0, 20000);
+            const sn = { id: Date.now(), text, done: false, createdAt: formatDateCH(formatDateISO(new Date())) };
+            if (due) sn.due = due; else sn.someday = true;
+            if (body) sn.body = body;
+            standaloneNotesStore.unshift(sn);
+            inp.value = '';
+            const dueEl = document.getElementById('standaloneNoteDue');
             if (dueEl) dueEl.value = formatDateISO(new Date());
+            const ta = document.getElementById('snNewTa'); if (ta) ta.value = '';
+            document.getElementById('snNewBox')?.classList.add('hidden');
+            document.getElementById('snNewTextBtn')?.classList.remove('on');
             saveAllState();
             renderNotesOverview();
-            showToast("Allgemeine Pendenz gespeichert!");
+            updateOpenNotesBadge();
+            showToast(due ? 'Allgemeine Pendenz gespeichert!' : 'In «Irgendwann» gelegt.');
+        }
+        function toggleNewSnText() {
+            const box = document.getElementById('snNewBox'), btn = document.getElementById('snNewTextBtn');
+            if (!box) return;
+            const show = box.classList.contains('hidden');
+            box.classList.toggle('hidden', !show);
+            if (btn) btn.classList.toggle('on', show);
+            if (show) document.getElementById('snNewTa').focus();
         }
 
         function toggleStandaloneTodoById(id) {
@@ -7534,16 +7565,6 @@ Text:\n${raw.slice(0, 12000)}`;
         const openSnBodies = new Set();
         let editingSn = null;
         const snDraft = {};
-        function addStandaloneSomeday() {
-            const inp = document.getElementById('standaloneNoteInput');
-            const text = (inp.value || '').trim();
-            if (!text) { showToast('Bitte zuerst einen Text eingeben.'); inp.focus(); return; }
-            standaloneNotesStore.unshift({ id: Date.now(), text, done: false, createdAt: formatDateCH(formatDateISO(new Date())), someday: true });
-            inp.value = '';
-            saveAllState();
-            renderNotesOverview();
-            showToast('In «Irgendwann» gelegt.');
-        }
         function moveSnSomeday(id) {
             const sn = standaloneNotesStore.find(x => String(x.id) === String(id));
             if (!sn) return;
@@ -7555,7 +7576,10 @@ Text:\n${raw.slice(0, 12000)}`;
         }
         function toggleSnBody(id) {
             const k = String(id);
-            if (openSnBodies.has(k)) { openSnBodies.delete(k); if (editingSn === k) editingSn = null; } else openSnBodies.add(k);
+            if (openSnBodies.has(k)) { openSnBodies.delete(k); if (editingSn === k) editingSn = null; renderNotesOverview(); return; }
+            const sn = standaloneNotesStore.find(x => String(x.id) === k);
+            if (sn && !(typeof sn.body === 'string' && sn.body.trim())) { startSnEdit(id); return; }
+            openSnBodies.add(k);
             renderNotesOverview();
         }
         function fmtInline(t) {
@@ -7595,8 +7619,8 @@ Text:\n${raw.slice(0, 12000)}`;
             renderNotesOverview();
             setTimeout(() => { const ta = document.getElementById('snEditTa'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }, 30);
         }
-        function snFmt(kind) {
-            const ta = document.getElementById('snEditTa');
+        function snFmt(kind, taId) {
+            const ta = document.getElementById(taId || 'snEditTa');
             if (!ta) return;
             const v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
             let nv, na, nb;
@@ -7616,7 +7640,7 @@ Text:\n${raw.slice(0, 12000)}`;
             ta.value = nv;
             ta.focus();
             ta.setSelectionRange(na, nb);
-            if (editingSn !== null) snDraft[editingSn] = nv;
+            if (ta.id === 'snEditTa' && editingSn !== null) snDraft[editingSn] = nv;
         }
         function snDraftInput(id, val) { snDraft[String(id)] = val; }
         function saveSnEdit(id) {
@@ -7645,8 +7669,7 @@ Text:\n${raw.slice(0, 12000)}`;
                     <div class="sd-act"><button type="button" class="ok" onclick="saveSnEdit(${jsArg(sn.id)})">Speichern</button><button type="button" class="no" onclick="cancelSnEdit(${jsArg(sn.id)})">Abbrechen</button></div></div>`;
             }
             const has = typeof sn.body === 'string' && sn.body.trim();
-            return `<div class="sd-body">${has ? fmtSnBody(sn.body, sn.id) : '<span class="sd-empty">Noch kein Text.</span>'}
-                <div class="sd-act"><button type="button" class="no" onclick="startSnEdit(${jsArg(sn.id)})">${has ? 'Text bearbeiten' : 'Text schreiben'}</button></div></div>`;
+            return `<div class="sd-body" title="Zum Bearbeiten anklicken" onclick="if(!event.target.closest('input,button,a'))startSnEdit(${jsArg(sn.id)})" style="cursor:text">${has ? fmtSnBody(sn.body, sn.id) : '<span class="sd-empty">Noch kein Text. Zum Schreiben anklicken.</span>'}</div>`;
         }
         function snBodyBtn(sn) {
             const open = openSnBodies.has(String(sn.id)), has = typeof sn.body === 'string' && sn.body.trim();
@@ -10650,7 +10673,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.19',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.20',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){

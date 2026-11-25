@@ -1,5 +1,10 @@
 # Änderungen
 
+## Version 21.20 – 25.11.2026
+- Pendenzen: **Heute**, **Morgen** und **Irgendwann** legen die Pendenz jetzt sofort an (wie «Irgendwann»), ohne zusätzliches «Hinzufügen». «Hinzufügen» gilt für ein selbst gewähltes Datum.
+- Neu: Knopf **«+ Text»** im Formular. Er öffnet ein Textfeld mit Formatierleiste, sodass Titel und Text in einem Schritt erfasst werden.
+- Knopf **«Text»** an einer Pendenz öffnet bei leerem Text sofort das Textfeld zum Schreiben. Ein Klick auf den angezeigten Text bearbeitet ihn (kein zweiter Knopf mehr nötig).
+
 ## Version 21.19 – 25.11.2026
 - Pendenzen: Neue Liste **«Irgendwann»** für Pendenzen ohne Datum (Zwischenspeicher). Knopf «Irgendwann» beim Erfassen, oder bei einer bestehenden Pendenz. Die Liste steht ganz unten, ist einklappbar, löst keine Erinnerung aus und zählt nicht in der Zahl am Reiter. Gibst du ihr ein Datum, wandert sie nach oben.
 - Jede freie Pendenz hat einen **ausklappbaren Text** (Knopf «Text») für längere Notizen, mit Formatierleiste: fett, kursiv, Aufzählung, Checkliste (Haken lassen sich direkt setzen). Der Text wird als einfacher Text gespeichert und wie die Pendenzen synchronisiert und gesichert. Bestehende Pendenzen bleiben unverändert.
