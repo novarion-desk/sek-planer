@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 21.13 – 25.11.2026
+- Neu: **Fach und Klasse im Stundenplan von Hand ändern.** In der Übersicht «Stundenplan» auf eine Lektion klicken, Fach und Klasse anpassen, OK. Die geplanten Inhalte bleiben erhalten (z. B. RZG in 2× Geschichte und 1× Geografie aufteilen).
+
 ## Version 21.12 – 25.11.2026
 - Neu: **Offline-Start.** Die App wird beim ersten Öffnen zwischengespeichert und öffnet danach auch ohne Netz (z. B. bei WLAN-Ausfall). Mit Netz kommt immer die neueste Version. Die Datenspeicherung ist unverändert: Eingaben werden zuerst auf dem Gerät gespeichert und beim nächsten Netz automatisch mit der Cloud abgeglichen. KI, Drive und Feedback brauchen Netz.
 - Die Schrift Inter liegt jetzt in der App statt bei Google Fonts: keine Verbindung zu fremden Servern mehr.
