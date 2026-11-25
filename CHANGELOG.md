@@ -1,5 +1,12 @@
 # Änderungen
 
+## Version 21.17 – 25.11.2026
+- Neu: **Hilfe.** Oben rechts gibt es einen «?»-Knopf (auf dem Handy: Menü → Hilfe). «Knopf erklären»: Danach auf einen beliebigen Knopf tippen, dann wird er erklärt, ohne dass etwas ausgeführt wird. Die **Hilfeseite** zeigt alle Erklärungen mit Suche. Die Texte stehen in `help.js`.
+
+## Version 21.16 – 25.11.2026
+- Kopfzeile: Der Knopf «Änderungsverlauf» (Uhr-Symbol, jede Aktion einzeln rückgängig machen) lag bei breiten Fenstern unter den Reitern versteckt. Die Beschriftungen von «Suchen», «Rückgängig» und «Verlauf» erscheinen jetzt erst ab sehr breiten Fenstern, damit nichts mehr überdeckt wird. Bei schmalen Fenstern (z. B. iPad hochkant) steht die Kopfzeile in zwei Zeilen, damit Schuljahr, Suche, Rückgängig und Verlauf nicht unter den Reitern verschwinden.
+- Aufgeräumt: Das fest eingebundene Tailwind-CSS (`vendor/tailwind.css`) wurde neu erzeugt. Einige Hinweise und Dialoge (z. B. die Pendenz-Meldung oben) hatten bisher einzelne fehlende Stile.
+
 ## Version 21.15 – 25.11.2026
 - Notizen: Ein Klick irgendwo in die farbige Pendenz-Karte öffnet die Bearbeitung des Titels (ausser auf die Box, das Datum und die Knöpfe).
 
