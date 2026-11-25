@@ -1,5 +1,8 @@
 # Änderungen
 
+## Version 21.15 – 25.11.2026
+- Notizen: Ein Klick irgendwo in die farbige Pendenz-Karte öffnet die Bearbeitung des Titels (ausser auf die Box, das Datum und die Knöpfe).
+
 ## Version 21.14 – 25.11.2026
 - Notizen: Ein Klick auf den Text einer Pendenz öffnet direkt die Bearbeitung (der Stift ist weg). Abgehakt wird nur über die Box.
 - Notizen: Ein Klick aufs Datum öffnet sofort den Kalender. Rechts neben dem Datum steht der Wochentag.

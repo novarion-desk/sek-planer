@@ -7552,7 +7552,7 @@ Text:\n${raw.slice(0, 12000)}`;
                     lastTone = tone.k;
                     if (item.isStandalone) {
                         return `${groupHead}
-                            <div data-todo-row class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+                            <div data-todo-row onclick="if(!event.target.closest('input,button,textarea,select,a'))this.querySelector('[data-todo-text]')?.click()" class="cursor-pointer border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                                 <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                     <input type="checkbox" ${item.sn.done ? 'checked' : ''} onchange="toggleStandaloneTodoById(${jsArg(item.sn.id)})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                     <div class="flex flex-col min-w-0">
@@ -7568,7 +7568,7 @@ Text:\n${raw.slice(0, 12000)}`;
                     }
                     const style = getStyleForSlot(item.slot.subject, item.slot.className);
                     return `${groupHead}
-                        <div data-todo-row class="border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+                        <div data-todo-row onclick="if(!event.target.closest('input,button,textarea,select,a'))this.querySelector('[data-todo-text]')?.click()" class="cursor-pointer border ${frame} rounded-xl p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                             <div class="flex items-center gap-3 flex-1 min-w-[200px]">
                                 <input type="checkbox" ${item.todo.done ? 'checked' : ''} onchange="toggleGlobalTodo(${jsArg(item.key)}, ${item.todoIdx})" class="w-5 h-5 rounded text-indigo-600 shrink-0 cursor-pointer" title="Als erledigt markieren">
                                 <div class="flex flex-col min-w-0">
@@ -10479,7 +10479,7 @@ ${listing}`;
     </script>
 <script>
 /* Feedback: öffnet das anonyme Tally-Formular (App, Version und Gerät werden mitgegeben, keine Personendaten) */
-function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.14',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
+function openAppFeedback(){var q=new URLSearchParams({app:'sekplaner',version:'21.15',geraet:(navigator.userAgent||'').slice(0,120)});window.open('https://tally.so/r/GeR9re?'+q.toString(),'_blank','noopener');}
 
 /* ===== Zurück-Geste (Handy): ein Schritt zurück statt App schliessen ===== */
 (function(){
