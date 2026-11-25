@@ -1,5 +1,9 @@
 # Änderungen
 
+## Version 21.12 – 25.11.2026
+- Neu: **Offline-Start.** Die App wird beim ersten Öffnen zwischengespeichert und öffnet danach auch ohne Netz (z. B. bei WLAN-Ausfall). Mit Netz kommt immer die neueste Version. Die Datenspeicherung ist unverändert: Eingaben werden zuerst auf dem Gerät gespeichert und beim nächsten Netz automatisch mit der Cloud abgeglichen. KI, Drive und Feedback brauchen Netz.
+- Die Schrift Inter liegt jetzt in der App statt bei Google Fonts: keine Verbindung zu fremden Servern mehr.
+
 ## Version 21.11 – 24.11.2026
 - Aufgeräumt: Alter Einladungscode samt Registrierfunktion aus dem Programmcode entfernt (Registrierung ist seit 21.9 geschlossen)
 - Drive-Auswahl (drive-backup.js): Dateiauswahl startet in «Meine Ablage» mit Ordneransicht, Zuletzt-gewählt und Freigegebene; Esc/Abbrechen schliesst sauber. Bleibt das Google-Fenster leer (z. B. blockierte Drittanbieter-Cookies), erscheint nach 12 Sekunden ein Hinweis mit Alternativen
